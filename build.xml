@@ -10,6 +10,7 @@
 
 	<target name="clean">
 		<delete dir="${target}" />
+		<delete file="Mindroid.jar"/>
 	</target>
 	
 	<target name="jar" depends="build">
