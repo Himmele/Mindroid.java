@@ -1,0 +1,28 @@
+<project name="Mindroid" basedir=".">
+	<property name="src" value="src" />
+	<property name="target" value="bin" />
+	<property name="version" value="1.6" />
+
+	<target name="build">
+		<mkdir dir="${target}" />
+		<javac srcdir="${src}" destdir="${target}" optimize="on" source="${version}" target="${version}" includeantruntime="false" />				
+	</target>
+
+	<target name="clean">
+		<delete dir="${target}" />
+	</target>
+	
+	<target name="jar" depends="build">
+		<jar jarfile="Mindroid.jar" basedir="${target}">
+			<manifest>
+				<attribute name="Specification-Title" value="Mindroid" />
+				<attribute name="Specification-Version" value="1.0" />
+				<attribute name="Specification-Vendor" value="Daniel Himmelein" />
+				<attribute name="Implementation-Version" value="1.0" />
+				<attribute name="Implementation-Vendor" value="Daniel Himmelein" />
+				<attribute name="X-Compile-Source-JDK" value="@{version}" />
+				<attribute name="X-Compile-Target-JDK" value="@{version}" />
+			</manifest>
+		</jar>
+	</target>
+</project>
