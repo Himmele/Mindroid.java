@@ -1,20 +1,21 @@
 <project name="Mindroid" basedir=".">
-	<property name="src" value="src" />
-	<property name="target" value="bin" />
+	<property name="src.dir" value="src" />
+	<property name="out.dir" value="bin" />
+	<property name="jar.filename" value="Mindroid.jar" />
 	<property name="version" value="1.6" />
 
 	<target name="build">
-		<mkdir dir="${target}" />
-		<javac srcdir="${src}" destdir="${target}" optimize="on" source="${version}" target="${version}" includeantruntime="false" />				
+		<mkdir dir="${out.dir}" />
+		<javac srcdir="${src.dir}" destdir="${out.dir}" optimize="on" source="${version}" target="${version}" includeantruntime="false" />				
 	</target>
 
 	<target name="clean">
-		<delete dir="${target}" />
-		<delete file="Mindroid.jar"/>
+		<delete dir="${out.dir}" />
+		<delete file="${jar.filename}"/>
 	</target>
 	
 	<target name="jar" depends="build">
-		<jar jarfile="Mindroid.jar" basedir="${target}">
+		<jar jarfile="${jar.filename}" basedir="${out.dir}">
 			<manifest>
 				<attribute name="Specification-Title" value="Mindroid" />
 				<attribute name="Specification-Version" value="1.0" />
