@@ -9,9 +9,9 @@ We also plan to make this application framework work on Java ME 8 and CLDC 8 (JS
 #### [Mindroid Developer Guide](http://esrlabs.com/Mindroid) ####
 
 ### Build ###
-* ant sdk (Compiles the Mindroid.jar SDK)
-* and install-apps (Build and installs apps to the apps directory)
-* ant docs (Builds the SDK docs)
+* ant sdk (Compile the Mindroid.jar SDK)
+* ant install-apps (Build and install apps to the apps directory)
+* ant docs (Build the SDK docs)
 
 ### Run ###
 * Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=../../
