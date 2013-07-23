@@ -1,13 +1,12 @@
 ## Mindroid.java ##
 
-### Docs ###
-#### [Mindroid Developer Guide](http://esrlabs.com/Mindroid) ####
-
 Mindroid's application framework lets you create extremely rich and innovative apps using a set of reusable components.
 The Mindroid application framework currently complies to the Java specification v1.4 to make it work on Jave ME CDC targets.
 It provides a subset of the Android application framework API.
 The framework is mainly intended for machine-to-machine (M2M) projects in the Internet of Things.
 We also plan to make this application framework work on Java ME 8 and CLDC 8 (JSR 360).
+
+#### [Mindroid Developer Guide](http://esrlabs.com/Mindroid) ####
 
 ### Build ###
 * ant sdk (Compiles the Mindroid.jar SDK)
