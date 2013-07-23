@@ -34,14 +34,10 @@ import mindroid.content.SharedPreferences;
 public abstract class Context {
 	public static final String SERVICE_MANAGER = "serviceManager";
 	public static final String PACKAGE_MANAGER = "packageManager";
-	public static final String CAR_DATA_SERVICE = "carDataService";
 	public static final String LOCATION_SERVICE = "locationService";
 	public static final String TELEPHONY_SERVICE = "telephonyService";
 	public static final String CONSOLE_LOGGER_SERVICE = "consoleLogger";
 	public static final String CLOUD_LOGGER_SERVICE = "cloudLogger";
-	public static final String CLOUD_PUSHER_SERVICE = "cloudPusher";
-	public static final String CLOUD_PULLER_SERVICE = "cloudPuller";
-	public static final String CAR_PROVISIONING_SERVICE = "carProvisioner";
 	
 	/**
      * File creation mode: for use with {@link #openFileOutput}, if the file
