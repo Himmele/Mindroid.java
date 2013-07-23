@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2012 Daniel Himmelein
+ * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +17,19 @@
 
 package mindroid.os;
 
-import java.util.Map;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
+/**
+ * A mapping from String values to various types.
+ *
+ */
 public final class Bundle {
-	private Map<String, Object> mMap;
+	private Hashtable mHashtable;
 	
 	public Bundle() {
-		mMap = new HashMap<String, Object>();
+		mHashtable = new Hashtable();
 	}
 	
 	/**
@@ -33,11 +39,13 @@ public final class Bundle {
      * @param otherBundle a Bundle to be copied.
      */
     public Bundle(Bundle otherBundle) {
-        if (otherBundle.mMap != null) {
-        	mMap = new HashMap<String, Object>(otherBundle.mMap);
-        } else {
-        	mMap = null;
-        }
+    	mHashtable = new Hashtable();
+    	Enumeration iterator = otherBundle.mHashtable.keys();        	
+    	while (iterator.hasMoreElements()) {
+    		Object key = iterator.nextElement();
+    		Object value = otherBundle.mHashtable.get(key);
+    		mHashtable.put(key, value);
+    	}
     }
 	
 	/**
@@ -54,21 +62,21 @@ public final class Bundle {
      * @return the number of mappings as an int.
      */
     public int size() {
-        return mMap.size();
+        return mHashtable.size();
     }
 
     /**
      * Returns true if the mapping of this Bundle is empty, false otherwise.
      */
     public boolean isEmpty() {
-        return mMap.isEmpty();
+        return mHashtable.isEmpty();
     }
 
     /**
      * Removes all elements from the mapping of this Bundle.
      */
     public void clear() {
-    	mMap.clear();
+    	mHashtable.clear();
     }
 
     /**
@@ -79,7 +87,7 @@ public final class Bundle {
      * @return true if the key is part of the mapping, false otherwise
      */
     public boolean containsKey(String key) {
-        return mMap.containsKey(key);
+        return mHashtable.containsKey(key);
     }
 
     /**
@@ -89,7 +97,7 @@ public final class Bundle {
      * @return an Object, or null
      */
     public Object get(String key) {
-        return mMap.get(key);
+        return mHashtable.get(key);
     }
 
     /**
@@ -98,7 +106,18 @@ public final class Bundle {
      * @param key a String key
      */
     public void remove(String key) {
-    	mMap.remove(key);
+    	mHashtable.remove(key);
+    }
+    
+    /**
+     * Inserts all key-value pairs from the given Bundle into this Bundle.
+     *
+     * @param bundle a Bundle
+     */
+    public void putAll(Bundle bundle) {
+    	if (bundle != null) {
+    		mHashtable.putAll(bundle.mHashtable);
+    	}
     }
     
     /**
@@ -109,7 +128,7 @@ public final class Bundle {
      * @param value a Boolean, or null
      */
     public void putBoolean(String key, boolean value) {
-    	mMap.put(key, new Boolean(value));
+    	mHashtable.put(key, new Boolean(value));
     }
 
     /**
@@ -120,7 +139,7 @@ public final class Bundle {
      * @param value a byte
      */
     public void putByte(String key, byte value) {
-    	mMap.put(key, new Byte(value));
+    	mHashtable.put(key, new Byte(value));
     }
 
     /**
@@ -131,7 +150,7 @@ public final class Bundle {
      * @param value a char, or null
      */
     public void putChar(String key, char value) {
-    	mMap.put(key, new Character(value));
+    	mHashtable.put(key, new Character(value));
     }
 
     /**
@@ -142,7 +161,7 @@ public final class Bundle {
      * @param value a short
      */
     public void putShort(String key, short value) {
-    	mMap.put(key, new Short(value));
+    	mHashtable.put(key, new Short(value));
     }
 
     /**
@@ -153,7 +172,7 @@ public final class Bundle {
      * @param value an int, or null
      */
     public void putInt(String key, int value) {
-    	mMap.put(key, new Integer(value));
+    	mHashtable.put(key, new Integer(value));
     }
 
     /**
@@ -164,7 +183,7 @@ public final class Bundle {
      * @param value a long
      */
     public void putLong(String key, long value) {
-    	mMap.put(key, new Long(value));
+    	mHashtable.put(key, new Long(value));
     }
 
     /**
@@ -175,7 +194,7 @@ public final class Bundle {
      * @param value a float
      */
     public void putFloat(String key, float value) {
-    	mMap.put(key, new Float(value));
+    	mHashtable.put(key, new Float(value));
     }
 
     /**
@@ -186,7 +205,7 @@ public final class Bundle {
      * @param value a double
      */
     public void putDouble(String key, double value) {
-    	mMap.put(key, new Double(value));
+    	mHashtable.put(key, new Double(value));
     }
 
     /**
@@ -197,7 +216,9 @@ public final class Bundle {
      * @param value a String, or null
      */
     public void putString(String key, String value) {
-    	mMap.put(key, value);
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
     }
     
     /**
@@ -208,7 +229,22 @@ public final class Bundle {
      * @param value an object, or null
      */
     public void putObject(String key, Object value) {
-    	mMap.put(key, value);
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+    
+    /**
+     * Inserts a boolean array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a boolean array object, or null
+     */
+    public void putBooleanArray(String key, boolean[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
     }
 
     /**
@@ -219,7 +255,22 @@ public final class Bundle {
      * @param value a byte array object, or null
      */
     public void putByteArray(String key, byte[] value) {
-        mMap.put(key, value);
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+    
+    /**
+     * Inserts a short array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a short array object, or null
+     */
+    public void putShortArray(String key, short[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
     }
 
     /**
@@ -230,7 +281,100 @@ public final class Bundle {
      * @param value a char array object, or null
      */
     public void putCharArray(String key, char[] value) {
-        mMap.put(key, value);
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts an int array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value an int array object, or null
+     */
+    public void putIntArray(String key, int[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts a long array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a long array object, or null
+     */
+    public void putLongArray(String key, long[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts a float array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a float array object, or null
+     */
+    public void putFloatArray(String key, float[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts a double array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a double array object, or null
+     */
+    public void putDoubleArray(String key, double[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts a String array value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value a String array object, or null
+     */
+    public void putStringArray(String key, String[] value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+    
+    /**
+     * Inserts an ArrayList<Integer> value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value an ArrayList<Integer> object, or null
+     */
+    public void putIntegerArrayList(String key, ArrayList value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
+    }
+
+    /**
+     * Inserts an ArrayList<String> value into the mapping of this Bundle, replacing
+     * any existing value for the given key.  Either key or value may be null.
+     *
+     * @param key a String, or null
+     * @param value an ArrayList<String> object, or null
+     */
+    public void putStringArrayList(String key, ArrayList value) {
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
     }
 
     /**
@@ -241,7 +385,9 @@ public final class Bundle {
      * @param value a Bundle object, or null
      */
     public void putBundle(String key, Bundle value) {
-    	mMap.put(key, value);
+    	if (value != null) {
+    		mHashtable.put(key, value);
+    	}
     }
     
     /**
@@ -263,7 +409,7 @@ public final class Bundle {
      * @return a boolean value
      */
     public boolean getBoolean(String key, boolean defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -293,7 +439,7 @@ public final class Bundle {
      * @return a byte value
      */
     public byte getByte(String key, byte defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -323,7 +469,7 @@ public final class Bundle {
      * @return a char value
      */
     public char getChar(String key, char defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -353,7 +499,7 @@ public final class Bundle {
      * @return a short value
      */
     public short getShort(String key, short defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -383,7 +529,7 @@ public final class Bundle {
      * @return an int value
      */
     public int getInt(String key, int defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -413,7 +559,7 @@ public final class Bundle {
      * @return a long value
      */
     public long getLong(String key, long defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -443,7 +589,7 @@ public final class Bundle {
      * @return a float value
      */
     public float getFloat(String key, float defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -473,7 +619,7 @@ public final class Bundle {
      * @return a double value
      */
     public double getDouble(String key, double defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -493,7 +639,7 @@ public final class Bundle {
      * @return a String value, or null
      */
     public String getString(String key) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return null;
         }
@@ -513,7 +659,7 @@ public final class Bundle {
      * @return a String value, or null
      */
     public String getString(String key, String defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -533,7 +679,7 @@ public final class Bundle {
      * @return an object value, or null
      */
     public Object getObject(String key) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         return o;
     }
 
@@ -546,7 +692,7 @@ public final class Bundle {
      * @return an object value, or null
      */
     public Object getObject(String key, Object defaultValue) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return defaultValue;
         }
@@ -562,7 +708,7 @@ public final class Bundle {
      * @return a Bundle value, or null
      */
     public Bundle getBundle(String key) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return null;
         }
@@ -579,10 +725,30 @@ public final class Bundle {
      * value is explicitly associated with the key.
      *
      * @param key a String, or null
+     * @return a boolean[] value, or null
+     */
+    public boolean[] getBooleanArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (boolean[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
      * @return a byte[] value, or null
      */
     public byte[] getByteArray(String key) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return null;
         }
@@ -599,15 +765,175 @@ public final class Bundle {
      * value is explicitly associated with the key.
      *
      * @param key a String, or null
+     * @return a short[] value, or null
+     */
+    public short[] getShortArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (short[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
      * @return a char[] value, or null
      */
     public char[] getCharArray(String key) {
-        Object o = mMap.get(key);
+        Object o = mHashtable.get(key);
         if (o == null) {
             return null;
         }
         try {
             return (char[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return an int[] value, or null
+     */
+    public int[] getIntArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (int[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return a long[] value, or null
+     */
+    public long[] getLongArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (long[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return a float[] value, or null
+     */
+    public float[] getFloatArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (float[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return a double[] value, or null
+     */
+    public double[] getDoubleArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (double[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return a String[] value, or null
+     */
+    public String[] getStringArray(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (String[]) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return an ArrayList<String> value, or null
+     */
+    public ArrayList getIntegerArrayList(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (ArrayList) o;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the value associated with the given key, or null if
+     * no mapping of the desired type exists for the given key or a null
+     * value is explicitly associated with the key.
+     *
+     * @param key a String, or null
+     * @return an ArrayList<String> value, or null
+     */
+    public ArrayList getStringArrayList(String key) {
+        Object o = mHashtable.get(key);
+        if (o == null) {
+            return null;
+        }
+        try {
+            return (ArrayList) o;
         } catch (ClassCastException e) {
             return null;
         }

@@ -1,0 +1,17 @@
+page.title=App Components
+page.landing=true
+page.landing.intro=Mindroid's application framework lets you create innovative apps using a set of reusable components. This section explains how Mindroid apps work and how you use components to build them. 
+
+@jd:body
+
+<div class="landing-docs">
+
+    <h3>Google Android</h3>
+    
+    <a href="http://developer.android.com/develop/index.html">
+      <h4>Google Android Developer Guide</h4>
+      <p>The Mindroid application framework is heavily inspired by Google Android.</p>
+    </a>
+
+</div>
+

@@ -1,0 +1,62 @@
+page.title=&lt;application&gt;
+parent.title=The MindroidManifest.xml File
+parent.link=manifest-intro.html
+@jd:body
+
+<dl class="xml">
+<dt>syntax:</dt>
+<dd><pre class="stx">&lt;application mindroid:<a href="#enabled">enabled</a>=["true" | "false"]
+             mindroid:<a href="#proc">process</a>="<i>string</i>" &gt;
+    . . .
+&lt;/application&gt;</pre></dd>
+
+<dt>contained in:</dt>
+<dd><code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code></dd>
+
+<dt>can contain:</dt>
+<dd><code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code></dd>
+
+<dt>description:</dt>
+<dd>The declaration of the application.  This element contains subelements 
+that declare each of the application's components and has attributes 
+that can affect all the components.  All attributes (such as {@code process}) set default values 
+for corresponding attributes of the component elements.</dd>
+
+<dt>attributes</dt>
+<dd><dl class="attr">
+
+<dt><a name="enabled"></a>{@code mindroid:enabled}</dt>
+<dd>Whether or not the Mindroid system can instantiate components of 
+the application &mdash; {@code "true"} if it can, and {@code "false"} 
+if not.  If the value is {@code "true"}, each component's 
+{@code enabled} attribute determines whether that component is enabled 
+or not.  If the value is {@code "false"}, it overrides the 
+component-specific values; all components are disabled.
+
+<p>
+The default value is {@code "true"}.
+</p></dd>
+
+<dt><a name="proc"></a>{@code mindroid:process}</dt>
+<dd>The name of a process where all components of the application should run.
+Each component can override this default by setting its own {@code process}
+attribute.
+
+<p>
+By default, Mindroid creates a process for an application when the first
+of its components needs to run.  All components then run in that process.
+The name of the default process matches the package name set by the
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code> element.
+</p>
+
+<p>By setting this attribute to a process name that's shared with another
+application, you can arrange for components of both applications to run in
+the same process &mdash.
+</p></dd>
+
+</dl></dd>
+
+<dt>see also:</dt>
+<dd><code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code></dd>
+
+</dl>

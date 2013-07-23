@@ -1,0 +1,7 @@
+-target 1.4
+#-dontoptimize
+-keep public class * extends mindroid.app.Service
+-assumenosideeffects class mindroid.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+}

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +165,7 @@ public class Handler {
     }
 
     /**
-     * Returns a new {@link android.os.Message Message} from the global message pool. More efficient than
+     * Returns a new {@link mindroid.os.Message Message} from the global message pool. More efficient than
      * creating and allocating new instances. The retrieved message has its handler set to this instance (Message.target == this).
      *  If you don't want that facility, just call Message.obtain() instead.
      */
@@ -240,12 +241,12 @@ public class Handler {
     /**
      * Causes the Runnable r to be added to the message queue, to be run
      * at a specific time given by <var>uptimeMillis</var>.
-     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * <b>The time-base is {@link mindroid.os.SystemClock#uptimeMillis}.</b>
      * The runnable will be run on the thread to which this handler is attached.
      *
      * @param runnable The Runnable that will be executed.
      * @param uptimeMillis The absolute time at which the callback should run,
-     *         using the {@link android.os.SystemClock#uptimeMillis} time-base.
+     *         using the {@link mindroid.os.SystemClock#uptimeMillis} time-base.
      *  
      * @return Returns true if the Runnable was successfully placed in to the 
      *         message queue.  Returns false on failure, usually because the
@@ -261,12 +262,12 @@ public class Handler {
     /**
      * Causes the Runnable r to be added to the message queue, to be run
      * at a specific time given by <var>uptimeMillis</var>.
-     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * <b>The time-base is {@link mindroid.os.SystemClock#uptimeMillis}.</b>
      * The runnable will be run on the thread to which this handler is attached.
      *
      * @param runnable The Runnable that will be executed.
      * @param uptimeMillis The absolute time at which the callback should run,
-     *         using the {@link android.os.SystemClock#uptimeMillis} time-base.
+     *         using the {@link mindroid.os.SystemClock#uptimeMillis} time-base.
      * 
      * @return Returns true if the Runnable was successfully placed in to the 
      *         message queue.  Returns false on failure, usually because the
@@ -275,7 +276,7 @@ public class Handler {
      *         the looper is quit before the delivery time of the message
      *         occurs then the message will be dropped.
      *         
-     * @see android.os.SystemClock#uptimeMillis
+     * @see mindroid.os.SystemClock#uptimeMillis
      */
     public final boolean postAtTime(Runnable runnable, Object token, long uptimeMillis) {
         return sendMessageAtTime(getPostMessage(runnable, token), uptimeMillis);
@@ -345,7 +346,7 @@ public class Handler {
     /**
      * Sends a Message containing only the what value, to be delivered
      * after the specified amount of time elapses.
-     * @see #sendMessageDelayed(android.os.Message, long) 
+     * @see #sendMessageDelayed(mindroid.os.Message, long) 
      * 
      * @return Returns true if the message was successfully placed in to the 
      *         message queue.  Returns false on failure, usually because the
@@ -360,7 +361,7 @@ public class Handler {
     /**
      * Sends a Message containing only the what value, to be delivered 
      * at a specific time.
-     * @see #sendMessageAtTime(android.os.Message, long)
+     * @see #sendMessageAtTime(mindroid.os.Message, long)
      *  
      * @return Returns true if the message was successfully placed in to the 
      *         message queue.  Returns false on failure, usually because the
@@ -395,13 +396,13 @@ public class Handler {
     /**
      * Enqueue a message into the message queue after all pending messages
      * before the absolute time (in milliseconds) <var>uptimeMillis</var>.
-     * <b>The time-base is {@link android.os.SystemClock#uptimeMillis}.</b>
+     * <b>The time-base is {@link mindroid.os.SystemClock#uptimeMillis}.</b>
      * You will receive it in {@link #handleMessage}, in the thread attached
      * to this handler.
      * 
      * @param uptimeMillis The absolute time at which the message should be
      *         delivered, using the
-     *         {@link android.os.SystemClock#uptimeMillis} time-base.
+     *         {@link mindroid.os.SystemClock#uptimeMillis} time-base.
      *         
      * @return Returns true if the message was successfully placed in to the 
      *         message queue.  Returns false on failure, usually because the

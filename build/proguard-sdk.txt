@@ -1,0 +1,18 @@
+-target 1.4
+#-dontoptimize
+#-printmapping audi-cgw.map
+-assumenosideeffects class mindroid.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+}
+
+-keepclasseswithmembers public class main.* { public static void main(java.lang.String[]); }
+-keep public class * extends mindroid.app.Service
+-keepparameternames
+
+
+#### Mindroid ####
+
+-keep public class mindroid.** {
+    public protected *;
+}

@@ -1,0 +1,10 @@
+page.title=Data Storage
+page.landing=true
+page.landing.intro=Store application data in files, or preferences on internal storage.
+page.landing.image=
+
+@jd:body
+
+<div class="landing-docs">
+
+</div>

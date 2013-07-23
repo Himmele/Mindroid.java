@@ -1,0 +1,123 @@
+page.title=Application Fundamentals
+@jd:body
+
+<div id="qv-wrapper">
+<div id="qv">
+
+<h2>Quickview</h2>
+<ul>
+  <li>Mindroid applications are composed of one or more services</li>
+  <li>Each service performs a different role in the overall application behavior, and each
+one can be activated individually by other services</li>
+<li>The manifest file must declare all services in the application and should also declare
+all application requirements</li>
+</ul>
+
+
+<h2>In this document</h2>
+<ol>
+<li><a href="#Components">Application Components</a>
+  <ol>
+    <li><a href="#ActivatingComponents">Activating components</a></li>
+  </ol>
+</li>
+<li><a href="#Manifest">The Manifest File</a>
+  <ol>
+    <li><a href="#DeclaringComponents">Declaring components</a></li>
+  </ol>
+</li>
+</ol>
+</div>
+</div>
+
+<p>Mindroid applications are written in the Java programming language using the Java language
+specification v1.4.</p>
+<p>The Mindroid SDK tools compile the code into an <i>Mindroid package</i>, an
+archive file with an {@code .jar} suffix. All the code in a single {@code .jar} file is considered
+to be one application and is the file that Mindroid use to install the
+application.</p>
+
+<h2 id="Components">Application Components</h2>
+
+<p>Application components are the essential building blocks of an Mindorid application.</p>
+
+<p>There is currenlty only one type of application component, the service.</p>
+
+<dl>
+
+<dt><b>Services</b></dt>
+
+<dd>A <i>service</i> is a component that runs in the background to perform long-running
+operations or to perform work for remote lightweight processes.
+
+<p>A service is implemented as a subclass of {@link mindroid.app.Service} and you can learn more
+about it in the <a href="{@docRoot}guide/components/services.html">Services</a> developer
+guide.</p>
+</dd>
+
+</dl>
+
+
+<h3 id="ActivatingComponents">Activating Components</h3>
+
+<p>Services are activated by an asynchronous message called an <em>intent</em>.
+Intents bind individual components to each other at runtime (you can think of them
+as the messengers that request an action from other components), whether the component belongs
+to your application or another.</p>
+
+<p>An intent is created with an {@link mindroid.content.Intent} object, which defines a message to
+activate a specific component.</p>
+
+<p>There are separate methods for activating a service:</p>
+<ul>
+  <li>You can start a service (or give new instructions to an ongoing service) by
+passing an {@link mindroid.content.Intent} to {@link mindroid.content.Context#startService
+startService()}.</li>
+  <li>Or you can bind to the service by passing an {@link mindroid.content.Intent} to
+{@link mindroid.content.Context#bindService bindService()}.</li>
+</ul>
+
+<p>For more information about using intents, see the <a
+href="{@docRoot}guide/components/intents.html">Intents</a> document.
+More information about activating specific servies is also provided
+in the following document: <a
+href="{@docRoot}guide/components/services.html">Services</a>.</p>
+
+
+<h2 id="Manifest">The Manifest File</h2>
+
+<p>Before the Mindroid system can start an application component, the system must know that the
+component exists by reading the application's {@code MindroidManifest.xml} file (the "manifest"
+file). Your application must declare all its components in this file, which must be at the root of
+the application project directory.</p>
+
+<h3 id="DeclaringComponents">Declaring components</h3>
+
+<p>The primary task of the manifest is to inform the system about the application's components. For
+example, a manifest file can declare a service as follows: </p>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;manifest ... &gt;
+    &lt;application ... &gt;
+        &lt;service mindroid:name="com.example.project.ExampleService"
+                 mindroid:autostart="true" ... &gt;
+        &lt;/service&gt;
+        ...
+    &lt;/application&gt;
+&lt;/manifest&gt;</pre>
+
+<p>You must declare all application components this way:</p>
+<ul>
+  <li><code><a
+href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code> elements for
+services</li>
+</ul>
+
+<p>Servies that you include in your source but do not declare
+in the manifest are not visible to the system and, consequently, can never run.</p>
+
+<p>For more about how to structure the manifest file for your application, see the <a
+href="{@docRoot}guide/topics/manifest/manifest-intro.html">The MindroidManifest.xml File</a>
+documentation. </p>
+

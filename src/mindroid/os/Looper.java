@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +50,10 @@ import java.lang.ThreadLocal;
   *  }</pre>
   */
 public class Looper {
+    private static final String LOG_TAG = "Looper";
+
     // sThreadLocal.get() will return null unless you've called prepare().
-    static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
+    static final ThreadLocal sThreadLocal = new ThreadLocal();
     final MessageQueue mMessageQueue;
     final Thread mThread;
 

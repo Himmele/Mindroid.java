@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +15,23 @@
  * limitations under the License.
  */
 
-package mindroid.util;
+package mindroid.content.pm;
 
-public class Logger {	
-	private static final int BUFFER_SIZE_256_KB = 262144;
-	private CircularLogBuffer mLogBuffer = new CircularLogBuffer(BUFFER_SIZE_256_KB);
+/**
+ * Information you can retrieve about a particular application
+ * service. This corresponds to information collected from the
+ * MindroidManifest.xml's &lt;service&gt; tags.
+ */
+public class ServiceInfo extends ComponentInfo {
 	
-	public int println(int bufferId, int priority, String tag, String msg) {		
-		mLogBuffer.insertLogMessage(priority, tag, msg);
-		return 0;
-	}
+	public String serviceName;
 	
-	public CircularLogBuffer getLogBuffer() {
-		return mLogBuffer;
-	}
+	public boolean autostart;
+	
+	/** @hide */
+	public boolean systemService;
+
+	public ServiceInfo() {
+		systemService = false;
+    }
 }

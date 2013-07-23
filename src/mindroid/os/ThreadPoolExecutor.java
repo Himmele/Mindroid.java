@@ -16,17 +16,15 @@
 
 package mindroid.os;
 
-import java.util.concurrent.LinkedBlockingQueue;
-
 public class ThreadPoolExecutor extends Executor {
 	private final int THREAD_POOL_SIZE;
 	private WorkerThread[] mWorkerThreads;
-	private LinkedBlockingQueue<Runnable> mQueue;
+	private LinkedBlockingQueue mQueue;
 	
 	public ThreadPoolExecutor(int threadPoolSize) {
 		THREAD_POOL_SIZE = threadPoolSize;
 		mWorkerThreads = new WorkerThread[THREAD_POOL_SIZE];
-		mQueue = new LinkedBlockingQueue<Runnable>();
+		mQueue = new LinkedBlockingQueue();
 		start();
 	}
 	
@@ -45,27 +43,18 @@ public class ThreadPoolExecutor extends Executor {
 	public void shutdown() {
 		for (int i = 0; i < THREAD_POOL_SIZE; i++) {
 			mWorkerThreads[i].interrupt();
-			try {
-				mQueue.put(null);
-			} catch (InterruptedException e) {
-				// Ignore exceptions while shutting down.
-			}
+			mQueue.put(null);
 		}
 		for (int i = 0; i < THREAD_POOL_SIZE; i++) {
 			try {
 				mWorkerThreads[i].join();
 			} catch (InterruptedException e) {
-				// Ignore exceptions while shutting down.
 			}
 		}
 	}
 	
 	public void execute(Runnable runnable) {
-		try {
-			mQueue.put(runnable);
-		} catch (InterruptedException e) {
-			// Ignore this exception.
-		}
+		mQueue.put(runnable);
 	}
 	
 	public boolean cancel(Runnable runnable) {
@@ -103,7 +92,7 @@ public class ThreadPoolExecutor extends Executor {
 	}
 	
 	class WorkerThread extends Thread {
-		private LinkedBlockingQueue<Runnable> mQueue;
+		private LinkedBlockingQueue mQueue;
 		private AtomicBoolean mIsInterrupted;
 
 		public WorkerThread() {
@@ -118,21 +107,17 @@ public class ThreadPoolExecutor extends Executor {
 		
 		public void run() {
 			while (!mIsInterrupted.get()) {
-				Runnable runnable = null;
+				Runnable runnable;
 				try {
 					runnable = (Runnable) mQueue.take();
 				} catch (InterruptedException e) {
-					// Ignore this exception.
-				}
-				if (runnable != null) {
-					runnable.run();
-				} else {
 					break;
 				}
+				runnable.run();
 			}
 		}
 
-		private void setQueue(LinkedBlockingQueue<Runnable> queue) {
+		private void setQueue(LinkedBlockingQueue queue) {
 			mQueue = queue;
 		}
 	}

@@ -1,0 +1,80 @@
+page.title=&lt;service&gt;
+parent.title=The MindroidManifest.xml File
+parent.link=manifest-intro.html
+@jd:body
+
+<dl class="xml">
+<dt>syntax:</dt>
+<dd><pre class="stx">&lt;service mindroid:<a href="#enabled">enabled</a>=["true" | "false"]
+         mindroid:<a href="#nm">name</a>="<i>string</i>"
+         mindroid:<a href="#proc">process</a>="<i>string</i>"
+         mindroid:<a href="#autostart">autostart</a>=["true" | "false"] &gt;
+    . . .
+&lt;/service&gt;</pre></dd>
+
+<dt>contained in:</dt>
+<dd><code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code></dd>
+
+<dt>description:</dt>
+<dd>Declares a service (a {@link mindroid.app.Service} subclass) as one 
+of the application's components.  Services are used to implement long-running background 
+operations or a rich communications API that can be called by other 
+applications.
+
+<p>
+All services must be represented by {@code &lt;service&gt;} elements in 
+the manifest file.  Any that are not declared there will not be seen 
+by the system and will never be run.
+</p></dd>
+
+<dt>attributes:</dt>
+<dd><dl class="attr">
+<dt><a name="enabled"></a>{@code mindroid:enabled}</dt>
+<dd>Whether or not the service can be instantiated by the system &mdash; 
+"{@code true}" if it can be, and "{@code false}" if not.  The default value 
+is "{@code true}".
+
+<p>
+The <code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code> element has its own 
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html#enabled">enabled</a></code> attribute that applies to all 
+application components, including services.  The 
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code> and {@code &lt;service&gt;} 
+attributes must both be "{@code true}" (as they both
+are by default) for the service to be enabled.  If either is 
+"{@code false}", the service is disabled; it cannot be instantiated.
+</p></dd>
+
+<dt><a name="nm"></a>{@code mindroid:name}</dt>
+<dd>The name of the {@link mindroid.app.Service} subclass that implements 
+the service.  This should be a fully qualified class name (such as, 
+"{@code com.example.project.ExampleService}").  However, as a shorthand, if 
+the first character of the name is a period (for example, "{@code .ExampleService}"),
+it is appended to the package name specified in the 
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code> element.  
+
+<p>Once you publish your application, you should not
+change this name</a>.</p>
+
+<p>
+There is no default.  The name must be specified.
+</p></dd>
+
+<dt><a name="proc"></a>{@code mindroid:process}</dt>
+<dd>The name of the process where the service is to run.  Normally, 
+all components of an application run in the default process created for the 
+application.  It has the same name as the application package.  The 
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code> element's 
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html#proc">process</a></code> 
+attribute can set a different 
+default for all components.  But component can override the default
+with its own {@code process} attribute, allowing you to spread your 
+application across multiple processes.</dd>
+
+<dt><a name="autostart"></a>{@code mindroid:autostart}</dt>
+<dd>Whether or not the service will be automatically started by the system &mdash; 
+"{@code true}" if it will be, and "{@code false}" if not.  The default value 
+is "{@code false}".</dd>
+
+</dl></dd>
+
+</dl>

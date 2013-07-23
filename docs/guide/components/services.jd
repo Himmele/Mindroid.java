@@ -1,0 +1,503 @@
+page.title=Services
+@jd:body
+
+<div id="qv-wrapper">
+<ol id="qv">
+<h2>Quickview</h2>
+<ul>
+  <li>A service can run in the background to perform work</li>
+  <li>A service can allow other components to bind to it, in order to interact with it and
+perform interprocess communication</li>
+  <li>A service runs in the main thread of the application that hosts it, by default</li>
+</ul>
+<h2>In this document</h2>
+<ol>
+<li><a href="#Basics">The Basics</a></li>
+<ol>
+  <li><a href="#Declaring">Declaring a service in the manifest</a></li>
+</ol>
+<li><a href="#CreatingAService">Creating a Started Service</a>
+  <ol>
+    <li><a href="#ExtendingService">Extending the Service class</a></li>
+    <li><a href="#StartingAService">Starting a service</a></li>
+    <li><a href="#Stopping">Stopping a service</a></li>
+  </ol>
+</li>
+<li><a href="#CreatingBoundService">Creating a Bound Service</a></li>
+<li><a href="#Lifecycle">Managing the Lifecycle of a Service</a>
+<ol>
+  <li><a href="#LifecycleCallbacks">Implementing the lifecycle callbacks</a></li>
+</ol>
+</li>
+</ol>
+
+<h2>Key classes</h2>
+<ol>
+  <li>{@link mindroid.app.Service}</li>
+</ol>
+
+<h2>See also</h2>
+<ol>
+<li><a href="{@docRoot}guide/components/bound-services.html">Bound Services</a></li>
+</ol>
+
+</div>
+
+
+<p>A {@link mindroid.app.Service} is an application component that can perform operations in the background.
+Another application component can start a service and it will continue to run in the background even if the
+user switches to another application. Additionally, a component can bind to a service to
+interact with it and even perform interprocess communication (IPC). For example, a service might
+handle network transactions, or perform file I/O, all
+from the background.</p>
+
+<p>A service can essentially take two forms:</p>
+
+<dl>
+  <dt>Started</dt>
+  <dd>A service is "started" when an application component (such as another service) starts it by
+calling {@link mindroid.content.Context#startService startService()}. Once started, a service
+can run in the background indefinitely, even if the component that started it is destroyed. Usually,
+a started service performs a single operation and does not return a result to the caller.
+For example, it might download or upload a file over the network. When the operation is done, the
+service should stop itself.</dd>
+  <dt>Bound</dt>
+  <dd>A service is "bound" when an application component binds to it by calling {@link
+mindroid.content.Context#bindService bindService()}. A bound service offers a client-server
+interface that allows components to interact with the service, send requests, get results, and even
+do so across processes with interprocess communication (IPC). A bound service runs only as long as
+another application component is bound to it. Multiple components can bind to the service at once,
+but when all of them unbind, the service is destroyed.</dd>
+</dl>
+
+<p>Although this documentation generally discusses these two types of services separately, your
+service can work both ways&mdash;it can be started (to run indefinitely) and also allow binding.
+It's simply a matter of whether you implement a couple callback methods: {@link
+mindroid.app.Service#onStartCommand onStartCommand()} to allow components to start it and {@link
+mindroid.app.Service#onBind onBind()} to allow binding.</p>
+
+<p>Regardless of whether your application is started, bound, or both, any application component
+can use the service (even from a separate application), in the same way that any component can use
+a service&mdash;by starting it with {@link mindroid.content.Context#startService startService()}.</p>
+
+<p class="caution"><strong>Caution:</strong> A service runs in the
+main thread of its hosting lightweight process&mdash;the service does <strong>not</strong> create its own thread
+and does <strong>not</strong> run in a separate lightweight process. This means
+that, if your service is going to do any CPU intensive work or blocking operations (such as long-running computations 
+or networking), you should create a new thread within the service to do that work.</p>
+
+
+<h2 id="Basics">The Basics</h2>
+
+<p>To create a service, you must create a subclass of {@link mindroid.app.Service} (or one
+of its existing subclasses). In your implementation, you need to override some callback methods that
+handle key aspects of the service lifecycle and provide a mechanism for components to bind to
+the service, if appropriate. The most important callback methods you should override are:</p>
+
+<dl>
+  <dt>{@link mindroid.app.Service#onStartCommand onStartCommand()}</dt>
+    <dd>The system calls this method when another component, such as a service,
+requests that the service be started, by calling {@link mindroid.content.Context#startService
+startService()}. Once this method executes, the service is started and can run in the
+background indefinitely. If you implement this, it is your responsibility to stop the service when
+its work is done, by calling {@link mindroid.app.Service#stopSelf stopSelf()} or {@link
+mindroid.content.Context#stopService stopService()}. (If you only want to provide binding, you don't
+need to implement this method.)</dd>
+  <dt>{@link mindroid.app.Service#onBind onBind()}</dt>
+    <dd>The system calls this method when another component wants to bind with the
+service (such as to perform RPC), by calling {@link mindroid.content.Context#bindService
+bindService()}. In your implementation of this method, you must provide an interface that clients
+use to communicate with the service, by returning an {@link mindroid.os.IBinder}. You must always
+implement this method, but if you don't want to allow binding, then you should return null.</dd>
+  <dt>{@link mindroid.app.Service#onCreate()}</dt>
+    <dd>The system calls this method when the service is first created, to perform one-time setup
+procedures (before it calls either {@link mindroid.app.Service#onStartCommand onStartCommand()} or
+{@link mindroid.app.Service#onBind onBind()}). If the service is already running, this method is not
+called.</dd>
+  <dt>{@link mindroid.app.Service#onDestroy()}</dt>
+    <dd>The system calls this method when the service is no longer used and is being destroyed.
+Your service should implement this to clean up any resources such as threads, registered
+listeners, receivers, etc. This is the last call the service receives.</dd>
+</dl>
+
+<p>If a component starts the service by calling {@link
+mindroid.content.Context#startService startService()} (which results in a call to {@link
+mindroid.app.Service#onStartCommand onStartCommand()}), then the service
+remains running until it stops itself with {@link mindroid.app.Service#stopSelf()} or another
+component stops it by calling {@link mindroid.content.Context#stopService stopService()}.</p>
+
+<p>If a component calls
+{@link mindroid.content.Context#bindService bindService()} to create the service (and {@link
+mindroid.app.Service#onStartCommand onStartCommand()} is <em>not</em> called), then the service runs
+only as long as the component is bound to it. Once the service is unbound from all clients, the
+system destroys it.</p>
+
+<p>In the following sections, you'll see how you can create each type of service and how to use
+it from other application components.</p>
+
+
+<h3 id="Declaring">Declaring a service in the manifest</h3>
+
+<p>To declare your service, add a <a
+href="{@docRoot}guide/topics/manifest/service-element.html">{@code &lt;service&gt;}</a> element
+as a child of the <a
+href="{@docRoot}guide/topics/manifest/application-element.html">{@code &lt;application&gt;}</a>
+element. For example:</p>
+
+<pre>
+&lt;manifest ... &gt;
+  ...
+  &lt;application ... &gt;
+      &lt;service mindroid:name=".ExampleService" /&gt;
+      ...
+  &lt;/application&gt;
+&lt;/manifest&gt;
+</pre>
+
+<p>There are other attributes you can include in the <a
+href="{@docRoot}guide/topics/manifest/service-element.html">{@code &lt;service&gt;}</a> element to
+define other properties. The <a
+href="{@docRoot}guide/topics/manifest/service-element.html#nm">{@code mindroid:name}</a>
+attribute is the only required attribute&mdash;it specifies the class name of the service. Once
+you publish your application, you should not change this name, because if you do, you might break
+some functionality where explicit intents are used to reference your service.</p>
+
+<p>See the <a
+href="{@docRoot}guide/topics/manifest/service-element.html">{@code &lt;service&gt;}</a> element
+reference for more information about declaring your service in the manifest.</p>
+
+
+
+<h2 id="CreatingStartedService">Creating a Started Service</h2>
+
+<p>A started service is one that another component starts by calling {@link
+mindroid.content.Context#startService startService()}, resulting in a call to the service's
+{@link mindroid.app.Service#onStartCommand onStartCommand()} method.</p>
+
+<p>When a service is started, it has a lifecycle that's independent of the
+component that started it and the service can run in the background indefinitely, even if
+the component that started it is destroyed. As such, the service should stop itself when its job
+is done by calling {@link mindroid.app.Service#stopSelf stopSelf()}, or another component can stop it
+by calling {@link mindroid.content.Context#stopService stopService()}.</p>
+
+<p>An application component such as an service can start the service by calling {@link
+mindroid.content.Context#startService startService()} and passing an {@link mindroid.content.Intent}
+that specifies the service and includes any data for the service to use. The service receives
+this {@link mindroid.content.Intent} in the {@link mindroid.app.Service#onStartCommand
+onStartCommand()} method.</p>
+
+<p>For instance, suppose an service needs to save some data to an online database. The service can
+start a companion service and deliver it the data to save by passing an intent to {@link
+mindroid.content.Context#startService startService()}. The service receives the intent in {@link
+mindroid.app.Service#onStartCommand onStartCommand()}, connects to the Internet and performs the
+database transaction. When the transaction is done, the service stops itself and it is
+destroyed.</p>
+
+<p class="caution"><strong>Caution:</strong> A services runs in the same process as the application
+in which it is declared and in the main thread of that application, by default. So, if your service
+performs intensive or blocking operations, the service will slow down the overall performance.
+To avoid impacting application performance, you should start a new thread inside the service.</p>
+
+
+
+<h3 id="ExtendingService">Extending the Service class</h3>
+
+<p>The following example code is an implementation of the {@link
+mindroid.app.Service} class. The example code starts a worker thread for each start request to perform the
+job and processes only one request at a time.</p>
+
+<pre>
+package hello;
+
+public class HelloService extends Service {
+  private Looper mServiceLooper;
+  private ServiceHandler mServiceHandler;
+
+  // Handler that receives messages from the thread
+  private final class ServiceHandler extends Handler {
+      public ServiceHandler(Looper looper) {
+          super(looper);
+      }
+     
+      public void handleMessage(Message msg) {
+          // Normally we would do some work here, like download a file.
+          // For our sample, we just sleep for 5 seconds.
+          long endTime = System.currentTimeMillis() + 5*1000;
+          while (System.currentTimeMillis() &lt; endTime) {
+              synchronized (this) {
+                  try {
+                      wait(endTime - System.currentTimeMillis());
+                  } catch (Exception e) {
+                  }
+              }
+          }
+          // Stop the service using the startId, so that we don't stop
+          // the service in the middle of handling another job
+          stopSelf(msg.arg1);
+      }
+  }
+
+  public void onCreate() {
+    // Start up the thread running the service.  Note that we create a
+    // separate thread because the service normally runs in the process's
+    // main thread, which we don't want to block.  We also make it
+    // background priority so CPU-intensive work will not disrupt our UI.
+    HandlerThread thread = new HandlerThread();
+    thread.start();
+    
+    // Get the HandlerThread's Looper and use it for our Handler 
+    mServiceLooper = thread.getLooper();
+    mServiceHandler = new ServiceHandler(mServiceLooper);
+  }
+
+  public int onStartCommand(Intent intent, int flags, int startId) {
+      // For each start request, send a message to start a job and deliver the
+      // start ID so we know which request we're stopping when we finish the job
+      Message msg = mServiceHandler.obtainMessage();
+      msg.arg1 = startId;
+      mServiceHandler.sendMessage(msg);
+      return 0;
+  }
+
+  public IBinder onBind(Intent intent) {
+      // We don't provide binding, so return null
+      return null;
+  }
+  
+  public void onDestroy() {
+  }
+}
+</pre>
+
+
+<h3 id="StartingAService">Starting a Service</h3>
+
+<p>You can start a service from another service or other application component by passing an
+{@link mindroid.content.Intent} (specifying the service to start) to {@link
+mindroid.content.Context#startService startService()}. The Mindroid system calls the service's {@link
+mindroid.app.Service#onStartCommand onStartCommand()} method and passes it the {@link
+mindroid.content.Intent}. (You should never call {@link mindroid.app.Service#onStartCommand
+onStartCommand()} directly.)</p>
+
+<p>For example, a service can start the example service in the previous section ({@code
+HelloSevice}) using an explicit intent with {@link mindroid.content.Context#startService
+startService()}:</p>
+
+<pre>
+Intent intent = new Intent();
+intent.setClassName("hello", "HelloService");
+startService(intent);
+</pre>
+
+<p>The {@link mindroid.content.Context#startService startService()} method returns immediately and
+the Mindroid system calls the service's {@link mindroid.app.Service#onStartCommand
+onStartCommand()} method. If the service is not already running, the system first calls {@link
+mindroid.app.Service#onCreate onCreate()}, then calls {@link mindroid.app.Service#onStartCommand
+onStartCommand()}.</p>
+
+<p>If the service does not also provide binding, the intent delivered with {@link
+mindroid.content.Context#startService startService()} is the only mode of communication between the
+application component and the service.</p>
+
+<p>Multiple requests to start the service result in multiple corresponding calls to the service's
+{@link mindroid.app.Service#onStartCommand onStartCommand()}. However, only one request to stop
+the service (with {@link mindroid.app.Service#stopSelf stopSelf()} or {@link
+mindroid.content.Context#stopService stopService()}) is required to stop it.</p>
+
+
+<h3 id="Stopping">Stopping a service</h3>
+
+<p>A started service must manage its own lifecycle. So, the service must stop itself by calling 
+{@link mindroid.app.Service#stopSelf stopSelf()} or another component can stop it by calling 
+{@link mindroid.content.Context#stopService stopService()}.</p>
+
+<p>Once requested to stop with {@link mindroid.app.Service#stopSelf stopSelf()} or {@link
+mindroid.content.Context#stopService stopService()}, the system destroys the service as soon as
+possible.</p>
+
+<p>However, if your service handles multiple requests to {@link
+mindroid.app.Service#onStartCommand onStartCommand()} concurrently, then you shouldn't stop the
+service when you're done processing a start request, because you might have since received a new
+start request (stopping at the end of the first request would terminate the second one). To avoid
+this problem, you can use {@link mindroid.app.Service#stopSelf(int)} to ensure that your request to
+stop the service is always based on the most recent start request. That is, when you call {@link
+mindroid.app.Service#stopSelf(int)}, you pass the ID of the start request (the <code>startId</code>
+delivered to {@link mindroid.app.Service#onStartCommand onStartCommand()}) to which your stop request
+corresponds. Then if the service received a new start request before you were able to call {@link
+mindroid.app.Service#stopSelf(int)}, then the ID will not match and the service will not stop.</p>
+
+<p class="caution"><strong>Caution:</strong> It's important that your application stops its services
+when it's done working, to avoid wasting system resources. If necessary,
+other components can stop the service by calling {@link
+mindroid.content.Context#stopService stopService()}. Even if you enable binding for the service,
+you must always stop the service yourself if it ever received a call to {@link
+mindroid.app.Service#onStartCommand onStartCommand()}.</p>
+
+<p>For more information about the lifecycle of a service, see the section below about <a
+href="#Lifecycle">Managing the Lifecycle of a Service</a>.</p>
+
+
+
+<h2 id="CreatingBoundService">Creating a Bound Service</h2>
+
+<p>A bound service is one that allows application components to bind to it by calling {@link
+mindroid.content.Context#bindService bindService()} in order to create a long-standing connection
+(and generally does not allow components to <em>start</em> it by calling {@link
+mindroid.content.Context#startService startService()}).</p>
+
+<p>You should create a bound service when you want to interact with the service from other services
+and other components in your application or to expose some of your application's functionality to
+other applications, through interprocess communication (IPC).</p>
+
+<p>To create a bound service, you must implement the {@link
+mindroid.app.Service#onBind onBind()} callback method to return an {@link mindroid.os.IBinder} that
+defines the interface for communication with the service. Other application components can then call
+{@link mindroid.content.Context#bindService bindService()} to retrieve the interface and
+begin calling methods on the service. The service lives only to serve the application component that
+is bound to it, so when there are no components bound to the service, the system destroys it
+(you do <em>not</em> need to stop a bound service in the way you must when the service is started
+through {@link mindroid.app.Service#onStartCommand onStartCommand()}).</p>
+
+<p>To create a bound service, the first thing you must do is define the interface that specifies
+how a client can communicate with the service. This interface between the service
+and a client must be an implementation of {@link mindroid.os.IBinder} and is what your service must
+return from the {@link mindroid.app.Service#onBind
+onBind()} callback method. Once the client receives the {@link mindroid.os.IBinder}, it can begin
+interacting with the service through that interface.</p>
+
+<p>Multiple clients can bind to the service at once. When a client is done interacting with the
+service, it calls {@link mindroid.content.Context#unbindService unbindService()} to unbind. Once
+there are no clients bound to the service, the system destroys the service.</p>
+
+<p>There are multiple ways to implement a bound service and the implementation is more
+complicated than a started service, so the bound service discussion appears in a separate
+document about <a
+href="{@docRoot}guide/components/bound-services.html">Bound Services</a>.</p>
+
+
+
+<h2 id="Lifecycle">Managing the Lifecycle of a Service</h2>
+
+<p>The service lifecycle&mdash;from when it's created to when it's destroyed&mdash;can follow two
+different paths:</p>
+
+<ul>
+<li>A started service
+  <p>The service is created when another component calls {@link
+mindroid.content.Context#startService startService()}. The service then runs indefinitely and must
+stop itself by calling {@link
+mindroid.app.Service#stopSelf() stopSelf()}. Another component can also stop the
+service by calling {@link mindroid.content.Context#stopService
+stopService()}. When the service is stopped, the system destroys it..</p></li>
+
+<li>A bound service
+  <p>The service is created when another component (a client) calls {@link
+mindroid.content.Context#bindService bindService()}. The client then communicates with the service
+through an {@link mindroid.os.IBinder} interface. The client can close the connection by calling
+{@link mindroid.content.Context#unbindService unbindService()}. Multiple clients can bind to
+the same service and when all of them unbind, the system destroys the service. (The service
+does <em>not</em> need to stop itself.)</p></li>
+</ul>
+
+<p>These two paths are not entirely separate. That is, you can bind to a service that was already
+started with {@link mindroid.content.Context#startService startService()}. For example, a background
+download service could be started by calling {@link mindroid.content.Context#startService
+startService()} with an {@link mindroid.os.Bundle} that identifies the file to download. Later,
+possibly when the user wants to exercise some download status over the file or get other information about the
+file, a service can bind to the download service by calling {@link
+mindroid.content.Context#bindService bindService()}. In cases like this, {@link
+mindroid.content.Context#stopService stopService()} or {@link mindroid.app.Service#stopSelf
+stopSelf()} does not actually stop the service until all clients unbind. </p>
+
+
+<h3 id="LifecycleCallbacks">Implementing the lifecycle callbacks</h3>
+
+<p>Like an activity, a service has lifecycle callback methods that you can implement to monitor
+changes in the service's state and perform work at the appropriate times. The following skeleton
+service demonstrates each of the lifecycle methods:</p>
+
+<pre>
+public class ExampleService extends Service {
+    int mStartMode;       // indicates how to behave if the service is killed
+    IBinder mBinder;      // interface for clients that bind
+    boolean mAllowRebind; // indicates whether onRebind should be used
+
+    public void {@link mindroid.app.Service#onCreate onCreate}() {
+        // The service is being created
+    }
+    
+    public int {@link mindroid.app.Service#onStartCommand onStartCommand}(Intent intent, int flags, int startId) {
+        // The service is starting, due to a call to {@link mindroid.content.Context#startService startService()}
+        return 0;
+    }
+    
+    public IBinder {@link mindroid.app.Service#onBind onBind}(Intent intent) {
+        // A client is binding to the service with {@link mindroid.content.Context#bindService bindService()}
+        return <em>mBinder</em>;
+    }
+    
+    public boolean {@link mindroid.app.Service#onUnbind onUnbind}(Intent intent) {
+        // All clients have unbound with {@link mindroid.content.Context#unbindService unbindService()}
+        return true;
+    }
+    
+    public void {@link mindroid.app.Service#onDestroy onDestroy}() {
+        // The service is no longer used and is being destroyed
+    }
+}
+</pre>
+
+<p class="note"><strong>Note:</strong>You are <em>not</em> required to call the superclass
+implementation of these callback methods.</p>
+
+<img src="{@docRoot}images/service_lifecycle.png" alt="" />
+<p class="img-caption"><strong>Figure 1.</strong> The service lifecycle. The diagram on the left
+shows the lifecycle when the service is created with {@link mindroid.content.Context#startService
+startService()} and the diagram on the right shows the lifecycle when the service is created
+with {@link mindroid.content.Context#bindService bindService()}.</p>
+
+<p>By implementing these methods, you can monitor two nested loops of the service's lifecycle: </p>
+
+<ul>
+<li>The <strong>entire lifetime</strong> of a service happens between the time {@link
+mindroid.app.Service#onCreate onCreate()} is called and the time {@link
+mindroid.app.Service#onDestroy} returns. A service does its initial setup in
+{@link mindroid.app.Service#onCreate onCreate()} and releases all remaining resources in {@link
+mindroid.app.Service#onDestroy onDestroy()}.
+
+<p>The {@link mindroid.app.Service#onCreate onCreate()} and {@link mindroid.app.Service#onDestroy
+onDestroy()} methods are called for all services, whether
+they're created by {@link mindroid.content.Context#startService startService()} or {@link
+mindroid.content.Context#bindService bindService()}.</p></li>
+
+<li>The <strong>active lifetime</strong> of a service begins with a call to either {@link
+mindroid.app.Service#onStartCommand onStartCommand()} or {@link mindroid.app.Service#onBind onBind()}.
+Each method is handed the {@link
+mindroid.content.Intent} that was passed to either {@link mindroid.content.Context#startService
+startService()} or {@link mindroid.content.Context#bindService bindService()}, respectively.
+<p>If the service is started, the active lifetime ends the same time that the entire lifetime
+ends (the service is still active even after {@link mindroid.app.Service#onStartCommand
+onStartCommand()} returns). If the service is bound, the active lifetime ends when {@link
+mindroid.app.Service#onUnbind onUnbind()} returns.</p>
+</li>
+</ul>
+
+<p class="note"><strong>Note:</strong> Although a started service is stopped by a call to
+either {@link mindroid.app.Service#stopSelf stopSelf()} or {@link
+mindroid.content.Context#stopService stopService()}, there is not a respective callback for the
+service (there's no {@code onStop()} callback). So, unless the service is bound to a client,
+the system destroys it when the service is stopped&mdash;{@link
+mindroid.app.Service#onDestroy onDestroy()} is the only callback received.</p>
+
+<p>Figure 1 illustrates the typical callback methods for a service. Although the figure separates
+services that are created by {@link mindroid.content.Context#startService startService()} from those
+created by {@link mindroid.content.Context#bindService bindService()}, keep
+in mind that any service, no matter how it's started, can potentially allow clients to bind to it.
+So, a service that was initially started with {@link mindroid.app.Service#onStartCommand
+onStartCommand()} (by a client calling {@link mindroid.content.Context#startService startService()})
+can still receive a call to {@link mindroid.app.Service#onBind onBind()} (when a client calls
+{@link mindroid.content.Context#bindService bindService()}).</p>
+
+<p>For more information about creating a service that provides binding, see the <a
+href="{@docRoot}guide/components/bound-services.html">Bound Services</a> document.</p>
+

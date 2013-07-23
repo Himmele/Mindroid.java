@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2012 Daniel Himmelein
+ * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +15,25 @@
  * limitations under the License.
  */
 
-package mindroid.app;
+package mindroid.os;
 
-import mindroid.os.Handler;
-import mindroid.os.ServiceManager;
+/**
+ * Parent exception for all Binder remote-invocation errors
+ */
+public class RemoteException extends RuntimeException {
+    public RemoteException() {
+        super();
+    }
 
-public class Context {
-	public Handler bindService(String name) {
-		return ServiceManager.getService(name).onBind();
-	}
-	
-	public void unbindService(String name) {
-		ServiceManager.getService(name).onUnbind();
-	}
+    public RemoteException(String message) {
+        super(message);
+    }
+    
+    public RemoteException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public RemoteException(Exception cause) {
+        super(cause);
+    }
 }

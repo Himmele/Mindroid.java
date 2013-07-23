@@ -1,0 +1,359 @@
+page.title=Bound Services
+parent.title=Services
+parent.link=services.html
+@jd:body
+
+
+<div id="qv-wrapper">
+<ol id="qv">
+<h2>Quickview</h2>
+<ul>
+  <li>A bound service allows other components to bind to it, in order to interact with it and
+perform interprocess communication</li>
+  <li>A bound service is destroyed once all clients unbind, unless the service was also started</li>
+</ul>
+<h2>In this document</h2>
+<ol>
+  <li><a href="#Basics">The Basics</a></li>
+  <li><a href="#Creating">Creating a Bound Service</a>
+    <ol>
+      <li><a href="#Binder">Extending the Binder class</a></li>
+    </ol>
+  </li>
+  <li><a href="#Binding">Binding to a Service</a></li>
+  <li><a href="#Lifecycle">Managing the Lifecycle of a Bound Service</a></li>
+</ol>
+
+<h2>Key classes</h2>
+<ol>
+  <li>{@link mindroid.app.Service}</li>
+  <li>{@link mindroid.content.ServiceConnection}</li>
+  <li>{@link mindroid.os.IBinder}</li>
+</ol>
+
+<h2>See also</h2>
+<ol>
+  <li><a href="{@docRoot}guide/components/services.html">Services</a></li>
+</ol>
+</div>
+
+
+<p>A bound service is the server in a client-server interface. A bound service allows components
+(such as activities) to bind to the service, send requests, receive responses, and even perform
+interprocess communication (IPC). A bound service typically lives only while it serves another
+application component and does not run in the background indefinitely.</p>
+
+<p>This document shows you how to create a bound service, including how to bind
+to the service from other application components. However, you should also refer to the <a
+href="{@docRoot}guide/components/services.html">Services</a> document for additional
+information about services in general, such as how to deliver notifications from a service, set
+the service to run in the foreground, and more.</p>
+
+
+<h2 id="Basics">The Basics</h2>
+
+<p>A bound service is an implementation of the {@link mindroid.app.Service} class that allows
+other applications to bind to it and interact with it. To provide binding for a
+service, you must implement the {@link mindroid.app.Service#onBind onBind()} callback method. This
+method returns an {@link mindroid.os.IBinder} object that defines the programming interface that
+clients can use to interact with the service.</p>
+
+<div class="sidebox-wrapper">
+<div class="sidebox">
+  <h3>Binding to a Started Service</h3>
+
+<p>As discussed in the <a href="{@docRoot}guide/components/services.html">Services</a>
+document, you can create a service that is both started and bound. That is, the service can be
+started by calling {@link mindroid.content.Context#startService startService()}, which allows the
+service to run indefinitely, and also allow a client to bind to the service by calling {@link
+mindroid.content.Context#bindService bindService()}.
+  <p>If you do allow your service to be started and bound, then when the service has been
+started, the system does <em>not</em> destroy the service when all clients unbind. Instead, you must
+explicitly stop the service, by calling {@link mindroid.app.Service#stopSelf stopSelf()} or {@link
+mindroid.content.Context#stopService stopService()}.</p>
+
+<p>Although you should usually implement either {@link mindroid.app.Service#onBind onBind()}
+<em>or</em> {@link mindroid.app.Service#onStartCommand onStartCommand()}, it's sometimes necessary to
+implement both. For example, a music player might find it useful to allow its service to run
+indefinitely and also provide binding. This way, an activity can start the service to play some
+music and the music continues to play even if the user leaves the application. Then, when the user
+returns to the application, the activity can bind to the service to regain control of playback.</p>
+
+<p>Be sure to read the section about <a href="#Lifecycle">Managing the Lifecycle of a Bound
+Service</a>, for more information about the service lifecycle when adding binding to a
+started service.</p>
+</div>
+</div>
+
+<p>A client can bind to the service by calling {@link mindroid.content.Context#bindService
+bindService()}. When it does, it must provide an implementation of {@link
+mindroid.content.ServiceConnection}, which monitors the connection with the service. The {@link
+mindroid.content.Context#bindService bindService()} method returns immediately without a value, but
+when the Android system creates the connection between the
+client and service, it calls {@link
+mindroid.content.ServiceConnection#onServiceConnected onServiceConnected()} on the {@link
+mindroid.content.ServiceConnection}, to deliver the {@link mindroid.os.IBinder} that
+the client can use to communicate with the service.</p>
+
+<!--
+<p>Multiple clients can connect to the service at once. However, the system calls your service's
+{@link mindroid.app.Service#onBind onBind()} method to retrieve the {@link mindroid.os.IBinder} only
+when the first client binds. The system then delivers the same {@link android.os.IBinder} to any
+additional clients that bind, without calling {@link mindroid.app.Service#onBind onBind()} again.</p>
+-->
+
+<p>When the last client unbinds from the service, the system destroys the service (unless the
+service was also started by {@link mindroid.content.Context#startService startService()}).</p>
+
+<p>When you implement your bound service, the most important part is defining the interface
+that your {@link mindroid.app.Service#onBind onBind()} callback method returns. There are a few
+different ways you can define your service's {@link mindroid.os.IBinder} interface and the following
+section discusses each technique.</p>
+
+
+
+<!-- TODO: Rewrite for Mindroid
+
+<h2 id="Creating">Creating a Bound Service</h2>
+
+<p>When creating a service that provides binding, you must provide an {@link mindroid.os.IBinder}
+that provides the programming interface that clients can use to interact with the service. There
+are three ways you can define the interface:</p>
+
+<dl>
+  <dt><a href="#Binder">Extending the Binder class</a></dt>
+  <dd>If your service provides an interface for use by other services, you should create your
+interface by extending the {@link mindroid.os.Binder} class and returning an instance of it from
+{@link mindroid.app.Service#onBind onBind()}. The client receives the {@link mindroid.os.Binder} and
+can use it to directly access public methods available in either the {@link mindroid.os.Binder}
+implementation or even the {@link mindroid.app.Service}.
+  <p>This is the preferred technique when your service is merely a background worker for your own
+application.</dd>
+</dl>
+
+
+
+<h3 id="Binder">Extending the Binder class</h3>
+
+<p>Here's how to set it up:</p>
+<ol>
+  <li>In your service, create an instance of {@link mindroid.os.Binder}:
+  <li>Return this instance of {@link android.os.Binder} from the {@link
+mindroid.app.Service#onBind onBind()} callback method.</li>
+  <li>In the client, receive the {@link android.os.Binder} from the {@link
+mindroid.content.ServiceConnection#onServiceConnected onServiceConnected()} callback method and
+make calls to the bound service using the methods provided.</li>
+</ol>
+
+<p>For example, here's a service that provides clients access to methods in the service through
+a {@link android.os.Binder} implementation:</p>
+
+<pre>
+public class LocalService extends Service {
+    // Binder given to clients
+    private final IBinder mBinder = new LocalBinder();
+    // Random number generator
+    private final Random mGenerator = new Random();
+
+    /**
+     * Class used for the client Binder.  Because we know this service always
+     * runs in the same process as its clients, we don't need to deal with IPC.
+     */
+    public class LocalBinder extends Binder {
+        LocalService getService() {
+            // Return this instance of LocalService so clients can call public methods
+            return LocalService.this;
+        }
+    }
+
+    &#64;Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+
+    /** method for clients */
+    public int getRandomNumber() {
+      return mGenerator.nextInt(100);
+    }
+}
+</pre>
+
+<p>The {@code LocalBinder} provides the {@code getService()} method for clients to retrieve the
+current instance of {@code LocalService}. This allows clients to call public methods in the
+service. For example, clients can call {@code getRandomNumber()} from the service.</p>
+
+<p>Here's an activity that binds to {@code LocalService} and calls {@code getRandomNumber()}
+when a button is clicked:</p>
+
+<pre>
+public class BindingActivity extends Activity {
+    LocalService mService;
+    boolean mBound = false;
+
+    &#64;Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
+    }
+
+    &#64;Override
+    protected void onStart() {
+        super.onStart();
+        // Bind to LocalService
+        Intent intent = new Intent(this, LocalService.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    &#64;Override
+    protected void onStop() {
+        super.onStop();
+        // Unbind from the service
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+    }
+
+    /** Called when a button is clicked (the button in the layout file attaches to
+      * this method with the android:onClick attribute) */
+    public void onButtonClick(View v) {
+        if (mBound) {
+            // Call a method from the LocalService.
+            // However, if this call were something that might hang, then this request should
+            // occur in a separate thread to avoid slowing down the activity performance.
+            int num = mService.getRandomNumber();
+            Toast.makeText(this, "number: " + num, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        &#64;Override
+        public void onServiceConnected(ComponentName className,
+                IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            LocalBinder binder = (LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        &#64;Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+}
+</pre>
+
+<p>The above sample shows how the client binds to the service using an implementation of
+{@link android.content.ServiceConnection} and the {@link
+android.content.ServiceConnection#onServiceConnected onServiceConnected()} callback. The next
+section provides more information about this process of binding to the service.</p>
+
+<p class="note"><strong>Note:</strong> The example above doesn't explicitly unbind from the service,
+but all clients should unbind at an appropriate time (such as when the activity pauses).</p>
+
+<p>For more sample code, see the <a
+href="{@docRoot}resources/samples/ApiDemos/src/com/example/android/apis/app/LocalService.html">{@code
+LocalService.java}</a> class and the <a
+href="{@docRoot}resources/samples/ApiDemos/src/com/example/android/apis/app/LocalServiceActivities.html">{@code
+LocalServiceActivities.java}</a> class in <a
+href="{@docRoot}resources/samples/ApiDemos/index.html">ApiDemos</a>.</p>
+
+-->
+
+
+
+<h2 id="Binding">Binding to a Service</h2>
+
+<p>Application components (clients) can bind to a service by calling
+{@link mindroid.content.Context#bindService bindService()}. The Android
+system then calls the service's {@link mindroid.app.Service#onBind
+onBind()} method, which returns an {@link mindroid.os.IBinder} for interacting with the service.</p>
+
+<p>The binding is asynchronous. {@link mindroid.content.Context#bindService
+bindService()} returns immediately and does <em>not</em> return the {@link mindroid.os.IBinder} to
+the client. To receive the {@link mindroid.os.IBinder}, the client must create an instance of {@link
+mindroid.content.ServiceConnection} and pass it to {@link mindroid.content.Context#bindService
+bindService()}. The {@link mindroid.content.ServiceConnection} includes a callback method that the
+system calls to deliver the {@link mindroid.os.IBinder}.</p>
+
+<p>So, to bind to a service from your client, you must: </p>
+<ol>
+  <li>Implement {@link mindroid.content.ServiceConnection}.
+    <p>Your implementation must override two callback methods:</p>
+    <dl>
+      <dt>{@link mindroid.content.ServiceConnection#onServiceConnected onServiceConnected()}</dt>
+        <dd>The system calls this to deliver the {@link mindroid.os.IBinder} returned by
+the service's {@link mindroid.app.Service#onBind onBind()} method.</dd>
+      <dt>{@link mindroid.content.ServiceConnection#onServiceDisconnected
+onServiceDisconnected()}</dt>
+        <dd>The Mindroid system calls this when the connection to the service is unexpectedly
+lost, such as when the service has crashed or has been killed. This is <em>not</em> called when the
+client unbinds.</dd>
+    </dl>
+  </li>
+  <li>Call {@link
+mindroid.content.Context#bindService bindService()}, passing the {@link
+mindroid.content.ServiceConnection} implementation. </li>
+  <li>When the system calls your {@link mindroid.content.ServiceConnection#onServiceConnected
+onServiceConnected()} callback method, you can begin making calls to the service, using
+the methods defined by the interface.</li>
+  <li>To disconnect from the service, call {@link
+mindroid.content.Context#unbindService unbindService()}.
+    <p>When your client is destroyed, it will unbind from the service, but you should always unbind
+when you're done interacting with the service or when your service pauses so that the previously bound
+service can shutdown while its not being used. (Appropriate times to bind and unbind is discussed
+more below.)</p>
+  </li>
+</ol>
+
+<p>For example, the following snippet connects the client to the service created above by
+<a href="#Binder">extending the Binder class</a>.
+
+<pre>
+ITestManager mService;
+private ServiceConnection mConnection = new ServiceConnection() {
+    // Called when the connection with the service is established
+    public void onServiceConnected(ComponentName className, IBinder service) {
+        // Because we have bound to an explicit
+        // service that is running in our own process, we can
+        // cast its IBinder to a concrete class and directly access it.
+        mService = ITestManager.Stub.asInterface(service);
+        mBound = true;
+    }
+
+    // Called when the connection with the service disconnects unexpectedly
+    public void onServiceDisconnected(ComponentName className) {
+        Log.e(TAG, "onServiceDisconnected");
+        mBound = false;
+    }
+};
+</pre>
+
+
+
+<h2 id="Lifecycle">Managing the Lifecycle of a Bound Service</h2>
+
+<p>When a service is unbound from all clients, the Mindroid system destroys it (unless it was also
+started with {@link mindroid.app.Service#onStartCommand onStartCommand()}). As such, you don't have
+to manage the lifecycle of your service if it's purely a bound
+service&mdash;the Mindroid system manages it for you based on whether it is bound to any clients.</p>
+
+<p>However, if you choose to implement the {@link mindroid.app.Service#onStartCommand
+onStartCommand()} callback method, then you must explicitly stop the service, because the
+service is now considered to be <em>started</em>. In this case, the service runs until the service
+stops itself with {@link mindroid.app.Service#stopSelf()} or another component calls {@link
+mindroid.content.Context#stopService stopService()}, regardless of whether it is bound to any
+clients.</p>
+
+
+<img src="{@docRoot}images/fundamentals/service_binding_tree_lifecycle.png" alt="" />
+<p class="img-caption"><strong>Figure 1.</strong> The lifecycle for a service that is started
+and also allows binding.</p>
+
+
+<p>For more information about the lifecycle of a started service, see the <a
+href="{@docRoot}guide/components/services.html#Lifecycle">Services</a> document.</p>
+

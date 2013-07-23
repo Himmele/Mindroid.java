@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,14 +52,7 @@ public final class Message {
     public int arg2;
 
     /**
-     * An arbitrary object to send to the recipient.  When using
-     * {@link Messenger} to send the message across processes this can only
-     * be non-null if it contains a Parcelable of a framework class (not one
-     * implemented by the application).   For other data transfer use
-     * {@link #setData}.
-     * 
-     * <p>Note that Parcelable objects here are not supported prior to
-     * the {@link android.os.Build.VERSION_CODES#FROYO} release.
+     * An arbitrary object to send to the recipient.
      */
     public Object obj;    
 
@@ -263,9 +257,9 @@ public final class Message {
     }
 
     /**
-     * Retrieve the a {@link android.os.Handler Handler} implementation that
+     * Retrieve the a {@link mindroid.os.Handler Handler} implementation that
      * will receive this message. The object must implement
-     * {@link android.os.Handler#handleMessage(android.os.Message)
+     * {@link mindroid.os.Handler#handleMessage(mindroid.os.Message)
      * Handler.handleMessage()}. Each Handler has its own name-space for
      * message codes, so you do not need to
      * worry about yours conflicting with other handlers.
@@ -289,11 +283,7 @@ public final class Message {
     /** 
      * Obtains a Bundle of arbitrary data associated with this
      * event, lazily creating it if necessary. Set this value by calling
-     * {@link #setData(Bundle)}.  Note that when transferring data across
-     * processes via {@link Messenger}, you will need to set your ClassLoader
-     * on the Bundle via {@link Bundle#setClassLoader(ClassLoader)
-     * Bundle.setClassLoader()} so that it can instantiate your objects when
-     * you retrieve them.
+     * {@link #setData(Bundle)}.
      * @see #peekData()
      * @see #setData(Bundle)
      */

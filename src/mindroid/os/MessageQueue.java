@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 The Android Open Source Project
+ * Copyright (C) 2013 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ import mindroid.util.Log;
  * {@link Looper#myQueue() Looper.myQueue()}.
  */
 public class MessageQueue {
+    private static final String LOG_TAG = "MessageQueue";
     private final boolean mAllowQuitMessage;
 
     Message mMessages;
@@ -60,9 +62,15 @@ public class MessageQueue {
 
         synchronized (this) {
             if (mQuiting) {
-                RuntimeException e = new RuntimeException(message.target + ": Handler is sending a message to a Handler on a dead thread");
-                Log.w("MessageQueue", e.getMessage(), e);
-                return false;
+                if (!(message.target instanceof Binder)) {
+                    RuntimeException e = new RuntimeException(message.target + " is sending a message to a Handler on a dead thread");
+                    Log.w(LOG_TAG, e.getMessage(), e);
+                    return false;
+                } else {
+                    RemoteException e = new RemoteException(message.target + " is sending a message to a dead Binder");
+                    Log.w(LOG_TAG, e.getMessage(), e);
+                    throw e;
+                }
             }
 
             message.when = when;

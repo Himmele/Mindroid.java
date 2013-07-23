@@ -16,50 +16,104 @@
 
 package mindroid.util;
 
+import java.util.ArrayList;
 import mindroid.app.Service;
-import mindroid.os.Handler;
-import mindroid.util.CircularLogBuffer.LogMessage;
+import mindroid.content.Intent;
+import mindroid.os.IBinder;
+import mindroid.util.LogBuffer.LogMessage;
 
 public class ConsoleLogger extends Service {
 	private static final String LOG_TAG = "ConsoleLogger";
-	private CircularLogBuffer mLogBuffer = Log.getLogBuffer();
-	private Thread mThread;
-	private volatile boolean mRunning = true;
-	private int mPrio = Log.DEBUG;
-	private boolean mTimestamp = true;
+	private LoggerThread mMainLogThread = null;
+	private LoggerThread mTaskManagerLogThread = null;
+	private ArrayList mLogIds;
 
-	public void onCreate() {
-		Log.i(LOG_TAG, "onCreate");
+	class LoggerThread extends Thread {
+		private LogBuffer mLogBuffer;
+		private boolean mUseTimestamps;
+		private int mPriority;
 		
-		mThread = new Thread() {
-			public void run() {
-				mRunning = true;
-				while (mRunning) {
-					LogMessage logMessage = mLogBuffer.getLogMessage(mPrio);
-					if (logMessage != null) {
-						System.out.println(logMessage.toString(mTimestamp));
-					}
+		public LoggerThread(String name, int logId, boolean useTimeStamps, int priority) {
+			super(name);
+			setPriority(MIN_PRIORITY);
+			mLogBuffer = Log.getLogBuffer(logId);
+			mUseTimestamps = useTimeStamps;
+			mPriority = priority;
+		}
+		
+		public void run() {
+			while (!isInterrupted()) {
+				LogMessage logMessage;
+				try {
+					logMessage = mLogBuffer.dequeue(mPriority);
+				} catch (InterruptedException e) {
+					break;
+				}
+				if (logMessage != null) {
+					System.out.println(logMessage.toString(mUseTimestamps));
 				}
 			}
-		};
-	}
-
-	public void onStart(int startId) {
-		Log.i(LOG_TAG, "onStart: " + startId);
-		mThread.start();
-	}
-
-	public void onDestroy() {
-		Log.i(LOG_TAG, "onDestroy");
-		mRunning = false;
-		Log.i(LOG_TAG, "notify");
-		try {
-			mThread.join();
-		} catch (InterruptedException e) {
+		}
+		
+		public void enableTimestamps(boolean useTimestamps) {
+			mUseTimestamps = useTimestamps;
+			mLogBuffer.resume();
+		}
+		
+		public void setLogPriority(int priority) {
+			mPriority = priority;
+			mLogBuffer.resume();
 		}
 	}
 
-	public Handler onBind() {
+	public void onCreate() {
+	}
+	
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		mLogIds = intent.getIntegerArrayListExtra("logIds");
+		if ((mLogIds == null) || mLogIds.contains(new Integer(Log.LOG_ID_MAIN))) {
+			if (mMainLogThread == null) {
+				boolean useTimestamps = intent.getBooleanExtra("timestamps", false);
+				int priority = intent.getIntExtra("priority", Log.ERROR);
+				mMainLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_MAIN, useTimestamps, priority);
+				mMainLogThread.start();
+			} else {
+				boolean useTimestamps = intent.getBooleanExtra("timestamps", false);
+				int priority = intent.getIntExtra("priority", Log.ERROR);
+				mMainLogThread.enableTimestamps(useTimestamps);
+				mMainLogThread.setLogPriority(priority);
+			}
+		}
+		
+		if ((mLogIds != null) && mLogIds.contains(new Integer(Log.LOG_ID_TASK_MANAGER))) {
+			if (mTaskManagerLogThread == null) {
+				mTaskManagerLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_TASK_MANAGER, true, Log.DEBUG);
+				mTaskManagerLogThread.start();
+			}
+		}
+		
+        return 0;
+    }
+
+	public void onDestroy() {
+		if (mMainLogThread != null) {
+			mMainLogThread.interrupt();
+			try {
+				mMainLogThread.join();
+			} catch (InterruptedException e) {
+			}
+		}
+		
+		if (mTaskManagerLogThread != null) {
+			mTaskManagerLogThread.interrupt();
+			try {
+				mTaskManagerLogThread.join();
+			} catch (InterruptedException e) {
+			}
+		}
+	}
+
+	public IBinder onBind(Intent intent) {
 		return null;
 	}
 }

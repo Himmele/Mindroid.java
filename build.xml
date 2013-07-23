@@ -1,30 +1,240 @@
-<project name="Mindroid" basedir=".">
-	<property name="src.dir" value="src" />
-	<property name="out.dir" value="bin" />
-	<property name="jar.filename" value="Mindroid.jar" />
-	<property name="version" value="1.6" />
+<?xml version="1.0" encoding="UTF-8"?>
 
-	<target name="build">
-		<mkdir dir="${out.dir}" />
-		<javac srcdir="${src.dir}" destdir="${out.dir}" optimize="on" source="${version}" target="${version}" includeantruntime="false" />				
+<project name="Mindroid" default="all" basedir=".">
+	<property name="version.number" value="1.0.0" />
+	<property name="release.number" value="1" />
+	<property name="compile.source" value="1.4" />
+	<property name="compile.target" value="1.4" />
+
+	<!-- Global properties-->
+	<condition property="target" value="pc">
+		<not>
+			<isset property="target" />
+		</not>
+	</condition>
+	<echo message="Target is set to: ${target}" />
+
+	<!-- Platform dependent bootclasspath -->
+	<property name="platform" value="pc" />
+	<property name="target.bootclasspath" value="JSE_Bootclasspath" />
+	
+	<path id="JSE_Bootclasspath">
+		<pathelement location="${java.home}/lib/rt.jar"/>
+		<pathelement location="${java.home}/lib/jce.jar"/>
+		<pathelement location="${java.home}/lib/jsse.jar"/>
+	</path>
+
+	<echo>Target bootclasspath: ${target.bootclasspath}</echo>
+	
+	<property name="out.target.dir" value="${basedir}/out/${target}" />
+	<property name="app.target.dir" value="${basedir}/apps" />
+
+	<taskdef resource="proguard/ant/task.properties" classpath="prebuilts/ProGuard/proguard.jar" />
+	
+	<target name="compile">
+		<compile-module name="Mindroid" manifest-path=".">
+			<module-srcs>
+				<dirset dir="src" />
+			</module-srcs>
+		</compile-module>
+		
+		<compile-module name="Main" manifest-path=".">
+			<module-srcs>
+				<dirset dir="main" />
+			</module-srcs>
+			<module-classpath>
+				<path path="${out.target.dir}/Mindroid.jar" />
+			</module-classpath>
+		</compile-module>
 	</target>
 
 	<target name="clean">
-		<delete dir="${out.dir}" />
-		<delete file="${jar.filename}"/>
+		<delete includeEmptyDirs="true" failonerror="false">
+			<fileset dir="${out.target.dir}" includes="**/*" />
+		</delete>
 	</target>
 	
-	<target name="jar" depends="build">
-		<jar jarfile="${jar.filename}" basedir="${out.dir}">
+	<target name="sdk" depends="compile">
+		<delete dir="${out.target.dir}/tmp"/>
+		<mkdir dir="${out.target.dir}/tmp" />
+		<unzip dest="${out.target.dir}/tmp">
+			<fileset dir="${out.target.dir}">
+				<include name="Mindroid.jar"/>
+			</fileset>
+		</unzip>
+
+		<tstamp>
+			<format property="TODAY" pattern="MMMM dd yyyy hh:mm aa" locale="en,GERMAN"/>
+		</tstamp>
+
+		<jar jarfile="${out.target.dir}/tmp/Mindroid.jar">
 			<manifest>
-				<attribute name="Specification-Title" value="Mindroid" />
-				<attribute name="Specification-Version" value="1.0" />
-				<attribute name="Specification-Vendor" value="Daniel Himmelein" />
-				<attribute name="Implementation-Version" value="1.0" />
-				<attribute name="Implementation-Vendor" value="Daniel Himmelein" />
-				<attribute name="X-Compile-Source-JDK" value="@{version}" />
-				<attribute name="X-Compile-Target-JDK" value="@{version}" />
-			</manifest>
+				<attribute name="Created-By" value="E.S.R.Labs"/>
+				<attribute name="Main-Class" value="main.Main"/>
+				<attribute name="Implementation-Version" value="${version.number}-r${release.number}"/>
+				<attribute name="Built-Date" value="${TODAY}"/>
+				</manifest>
+			<fileset dir="${out.target.dir}/tmp">
+				<include name="**/*.class"/>
+				<include name="META-INF/**"/>
+			</fileset>
 		</jar>
+
+		<proguard configuration="build/proguard-sdk.txt">
+			<libraryjar refid="${target.bootclasspath}"/>
+			<injar name="${out.target.dir}/tmp/Mindroid.jar"/>
+			<outjar name="${out.target.dir}/Mindroid.jar"/>
+		</proguard>
+
+		<delete dir="${out.target.dir}/tmp"/>
+	</target>
+
+	<target name="apps" depends="sdk">
+		<antcall target="app">
+			<param name="app" value="Test"/>
+			<param name="dir" value="tests"/>
+		</antcall>
+	</target>
+	
+	<macrodef name="compile-module">
+		<attribute name="name" />
+		<attribute name="manifest-path" />
+		<element name="module-srcs" />
+		<element name="module-classpath" optional="true" />
+		<sequential>
+			<echo message="---- Compiling @{name} ----" />
+			<compile-trees module="@{name}">
+				<tree-srcs>
+					<module-srcs />
+				</tree-srcs>
+				<tree-classpath>
+					<module-classpath />
+				</tree-classpath>
+			</compile-trees>
+
+			<jar-module name="@{name}" manifest-path="@{manifest-path}" />
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="compile-trees">
+		<attribute name="module" />
+		<element name="tree-srcs" />
+		<element name="tree-classpath" optional="true" />
+		<sequential>
+			<mkdir dir="${out.target.dir}/@{module}/classes/src" />
+			<javac bootclasspathref="${target.bootclasspath}" destdir="${out.target.dir}/@{module}/classes/src" debug="on" deprecation="on" optimize="on" source="${compile.source}" target="${compile.target}" includeantruntime="false">
+				<src>
+					<tree-srcs />
+				</src>
+				<classpath>
+					<tree-classpath />
+				</classpath>
+				<compilerarg value="-Xlint:unchecked" />
+			</javac>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="jar-module">
+		<attribute name="name" />
+		<attribute name="manifest-path" />
+		<sequential>
+			<copy file="@{manifest-path}/MindroidManifest.xml" tofile="${out.target.dir}/@{name}/classes/src/MindroidManifest.xml" failonerror="false" />
+			<jar jarfile="${out.target.dir}/@{name}.jar" basedir="${out.target.dir}/@{name}/classes/src">
+				<manifest>
+					<attribute name="Specification-Title" value="@{name}" />
+					<attribute name="Specification-Version" value="${version.number}" />
+					<attribute name="Specification-Vendor" value="E.S.R.Labs" />
+					<attribute name="Implementation-Title" value="Commons Codec" />
+					<attribute name="Implementation-Version" value="${version.number}" />
+					<attribute name="Implementation-Vendor" value="E.S.R.Labs" />
+					<attribute name="Implementation-Vendor-Id" value="com.esrlabs" />
+					<attribute name="X-Compile-Source-JDK" value="${compile.source}" />
+					<attribute name="X-Compile-Target-JDK" value="${compile.target}" />
+				</manifest>
+			</jar>
+		</sequential>
+	</macrodef>
+	
+	<target name="app">
+		<compile-module name="${app}" manifest-path="tests">
+			<module-srcs>
+				<dirset dir="${dir}" />
+			</module-srcs>
+			<module-classpath>
+				<path path="${out.target.dir}/Mindroid.jar" />
+			</module-classpath>
+		</compile-module>
+		
+		<delete dir="${out.target.dir}/tmp"/>
+			<mkdir dir="${out.target.dir}/tmp" />
+		<copy file="${out.target.dir}/${app}.jar" tofile="${out.target.dir}/tmp/${app}.jar" />
+
+		<proguard configuration="build/proguard-apps.txt">
+			<libraryjar refid="${target.bootclasspath}"/>
+			<libraryjar name="${out.target.dir}/Mindroid.jar"/>
+			<injar name="${out.target.dir}/tmp/${app}.jar"/>
+			<outjar name="${out.target.dir}/${app}.jar"/>
+		</proguard>
+
+		<delete dir="${out.target.dir}/tmp"/>
+	</target>
+
+	<target name="install-apps" depends="apps">
+		<copy file="${out.target.dir}/Test.jar" tofile="${app.target.dir}/Test.jar" failonerror="false" />
+	</target>
+	
+	<target name="docs" description="Docs">
+		<delete dir="out/docs" failonerror="true"/>
+		<mkdir dir="out/docs"/>
+		<!-- http://ant.apache.org/manual/Tasks/javadoc.html -->
+		<javadoc packagenames="mindroid.*"
+				 defaultexcludes="yes"
+				 destdir="out/docs"
+				 docletpath="prebuilts/Droiddoc/jsilver.jar:prebuilts/Droiddoc/doclava.jar">
+				<doclet name="com.google.doclava.Doclava">
+				<param name="-XDignore.symbol.file" />
+				<param name="-stubs" value="out/docs/stubs" />
+				<param name="-templatedir" value="prebuilts/Droiddoc/mindroid" />
+				<param name="-htmldir" value="docs" />
+				<param name="-hdf"/>
+				<param name="project.name"/>
+				<param name="offline"/>
+				<param name="-offlinemode" />
+				<!-- versioning -->
+				<!-- <param name="-since"/> <param name="doclava/previous.xml"/> <param name="0" /> -->
+			</doclet>
+			<sourcefiles>
+				<fileset dir="src/">
+					<include name="mindroid/app/Service.java"/>
+					<include name="mindroid/content/ComponentName.java"/>
+					<include name="mindroid/content/Context.java"/>
+					<include name="mindroid/content/ContextWrapper.java"/>
+					<include name="mindroid/content/Intent.java"/>
+					<include name="mindroid/content/ServiceConnection.java"/>
+					<include name="mindroid/content/SharedPreferences.java"/>
+					<include name="mindroid/os/AsyncTask.java"/>
+					<include name="mindroid/os/Binder.java"/>
+					<include name="mindroid/os/Bundle.java"/>
+					<include name="mindroid/os/Environment.java"/>
+					<include name="mindroid/os/Executor.java"/>
+					<include name="mindroid/os/Handler.java"/>
+					<include name="mindroid/os/HandlerThread.java"/>
+					<include name="mindroid/os/IBinder.java"/>
+					<include name="mindroid/os/IInterface.java"/>
+					<include name="mindroid/os/Looper.java"/>
+					<include name="mindroid/os/Message.java"/>
+					<include name="mindroid/os/MessageQueue.java"/>
+					<include name="mindroid/os/RemoteException.java"/>
+					<include name="mindroid/os/SerialExecutor.java"/>
+					<include name="mindroid/os/SystemClock.java"/>
+					<include name="mindroid/os/ThreadPoolExecutor.java"/>
+					<include name="mindroid/util/Base64.java"/>
+					<include name="mindroid/util/Log.java"/>
+					<include name="mindroid/util/Pair.java"/>
+					<include name="mindroid/util/concurrent/SettableFuture.java"/>
+				</fileset>
+			</sourcefiles>
+		</javadoc>
+		<delete dir="out/docs/stubs" failonerror="true"/>
 	</target>
 </project>

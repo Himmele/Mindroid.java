@@ -1,0 +1,162 @@
+page.title=Processes and Threads
+@jd:body
+
+<div id="qv-wrapper">
+<div id="qv">
+<h2>Quickview</h2>
+<ul>
+  <li>Every service runs in its own lightweight process and all components of the application run in that
+process, by default</li>
+  <li>Any slow, blocking operations in a service should be done in a new thread, to avoid slowing
+down other operations</li>
+</ul>
+
+<h2>In this document</h2>
+<ol>
+<li><a href="#Processes">Processes</a>
+  <ol>
+    <li><a href="#Lifecycle">Process lifecycle</a></li>
+  </ol>
+</li>
+<li><a href="#Threads">Threads</a>
+  <ol>
+    <li><a href="#WorkerThreads">Worker threads</a></li>
+    <li><a href="#ThreadSafe">Thread-safe methods</a></li>
+  </ol>
+</li>
+<li><a href="#IPC">Interprocess Communication</a></li>
+</ol>
+
+</div>
+</div>
+
+<p>When an application component starts and the application does not have any other components
+running, the Mindroid system starts a new lightweight process for the application with a single thread of
+execution. By default, all components of the same application run in the same lightweight process and thread
+(called the "main" thread). If an application component starts and there already exists a lightweight process
+for that application (because another component from the application exists), then the component is
+started within that lightweight process and uses the same thread of execution. However you can create additional
+threads for any lightweight process.</p>
+
+<p>This document discusses how processes and threads work in a Mindroid application.</p>
+
+
+<h2 id="Processes">Lightweight processes</h2>
+
+<p>By default, all components of the same application run in the same lightweight process and most applications
+should not change this. However, if you find that you need to control which process a certain
+component belongs to, you can do so in the manifest file.</p>
+
+<p>The manifest entry for each type of component element&mdash;<a href="{@docRoot}guide/topics/manifest/service-element.html">{@code
+&lt;service&gt;}</a>&mdash;supports an {@code mindroid:process} attribute that can specify a
+process in which that component should run. You can set this attribute so that each component runs
+in its own lightweight process or so that some components share a process while others do not.  You can also set
+{@code mindroid:process} so that components of different applications run in the same
+process&mdash.</p>
+
+<p>The <a href="{@docRoot}guide/topics/manifest/application-element.html">{@code
+&lt;application&gt;}</a> element also supports an {@code mindroid:process} attribute, to set a
+default value that applies to all components.</p>
+
+<h3 id="Lifecycle">Lightweight process lifecycle</h3>
+
+<p>A lightweight stays alive as long as there is at least one service running in that process. </p>
+
+
+
+<h2 id="Threads">Threads</h2>
+
+<p>When an application is launched, the system creates a thread of execution for the application,
+called "main." This thread is very important because it is in charge of dispatching events to
+the appropriate service operations, callbacks etc. It is also the thread in which
+your application interacts with components.</p>
+
+<p>The system does <em>not</em> create a separate thread for each instance of a component. All
+components that run in the same lightweight process are instantiated in the main thread, and system calls to
+each component are dispatched from that thread. Consequently, methods that respond to system
+callbacks (such as {@link mindroid.location.LocationListener#onLocationChanged onLocationChanged()} to report location changes
+or a lifecycle callback method) always run in the main thread of the process.</p>
+
+<p>When your app performs intensive work in response to some action, this single thread model
+can yield poor performance unless you implement your application properly. Specifically, if
+everything is happening in the main thread, performing long operations such as network access or
+file system access will block the whole application. When the thread is blocked, no events can be dispatched.</p>
+
+<ol>
+<li>Do not block the main thread
+<li>Do not access the Mindroid framework from outside the main thread
+</ol>
+
+<h3 id="WorkerThreads">Worker threads</h3>
+
+<p>Because of the single thread model described above, it's vital to the responsiveness of your
+application's that you do not block the main thread. If you have operations to perform
+that are not instantaneous, you should make sure to do them in separate threads ("background" or
+"worker" threads).</p>
+
+
+<h4 id="AsyncTask">Using AsyncTask</h4>
+
+<p>{@link mindroid.os.AsyncTask} allows you to perform asynchronous work on your service.
+It performs the blocking operations in a worker thread and then publishes the results on
+the main thread, without requiring you to handle threads and/or handlers yourself.</p>
+
+<p>To use it, you must subclass {@link mindroid.os.AsyncTask} and implement the {@link
+mindroid.os.AsyncTask#doInBackground doInBackground()} callback method, which runs in a pool of
+background threads. To update your service state, you should implement {@link
+mindroid.os.AsyncTask#onPostExecute onPostExecute()}, which delivers the result from {@link
+mindroid.os.AsyncTask#doInBackground doInBackground()} and runs in the main thread, so you can safely
+update your state. You can then run the task by calling {@link mindroid.os.AsyncTask#execute execute()}
+from the main thread.</p>
+
+<p>For example, you can implement the previous example using {@link mindroid.os.AsyncTask} this
+way:</p>
+
+<pre>
+public void onClick(View v) {
+    new DownloadImageTask().execute("http://example.com/image.png");
+}
+
+private class DownloadImageTask extends AsyncTask {
+    /** The system calls this to perform work in a worker thread and
+      * delivers it the parameters given to AsyncTask.execute() */
+    protected Bitmap doInBackground(Object params) {
+        String[] urls = (String[]) params;
+        return loadImageFromNetwork(urls[0]);
+    }
+    
+    /** The system calls this to perform work in the main thread and delivers
+      * the result from doInBackground() */
+    protected void onPostExecute(Object result) {
+        File file = (File) result;
+        Log.i(LOG_TAG, "Download of file " + file.getName() + " done");
+    }
+}
+</pre>
+
+<p>Now the service is safe and the code is simpler, because it separates the work into the
+part that should be done on a worker thread and the part that should be done on the main thread.</p>
+
+<p>You should read the {@link mindroid.os.AsyncTask} reference for a full understanding on
+how to use this class, but here is a quick overview of how it works:</p>
+
+<h3 id="ThreadSafe">Thread-safe methods</h3>
+
+<p> In some situations, the methods you implement might be called from more than one thread, and
+therefore must be written to be thread-safe. </p>
+
+
+<h2 id="IPC">Interprocess Communication</h2>
+
+<p>Mindroid offers a mechanism for interprocess communication (IPC) using remote procedure calls
+(RPCs), in which a method is called by a service or other application component, but executed
+remotely (in another lightweight process), with any result returned back to the
+caller. This entails decomposing a method call and its data to a low level,
+transmitting it from the local lightweight process to the remote lightweight process,
+then reassembling and reenacting the call there.  Return values are then
+transmitted in the opposite direction. </p>
+
+<p>To perform IPC, your application must bind to a service, using {@link
+mindroid.content.Context#bindService bindService()}. For more information, see the <a
+href="{@docRoot}guide/components/services.html">Services</a> developer guide.</p>
+

@@ -1,0 +1,118 @@
+page.title=Intents
+@jd:body
+
+<div id="qv-wrapper">
+<div id="qv">
+
+<h2>In this document</h2>
+<ol>
+<li><a href="#iobjs">Intent Objects</a></li>
+<li><a href="#ires">Intent Resolution</a></li>
+<li style="margin-left: 2em"><a href="#ccases">Common cases</a></li>
+</ol>
+
+<h2>Key classes</h2>
+<ol>
+<li>{@link mindroid.content.Intent}</li>
+</ol>
+
+</div>
+</div>
+
+
+<p>
+The core components of an application &mdash; services &mdash; are activated through messages,
+called <i>intents</i>.   
+Intent messaging is a facility for late run-time binding between components in the same 
+or different applications.  The intent itself, an {@link mindroid.content.Intent} 
+object, is a passive data structure holding an abstract description of an operation 
+to be performed.
+</p>
+
+<ul>
+<li><p>An Intent object is passed to <code>{@link mindroid.content.Context#startService 
+Context.startService()}</code> to initiate a service or deliver new instructions to an 
+ongoing service.  Similarly, an intent can be passed to <code>{@link 
+mindroid.content.Context#bindService Context.bindService()}</code> to establish a 
+connection between the calling component and a target service.  It can optionally
+initiate the service if it's not already running.</p></li>
+</ul>
+
+<p>
+The Mindroid system finds the appropriate service to respond to the intent, instantiating it if necessary. 
+</p>
+
+<p>
+This document begins with a description of Intent objects.  It then describes the 
+rules Mindroid uses to map intents to components &mdash; how it resolves which 
+component should receive an intent message. 
+</p>
+
+
+<h2><a name="iobjs"></a>Intent Objects</h2>
+
+<p>
+An {@link mindroid.content.Intent} object is a bundle of information.  It 
+contains information of interest to the component that receives the intent 
+(such as actions to be taken and the data to act on) plus information 
+of interest to the Mindroid system.  
+Principally, it can contain the following:
+</p>
+
+<dl>
+
+<dt><b>Component name</b><a name="cname"></a></dt> 
+<dd>The name of the component that should handle the intent.  This field is 
+a {@link mindroid.content.ComponentName} object &mdash; a combination of the 
+fully qualified class name of the target component (for example "{@code 
+com.example.project.ExampleService}") and the package name set
+in the manifest file of the application where the component resides (for 
+example, "{@code com.example.project}").
+
+<p>  
+The component name is mandatory.  The Intent object is 
+delivered to an instance of the designated class.
+</p>
+
+<p>
+The component name is set by <code>{@link mindroid.content.Intent#setComponent 
+setComponent()}</code> or <code>{@link mindroid.content.Intent#setClassName(String, String) 
+setClassName()}</code> and read by <code>{@link mindroid.content.Intent#getComponent 
+getComponent()}</code>. 
+</p>
+</dd>
+
+<p><dt><b>Extras</b><a name="extras"></a></dt>
+<dd>Key-value pairs for additional information that should be delivered to the 
+component handling the intent.
+
+<p>
+The Intent object has a series of {@code put...()} methods for inserting various 
+types of extra data and a similar  set of {@code get...()} methods for reading 
+the data.  These methods parallel those for {@link mindroid.os.Bundle} objects.  
+In fact, the extras can be installed and read as a Bundle using the <code>{@link 
+mindroid.content.Intent#putExtras putExtras()}</code> and <code>{@link 
+mindroid.content.Intent#getExtras getExtras()}</code> methods.
+</p>
+</dd>
+
+<p><dt><b>Flags</b></dt>
+<dd>Flags are currently not used.  
+</dd>
+
+</dl>
+
+
+<h2><a name="ires"></a>Intent Resolution</h2>
+
+<ul>
+<li><i>Explicit intents</i> designate the target component by its 
+name (the <a href="#cname">component name field</a>, mentioned earlier, 
+has a value set).</li>
+
+<p>
+Mindroid delivers an explicit intent to an instance of the designated 
+target class.  Nothing in the Intent object other than the component 
+name matters for determining which component should get the intent.  
+</p>
+

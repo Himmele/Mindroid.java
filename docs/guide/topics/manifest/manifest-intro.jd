@@ -1,0 +1,167 @@
+page.title=The MindroidManifest.xml File
+@jd:body
+
+<div id="qv-wrapper">
+<div id="qv">
+
+<h2>In this document</h2>
+<ol>
+<li><a href="#filestruct">Structure of the Manifest File</a></li>
+<li><a href="#filec">File Conventions</a>
+</ol>
+</div>
+</div>
+
+<p>
+Every application must have an MindroidManifest.xml file (with precisely that 
+name) in its root directory.  The manifest presents essential information about 
+the application to the Mindroid system, information the system must have before 
+it can run any of the application's code.  Among other things, the manifest 
+does the following:
+</p>
+
+<ul>
+<li>It names the Java package for the application.
+The package name serves as a unique identifier for the application.</li>
+
+<li>It describes the components of the application &mdash: the services that
+the application is composed of.  It names the classes that implement each of
+the components.  These declarations let the Mindroid system 
+know what the components are and how they can be launched.</li>
+
+<li>It determines which lightweight processes will host application components.</li>  
+
+<li>It declares the minimum level of the Mindroid API that the application 
+requires.</li>
+</ul>
+
+
+<h2 id="filestruct">Structure of the Manifest File</h2>
+
+<p>
+The diagram below shows the general structure of the manifest file and 
+every element that it can contain.  Each element, along with all of its 
+attributes, is documented in full in a separate file.  To view detailed 
+information about any element, click on the element name in the diagram, 
+in the alphabetical list of elements that follows the diagram, or on any
+other mention of the element name. 
+</p>
+
+<pre>
+&lt;?xml version="1.0" encoding="utf-8"?&gt;
+
+<a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a>
+
+    <a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a>
+
+        <a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a>
+        <a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;/service&gt;</a>
+
+    <a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;/application&gt;</a>
+
+<a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;/manifest&gt;</a>
+</pre>
+
+<p>
+All the elements that can appear in the manifest file are listed below 
+in alphabetical order.  These are the only legal elements; you cannot 
+add your own elements or attributes.  
+</p>
+
+<p style="margin-left: 2em">
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code>
+<br/><code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code>
+<br/><code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code>
+</p>
+
+
+    
+
+<h2 id="filec">File Conventions</h2>
+
+<p>
+Some conventions and rules apply generally to all elements and attributes 
+in the manifest:
+</p>
+
+<dl>
+<dt><b>Elements</b></dt>
+<dd>Only the 
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code> and
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code> 
+elements are required, they each must be present and can occur only once.  
+Most of the others can occur many times or not at all &mdash; although at 
+least some of them must be present for the manifest to accomplish anything 
+meaningful.
+
+<p>
+If an element contains anything at all, it contains other elements.  
+All values are set through attributes, not as character data within an element.
+</p>
+
+<p>
+Elements at the same level are generally not ordered.  For example,
+<code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code> 
+elements can be intermixed in any sequence.
+</p></dd>
+
+<dt><b>Attributes</b></dt>
+<dd>In a formal sense, all attributes are optional.  However, there are some 
+that must be specified for an element to accomplish its purpose.  Use the 
+documentation as a guide.  For truly optional attributes, it mentions a default 
+value or states what happens in the absence of a specification.
+
+<p>Except for some attributes of the root 
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code> 
+element, all attribute names begin with an {@code mindroid:} prefix &mdash; 
+for example, {@code mindroid:name}.  Because the prefix is 
+universal, the documentation generally omits it when referring to attributes 
+by name.</p></dd>
+
+<dt><b>Declaring class names</b></dt>
+<dd>Many elements correspond to Java objects, including elements for the 
+application itself (the 
+<code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code> 
+element) and its principal components &mdash; services 
+(<code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code>).  
+
+<p>
+If you define a subclass, as you almost always would for the component classes 
+{@link mindroid.app.Service}, 
+the subclass is declared through a {@code name} attribute.  The name must include 
+the full package designation.  
+For example, an {@link mindroid.app.Service} subclass might be declared as follows:
+</p>
+
+<pre>&lt;manifest . . . &gt;
+    &lt;application . . . &gt;
+        &lt;service mindroid:name="com.example.project.ExampleService" . . . &gt;
+            . . .
+        &lt;/service&gt;
+        . . .
+    &lt;/application&gt;
+&lt;/manifest&gt;</pre>
+
+<p>
+However, as a shorthand, if the first character of the string is a period, the 
+string is appended to the application's package name (as specified by the 
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code> 
+element's 
+<code><a href="{@docRoot}guide/topics/manifest/manifest-element.html#package">package</a></code> 
+attribute).  The following assignment is the same as the one above: 
+</p>
+
+<pre>&lt;manifest package="com.example.project" . . . &gt;
+    &lt;application . . . &gt;
+        &lt;service mindroid:name=".ExampleService" . . . &gt;
+            . . .
+        &lt;/service&gt;
+        . . .
+    &lt;/application&gt;
+&lt;/manifest&gt;</pre>
+
+<p>
+When starting a component, Mindroid creates an instance of the named subclass.  
+If a subclass isn't specified, it creates an instance of the base class.
+</p></dd>
+
