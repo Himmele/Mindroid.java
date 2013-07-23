@@ -39,6 +39,13 @@ public class TestService1 extends Service {
 				unbindService(conn);
 			}
 		}, 4000);
+		
+		mHandler.postDelayed(new Runnable() {
+			public void run() {
+				Log.i(LOG_TAG, "Test");
+				mHandler.postDelayed(this, 1000);
+			}
+		}, 1000);
 	}
 
 	public IBinder onBind(Intent intent) {

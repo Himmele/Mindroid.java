@@ -34,13 +34,14 @@
 	<target name="compile">
 		<compile-module name="Mindroid" manifest-path=".">
 			<module-srcs>
-				<dirset dir="src" />
+				<dirset dir="src/mindroid" />
+				<dirset dir="src/org" />
 			</module-srcs>
 		</compile-module>
 		
 		<compile-module name="Main" manifest-path=".">
 			<module-srcs>
-				<dirset dir="main" />
+				<dirset dir="src/main" />
 			</module-srcs>
 			<module-classpath>
 				<path path="${out.target.dir}/Mindroid.jar" />
@@ -92,7 +93,7 @@
 	<target name="apps" depends="sdk">
 		<antcall target="app">
 			<param name="app" value="Test"/>
-			<param name="dir" value="tests"/>
+			<param name="dir" value="src/tests"/>
 		</antcall>
 	</target>
 	
@@ -156,7 +157,7 @@
 	</macrodef>
 	
 	<target name="app">
-		<compile-module name="${app}" manifest-path="tests">
+		<compile-module name="${app}" manifest-path="src/tests">
 			<module-srcs>
 				<dirset dir="${dir}" />
 			</module-srcs>
