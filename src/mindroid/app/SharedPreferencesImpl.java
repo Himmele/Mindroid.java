@@ -305,6 +305,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 		KXmlParser parser;
 		parser = new KXmlParser();
 		parser.setInput(is, UTF_8);
+		parser.require(XmlPullParser.START_DOCUMENT, null, null);
 		parser.nextTag();
 		parser.require(XmlPullParser.START_TAG, null, MAP_TAG);
 		

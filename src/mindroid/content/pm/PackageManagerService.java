@@ -214,6 +214,7 @@ public class PackageManagerService extends Service {
 			parser = new KXmlParser();
 			parser.setInput((InputStream) input, UTF_8);
 			parser.setFeature(KXmlParser.FEATURE_PROCESS_NAMESPACES, true);
+			parser.require(XmlPullParser.START_DOCUMENT, null, null);
 			parser.nextTag();
 			parser.require(XmlPullParser.START_TAG, null, MANIFEST_TAG);
 			
