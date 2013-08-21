@@ -232,8 +232,7 @@ public class PackageManagerService extends Service {
 			
 			List services = null;
 			boolean applicationTagDone = false;
-			int eventType;
-			while (((eventType = parser.nextTag()) != XmlPullParser.END_TAG) && !parser.getName().equals(MANIFEST_TAG)) {
+			for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 				if (eventType == XmlPullParser.END_TAG) {
 					throw new XmlPullParserException("Invalid XML format");
 				}
@@ -286,8 +285,7 @@ public class PackageManagerService extends Service {
 		ai.enabled = appEnabled;
 		
 		List services = new ArrayList();
-		int eventType;
-		while (((eventType = parser.nextTag()) != XmlPullParser.END_TAG) && !parser.getName().equals(APPLICATION_TAG)) {
+		for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
 			}
@@ -371,8 +369,7 @@ public class PackageManagerService extends Service {
 			si.autostart = autostart;
 		}
 		
-		int eventType;
-		while (((eventType = parser.nextTag()) != XmlPullParser.END_TAG) && !parser.getName().equals(SERVICE_TAG)) {
+		for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
 			}

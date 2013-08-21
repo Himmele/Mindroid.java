@@ -309,8 +309,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 		parser.require(XmlPullParser.START_TAG, null, MAP_TAG);
 		
 		Map map = new HashMap();
-		int eventType;
-		while (((eventType = parser.nextTag()) != XmlPullParser.END_TAG) && !parser.getName().equals(MAP_TAG)) {
+		for (int eventType = parser.nextTag(); !parser.getName().equals(MAP_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
 			}
@@ -480,8 +479,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 		}
 		
 		value = new HashSet();
-		int eventType;
-		while (((eventType = parser.nextTag()) != XmlPullParser.END_TAG) && !parser.getName().equals(STRING_SET_TAG)) {
+		for (int eventType = parser.nextTag(); !parser.getName().equals(STRING_SET_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
 			}
