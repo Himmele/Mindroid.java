@@ -52,7 +52,7 @@ component belongs to, you can do so in the manifest file.</p>
 process in which that component should run. You can set this attribute so that each component runs
 in its own lightweight process or so that some components share a process while others do not.  You can also set
 {@code mindroid:process} so that components of different applications run in the same
-process&mdash.</p>
+process.</p>
 
 <p>The <a href="{@docRoot}guide/topics/manifest/application-element.html">{@code
 &lt;application&gt;}</a> element also supports an {@code mindroid:process} attribute, to set a
@@ -60,7 +60,7 @@ default value that applies to all components.</p>
 
 <h3 id="Lifecycle">Lightweight process lifecycle</h3>
 
-<p>A lightweight stays alive as long as there is at least one service running in that process. </p>
+<p>A lightweight process stays alive as long as there is at least one service running in that process. </p>
 
 
 
