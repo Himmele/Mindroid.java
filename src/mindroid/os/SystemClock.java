@@ -130,4 +130,13 @@ public final class SystemClock {
     public static long uptimeMillis() {
     	return System.currentTimeMillis();
     }
+    
+    /**
+     * Returns nanoseconds since boot, including time spent in sleep.
+     *
+     * @return elapsed nanoseconds since boot.
+     */
+    public static long elapsedRealtimeNanos() {
+    	return System.currentTimeMillis() * 1000000;
+    }
 }

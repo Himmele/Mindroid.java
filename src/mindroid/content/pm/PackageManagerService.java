@@ -92,7 +92,11 @@ public class PackageManagerService extends Service {
 				mListeners.add(listener);
 				
 				if (mBootCompleted) {
-					listener.onBootCompleted();
+					try {
+						listener.onBootCompleted();
+					} catch (RemoteException e) {
+						removeListener(listener);
+					}
 				}
 			}
 		}
@@ -153,12 +157,22 @@ public class PackageManagerService extends Service {
 	private void onBootCompleted() {
 		mBootCompleted = true;
 		
+		ArrayList deadListeners = null;
 		for (Iterator itr = mListeners.iterator(); itr.hasNext();) {
 			IPackageManagerListener listener = (IPackageManagerListener) itr.next();
 			try {
 				listener.onBootCompleted();
 			} catch (RemoteException e) {
-				mMessenger.removeListener(listener);
+				if (deadListeners == null) {
+					deadListeners = new ArrayList();
+				}
+				deadListeners.add(listener);
+			}
+		}
+		
+		if (deadListeners != null) {
+			for (Iterator itr = deadListeners.iterator(); itr.hasNext();) {
+				mMessenger.removeListener((IPackageManagerListener) itr.next());
 			}
 		}
 	}
