@@ -18,6 +18,7 @@ public class HelloWorld extends Service {
 			case HELLO:
 				System.out.print("Hello ");
 				mWorldHandler.obtainMessage(WORLD).sendToTarget();
+				break;
 			}
 		}
 	};
@@ -29,6 +30,7 @@ public class HelloWorld extends Service {
 				System.out.println("World!");
 				Message hello = mHelloHandler.obtainMessage(HELLO);
 				mHelloHandler.sendMessageDelayed(hello, 1000);
+				break;
 			}
 		}
 	};
