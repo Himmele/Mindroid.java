@@ -5,6 +5,9 @@
     mindroid:versionName="1.0" >
 
     <application>
+    	<service
+            mindroid:name=".HelloWorld"
+            mindroid:autostart="true" />
         <service
             mindroid:name=".TestService1"
             mindroid:autostart="true"
