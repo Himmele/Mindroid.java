@@ -36,6 +36,11 @@ public class HelloWorld extends Service {
 	public void onCreate() {
 		mHelloHandler.obtainMessage(HELLO).sendToTarget();
 	}
+	
+	public void onDestroy() {
+		mHelloHandler.removeMessages(HELLO);
+		mWorldHandler.removeMessages(WORLD);
+	}
 
 	public IBinder onBind(Intent intent) {
 		return null;
