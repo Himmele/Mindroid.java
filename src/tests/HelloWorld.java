@@ -9,15 +9,15 @@ import mindroid.util.Log;
 
 public class HelloWorld extends Service {
 	private static final String LOG_TAG = "HelloWorld";
-	private static final int HELLO = 0;
-	private static final int WORLD = 1;
+	private static final int SAY_HELLO = 0;
+	private static final int SAY_WORLD = 1;
 	
 	private final Handler mHelloHandler = new Handler() {
 		public void handleMessage(Message message) {
 			switch (message.what) {
-			case HELLO:
+			case SAY_HELLO:
 				System.out.print("Hello ");
-				mWorldHandler.obtainMessage(WORLD).sendToTarget();
+				mWorldHandler.obtainMessage(SAY_WORLD).sendToTarget();
 				break;
 			}
 		}
@@ -26,9 +26,9 @@ public class HelloWorld extends Service {
 	private final Handler mWorldHandler = new Handler() {
 		public void handleMessage(Message message) {
 			switch (message.what) {
-			case WORLD:
+			case SAY_WORLD:
 				System.out.println("World!");
-				Message hello = mHelloHandler.obtainMessage(HELLO);
+				Message hello = mHelloHandler.obtainMessage(SAY_HELLO);
 				mHelloHandler.sendMessageDelayed(hello, 1000);
 				break;
 			}
@@ -36,12 +36,12 @@ public class HelloWorld extends Service {
 	};
 
 	public void onCreate() {
-		mHelloHandler.obtainMessage(HELLO).sendToTarget();
+		mHelloHandler.obtainMessage(SAY_HELLO).sendToTarget();
 	}
 	
 	public void onDestroy() {
-		mHelloHandler.removeMessages(HELLO);
-		mWorldHandler.removeMessages(WORLD);
+		mHelloHandler.removeMessages(SAY_HELLO);
+		mWorldHandler.removeMessages(SAY_WORLD);
 	}
 
 	public IBinder onBind(Intent intent) {
