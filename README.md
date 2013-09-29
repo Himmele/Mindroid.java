@@ -18,5 +18,6 @@ We also plan to make this application framework work on Java ME 8 and CLDC 8 (JS
 ### Run ###
 * Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=../../
 * Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=../../
+
 The rootDir must point to the parent directory of the apps directory to enable the package manager to find and load the apps.
 When starting the Mindroid test e.g. from out/pc rootDir has to point to "../../".
