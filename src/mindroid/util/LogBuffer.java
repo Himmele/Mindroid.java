@@ -33,7 +33,7 @@ public class LogBuffer {
 	private byte[] mArray;
 	private byte[] mIntByteArray;
 	private byte[] mLongByteArray;
-	private GregorianCalendar mCalendar = new GregorianCalendar(0);
+	private GregorianCalendar mCalendar = new GregorianCalendar();
 	private boolean mQuit = false;
 
 	public class LogMessage {

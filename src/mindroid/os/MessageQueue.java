@@ -29,6 +29,8 @@ import mindroid.util.Log;
  */
 public class MessageQueue {
     private static final String LOG_TAG = "MessageQueue";
+    private static final boolean DEBUG = false;
+    private static final int STARVATION_DELAY = 500; //ms
     private final boolean mAllowQuitMessage;
 
     Message mMessages;
@@ -114,6 +116,12 @@ public class MessageQueue {
 							// Ignore wakeups
 						}
                     } else {
+                    	if (DEBUG) {
+                    		if ((now - message.when) > STARVATION_DELAY) {
+	                        	Log.w(LOG_TAG, "Thread '" + Thread.currentThread().getName() + "' has starved " + (now - message.when) + "ms for CPU time");
+	                        }
+                    	}
+
                         mMessages = message.nextMessage;
                         message.nextMessage = null;
                         return message;

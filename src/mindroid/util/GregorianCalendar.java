@@ -177,7 +177,7 @@ package mindroid.util;
  * @see Calendar
  * @see TimeZone
  */
-public class GregorianCalendar {
+class GregorianCalendar {
 	/**
      * Value of the {@code MONTH} field indicating the first month of the
      * year.
@@ -619,7 +619,16 @@ public class GregorianCalendar {
     
     protected boolean isTimeSet;
 
-    public GregorianCalendar(long milliseconds) {
+    public GregorianCalendar() {
+    	fields = new int[FIELD_COUNT];
+    	isSet = new boolean[FIELD_COUNT];
+    	areFieldsSet = isTimeSet = false;
+    	setLenient(true);
+    	firstDayOfWeek = SUNDAY;
+    	setMinimalDaysInFirstWeek(1);
+    }
+    
+    GregorianCalendar(long milliseconds) {
     	fields = new int[FIELD_COUNT];
     	isSet = new boolean[FIELD_COUNT];
     	areFieldsSet = isTimeSet = false;      
