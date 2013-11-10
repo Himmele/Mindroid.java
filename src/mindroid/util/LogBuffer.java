@@ -125,11 +125,11 @@ public class LogBuffer {
         reset();
 	}
 	
-	public boolean enqueue(int priority, String tag, String message) {
-		return enqueue(System.currentTimeMillis(), Thread.currentThread().hashCode(), priority, tag, message);
+	public boolean offer(int priority, String tag, String message) {
+		return offer(System.currentTimeMillis(), Thread.currentThread().hashCode(), priority, tag, message);
 	}
 	
-	public synchronized boolean enqueue(long timestamp, int threadId, int priority, String tag, String message) {
+	public synchronized boolean offer(long timestamp, int threadId, int priority, String tag, String message) {
 		if (tag == null) {
 			tag = "";
 		}
@@ -164,7 +164,7 @@ public class LogBuffer {
         return true;
 	}
 	
-	public synchronized LogMessage dequeue(int minPriority) throws InterruptedException {
+	public synchronized LogMessage take(int minPriority) throws InterruptedException {
 	    while (true) {
             while (isEmpty()) {
         		wait();
@@ -187,16 +187,35 @@ public class LogBuffer {
 	    }
 	}
 	
+	public synchronized LogMessage poll(int minPriority) {
+	    while (true) {
+            if (isEmpty()) {
+        		return null;
+            }
+            int size = intFromByteArray(read(4));
+            long timestamp = longFromByteArray(read(8));
+            int threadId = intFromByteArray(read(4));
+            int priority = intFromByteArray(read(4));
+            int tagSize = intFromByteArray(read(4));
+            String tag = new String(read(tagSize));
+            int messageSize = intFromByteArray(read(4));
+            String message = new String(read(messageSize));
+            if (priority >= minPriority) {
+            	return new LogMessage(ID, timestamp, threadId, priority, tag, message);
+            }
+	    }
+	}
+	
 	public synchronized void resume() {
 		mQuit = true;
 		notify();
 	}
 	
-	private boolean isEmpty() {
+	public synchronized boolean isEmpty() {
 		return mReadIndex == mWriteIndex;
 	}
 	
-	private boolean isFull() {
+	public synchronized boolean isFull() {
 		return (mWriteIndex + 1) % SIZE == mReadIndex;
 	}
 	

@@ -45,7 +45,7 @@ public class ConsoleLogger extends Service {
 			while (!isInterrupted()) {
 				LogMessage logMessage;
 				try {
-					logMessage = mLogBuffer.dequeue(mPriority);
+					logMessage = mLogBuffer.take(mPriority);
 				} catch (InterruptedException e) {
 					break;
 				}

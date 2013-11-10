@@ -148,7 +148,7 @@ public interface IPackageManager extends IInterface {
 
 			public void addListener(IPackageManagerListener listener) {
 				if (mBinder.checkThread()) {
-					mServiceReference.addListener(listener);
+					mServiceReference.addListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
 				} else {
 					mProxy.addListener(listener);
 				}
@@ -156,7 +156,7 @@ public interface IPackageManager extends IInterface {
 
 			public void removeListener(IPackageManagerListener listener) {
 				if (mBinder.checkThread()) {
-					mServiceReference.removeListener(listener);
+					mServiceReference.removeListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
 				} else {
 					mProxy.removeListener(listener);
 				}

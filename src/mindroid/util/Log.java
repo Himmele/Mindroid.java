@@ -295,10 +295,10 @@ public final class Log {
     public static int println(int logId, int priority, String tag, String msg) {
     	switch (logId) {
     	case LOG_ID_MAIN:
-    		sMainLogBuffer.enqueue(priority, tag, msg);
+    		sMainLogBuffer.offer(priority, tag, msg);
     		return 0;
     	case LOG_ID_TASK_MANAGER:
-    		sTaskManagerLogBuffer.enqueue(priority, tag, msg);
+    		sTaskManagerLogBuffer.offer(priority, tag, msg);
     		return 0;
     	default:
     		return -1;
@@ -309,10 +309,10 @@ public final class Log {
     public static int println(int logId, long timestamp, int threadId, int priority, String tag, String msg) {
     	switch (logId) {
     	case LOG_ID_MAIN:
-    		sMainLogBuffer.enqueue(timestamp, threadId, priority, tag, msg);
+    		sMainLogBuffer.offer(timestamp, threadId, priority, tag, msg);
     		return 0;
     	case LOG_ID_TASK_MANAGER:
-    		sTaskManagerLogBuffer.enqueue(timestamp, threadId, priority, tag, msg);
+    		sTaskManagerLogBuffer.offer(timestamp, threadId, priority, tag, msg);
     		return 0;
     	default:
     		return -1;
