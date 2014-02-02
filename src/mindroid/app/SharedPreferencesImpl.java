@@ -73,7 +73,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
             mFile.delete();
             mBackupFile.renameTo(mFile);
         }
-
+        
         Map map = null;
         try {
             if (mFile.canRead()) {

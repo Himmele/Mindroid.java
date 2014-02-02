@@ -19,8 +19,9 @@ package mindroid.app;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -39,7 +40,7 @@ import mindroid.util.Log;
 public class Process {
 	private static final String LOG_TAG = "Process";
 	private final String mName;
-	private final Hashtable mServices;
+	private final HashMap mServices;
 	private final HandlerThread mMainThread;
 	private ThreadGroup mThreadGroup;
 	private MainHandler mMainHandler;
@@ -53,6 +54,7 @@ public class Process {
 	
 	public Process(String name) {
 		mName = name;
+		mServices = new HashMap();
 		mThreadGroup = new ThreadGroup("Process {" + name + "}") {
 			public void uncaughtException(Thread thread, Throwable e) {
 				Log.e(LOG_TAG, "Uncaught exception: " + e.getMessage(), e);
@@ -63,45 +65,46 @@ public class Process {
 				}
 				synchronized (mServices) {
 					mUncaughtException = true;
-					mServices.notify();
+					mServices.notifyAll();
 				}
 				super.uncaughtException(thread, e);
 			}
 		};
 		mMainThread = new HandlerThread(mThreadGroup, "Process {" + name + "}");
-		mServices = new Hashtable();
 		mDebug = Debug.Creator.createInstance();
 	}
 	
 	public void start() {
-		Log.i(LOG_TAG, "Starting process " + mName);
+		Log.d(LOG_TAG, "Starting process " + mName);
 		mMainThread.start();
 		mDebug.start(this);
 		mMainHandler = new MainHandler(mMainThread.getLooper());
 	}
 	
 	public void stop() {
-		Enumeration iterator = mServices.keys();
-    	while (iterator.hasMoreElements()) {
-    		ComponentName component = (ComponentName) iterator.nextElement();
-    		Intent intent = new Intent();
-    		intent.setComponent(component);
-    		Bundle data = new Bundle();
-    		data.putObject("intent", intent);
-    		Message msg = mMainHandler.obtainMessage(MainHandler.STOP_SERVICE);
-    		msg.setData(data);
-    		msg.sendToTarget();
-    	}
-    	synchronized (mServices) {
+		synchronized (mServices) {
+			Iterator itr = mServices.entrySet().iterator();
+		    while (itr.hasNext()) {
+		    	Map.Entry pair = (Map.Entry) itr.next();
+		    	ComponentName component = (ComponentName) pair.getKey();
+	    		Intent intent = new Intent();
+	    		intent.setComponent(component);
+	    		Bundle data = new Bundle();
+	    		data.putObject("intent", intent);
+	    		Message msg = mMainHandler.obtainMessage(MainHandler.STOP_SERVICE);
+	    		msg.setData(data);
+	    		msg.sendToTarget();
+		    }
+    	
 	    	while (!mServices.isEmpty() && !mUncaughtException) {
 	    		try {
-	    			// Do not remove the timeout. Had some problems during testing.
-					mServices.wait(1000);
+					mServices.wait();
 				} catch (InterruptedException e) {
+					break;
 				}
 	    	}
     	}
-    	
+		
     	mDebug.stop();
     	
 		mMainThread.quit();
@@ -110,7 +113,7 @@ public class Process {
 		} catch (InterruptedException e) {			
 		}
 		
-		Log.i(LOG_TAG, "Process " + mName + " has been stopped.");
+		Log.d(LOG_TAG, "Process " + mName + " has been stopped.");
 	}
 	
 	public void createService(Intent intent, ServiceInfo serviceInfo, Message reply) {
@@ -190,6 +193,10 @@ public class Process {
 		mMainHandler.post(action);
 	}
 	
+	public boolean isAlive() {
+		return mMainThread.isAlive();
+	}
+	
 	public void setUncaughtExceptionHandler(UncaughtExceptionHandler handler) {
 		synchronized (this) {
 			mUncaughtExceptionHandler = handler;
@@ -244,7 +251,7 @@ public class Process {
 				} break;
 			}
 	    }
-	}	
+	}
 	
 	private void handleCreateService(Intent intent, ServiceInfo serviceInfo, Message reply) {
         Service service = null;
@@ -262,7 +269,9 @@ public class Process {
         	}
         	if (service != null) {
 				service.attach(new ContextImpl(mMainThread, intent.getComponent()), this, intent.getComponent());
-				mServices.put(intent.getComponent(), service);
+				synchronized (mServices) {
+					mServices.put(intent.getComponent(), service);
+				}
 				service.onCreate();
 				reply.arg1 = 0;
 				reply.sendToTarget();
@@ -273,13 +282,15 @@ public class Process {
         } catch (Exception e) {
         	reply.arg1 = -1;
         	reply.sendToTarget();
-        	Log.e(LOG_TAG, "Cannot create service " + componentName + ": " + e, e);
-        	throw new RuntimeException(e.getMessage(), e.getCause());
+        	Log.d(LOG_TAG, "Cannot create service " + componentName + ": " + e, e);
         }
     }
 	
 	private void handleStartService(Intent intent, int flags, int startId, Message reply) {
-		Service service = (Service) mServices.get(intent.getComponent());
+		Service service;
+		synchronized (mServices) {
+			service = (Service) mServices.get(intent.getComponent());
+		}
 		if (service != null) {
 	        service.onStartCommand(intent, flags, startId);
 	        reply.sendToTarget();
@@ -287,25 +298,31 @@ public class Process {
     }
 	
 	private void handleStopService(Intent intent, Message reply) {
-		Service service = (Service) mServices.get(intent.getComponent());
+		Service service;
+		synchronized (mServices) {
+			service = (Service) mServices.get(intent.getComponent());
+		}
 		if (service != null) {
 			service.onDestroy();
 			Context context = service.getBaseContext();
 			if (context instanceof ContextImpl) {
 				((ContextImpl) context).cleanup();
 			}
-	        mServices.remove(intent.getComponent());
+			synchronized (mServices) {
+				mServices.remove(intent.getComponent());
+				mServices.notifyAll();
+			}
 	        if (reply != null) {
 	        	reply.sendToTarget();
 	        }
 		}
-        synchronized (mServices) {
-        	mServices.notify();
-        }
     }
 	
 	private void handleBindService(Intent intent, ServiceConnection conn, int flags, Message reply) {
-		Service service = (Service) mServices.get(intent.getComponent());
+		Service service;
+		synchronized (mServices) {
+			service = (Service) mServices.get(intent.getComponent());
+		}
 		if (service != null) {
 	        IBinder binder = service.onBind(intent);
 	        reply.getData().putObject("binder", binder);
@@ -314,7 +331,10 @@ public class Process {
     }
 	
 	private void handleUnbindService(Intent intent, Message reply) {
-		Service service = (Service) mServices.get(intent.getComponent());
+		Service service;
+		synchronized (mServices) {
+			service = (Service) mServices.get(intent.getComponent());
+		}
 		if (service != null) {
 	        service.onUnbind(intent);
 	        reply.sendToTarget();

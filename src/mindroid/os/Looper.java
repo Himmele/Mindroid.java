@@ -102,7 +102,7 @@ public class Looper {
      * null if the calling thread is not associated with a Looper.
      */
     public static Looper myLooper() {
-        return (Looper)sThreadLocal.get();
+        return (Looper) sThreadLocal.get();
     }    
     
     /**

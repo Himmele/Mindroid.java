@@ -27,18 +27,26 @@ public class SettableFuture {
 		return mIsDone;
 	}
 	
-	public synchronized Object get() throws InterruptedException {
+	public synchronized Object get() {
 		while (!isDone()) {
-			wait();
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				throw new CancellationException("Binder transaction aborted");
+			}
 		}
 		return mObject;
 	}
 	
-	public synchronized Object get(long timeout) throws InterruptedException {
+	public synchronized Object get(long timeout) {
 		long startTime = System.currentTimeMillis();
 		long endTime = startTime;
 		while (!isDone() && (endTime - startTime < timeout)) {
-			wait(timeout - (endTime - startTime));
+			try {
+				wait(timeout - (endTime - startTime));
+			} catch (InterruptedException e) {
+				throw new CancellationException("Binder transaction aborted");
+			}
 			endTime = System.currentTimeMillis();
 		}
 		return mObject;

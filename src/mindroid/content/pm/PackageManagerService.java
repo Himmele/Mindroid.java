@@ -61,7 +61,7 @@ public class PackageManagerService extends Service {
 	private boolean mBootCompleted = false;
 
 	public void onCreate() {
-		ServiceManager.addService(Context.PACKAGE_MANAGER, mMessenger);
+		ServiceManager.addService(Context.PACKAGE_MANAGER, mBinder);
 		
 		mHandler = new PackageHandler();
 	}
@@ -79,10 +79,10 @@ public class PackageManagerService extends Service {
 	}
 	
 	public IBinder onBind(Intent intent) {
-		return mMessenger;
+		return mBinder;
 	}
 	
-	private final IPackageManager.Stub mMessenger = new IPackageManager.Stub() {
+	private final IPackageManager.Stub mBinder = new IPackageManager.Stub() {
 		public ServiceInfo resolveService(Intent service) {
 			return (ServiceInfo) mServices.get(service.getComponent());
 		}
@@ -172,7 +172,7 @@ public class PackageManagerService extends Service {
 		
 		if (deadListeners != null) {
 			for (Iterator itr = deadListeners.iterator(); itr.hasNext();) {
-				mMessenger.removeListener((IPackageManagerListener) itr.next());
+				mBinder.removeListener((IPackageManagerListener) itr.next());
 			}
 		}
 	}
@@ -207,7 +207,7 @@ public class PackageManagerService extends Service {
 					} catch (IOException ex) {
 						Log.e(LOG_TAG, "Cannot read manifest file in jar");
 					} finally {
-						if(inputStream != null) {
+						if (inputStream != null) {
 							try {
 								inputStream.close();
 							} catch(IOException e) {

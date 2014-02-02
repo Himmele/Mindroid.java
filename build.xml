@@ -226,12 +226,14 @@
 					<include name="mindroid/os/Message.java"/>
 					<include name="mindroid/os/MessageQueue.java"/>
 					<include name="mindroid/os/RemoteException.java"/>
+					<include name="mindroid/os/Runtime.java"/>
 					<include name="mindroid/os/SerialExecutor.java"/>
 					<include name="mindroid/os/SystemClock.java"/>
 					<include name="mindroid/os/ThreadPoolExecutor.java"/>
 					<include name="mindroid/util/Base64.java"/>
 					<include name="mindroid/util/Log.java"/>
 					<include name="mindroid/util/Pair.java"/>
+					<include name="mindroid/util/concurrent/CancellationException.java"/>
 					<include name="mindroid/util/concurrent/SettableFuture.java"/>
 				</fileset>
 			</sourcefiles>

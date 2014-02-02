@@ -92,10 +92,7 @@ public interface IPackageManager extends IInterface {
 				msg.setData(data);
 				msg.sendToTarget();
 				ServiceInfo serviceInfo = null;
-				try {
-					serviceInfo = (ServiceInfo) future.get();
-				} catch (InterruptedException e) {
-				}
+				serviceInfo = (ServiceInfo) future.get();
 				return serviceInfo;
 			}
 
@@ -114,10 +111,7 @@ public interface IPackageManager extends IInterface {
 				Message msg = mBinder.obtainMessage(MSG_GET_AUTOSTART_SERVICES, future);
 	        	msg.sendToTarget();
 	        	ComponentName[] components = null;
-				try {
-					components = (ComponentName[]) future.get();
-				} catch (InterruptedException e) {
-				}
+				components = (ComponentName[]) future.get();
 				return components;
 			}
 		}

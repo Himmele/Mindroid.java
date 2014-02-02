@@ -137,11 +137,7 @@ public interface IServiceManager extends IInterface {
 				data.putObject("future", future);
 				msg.setData(data);
 				msg.sendToTarget();
-				ComponentName component = null;
-				try {
-					component = (ComponentName) future.get();
-				} catch (InterruptedException e) {
-				}
+				ComponentName component = (ComponentName) future.get();
 				return component;
 			}
 			
@@ -154,11 +150,7 @@ public interface IServiceManager extends IInterface {
 				data.putObject("future", future);
 				msg.setData(data);
 				msg.sendToTarget();
-				Boolean result = new Boolean(false);
-				try {
-					result = (Boolean) future.get();
-				} catch (InterruptedException e) {
-				}
+				Boolean result = (Boolean) future.get();
 				return result.booleanValue();
 			}
 			
@@ -173,11 +165,7 @@ public interface IServiceManager extends IInterface {
 				data.putObject("future", future);
 				msg.setData(data);
 				msg.sendToTarget();
-				Boolean result = new Boolean(false);
-				try {
-					result = (Boolean) future.get();
-				} catch (InterruptedException e) {
-				}
+				Boolean result = (Boolean) future.get();
 				return result.booleanValue();
 			}
 			
@@ -199,11 +187,7 @@ public interface IServiceManager extends IInterface {
 				data.putObject("future", future);
 				msg.setData(data);
 				msg.sendToTarget();
-				ComponentName component = null;
-				try {
-					component = (ComponentName) future.get();
-				} catch (InterruptedException e) {
-				}
+				ComponentName component = (ComponentName) future.get();
 				return component;
 			}
 
@@ -215,11 +199,7 @@ public interface IServiceManager extends IInterface {
 				data.putObject("future", future);
 				msg.setData(data);
 				msg.sendToTarget();
-				Boolean result = new Boolean(false);
-				try {
-					result = (Boolean) future.get();
-				} catch (InterruptedException e) {
-				}
+				Boolean result = (Boolean) future.get();
 				return result.booleanValue();
 			}
 		}
