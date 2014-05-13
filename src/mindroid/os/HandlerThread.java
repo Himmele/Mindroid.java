@@ -70,6 +70,7 @@ public class HandlerThread extends Thread {
                 try {
                     wait();
                 } catch (InterruptedException e) {
+                	return null;
                 }
             }
         }

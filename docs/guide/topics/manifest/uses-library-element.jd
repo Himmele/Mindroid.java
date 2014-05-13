@@ -1,0 +1,85 @@
+page.title=&lt;uses-library&gt;
+parent.title=The MindroidManifest.xml File
+parent.link=manifest-intro.html
+@jd:body
+
+<dl class="xml">
+
+<dt>syntax:</dt>
+<dd>
+<pre class="stx">
+&lt;uses-library
+  mindroid:<a href="#nm">name</a>="<var>string</var>"
+  mindroid:<a href="#rq">required</a>=["true" | "false"] /&gt;
+</pre>
+</dd>
+<dt>contained in:</dt>
+<dd>
+    <code>
+        <a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a>
+    </code>
+</dd>
+<dt>description:</dt>
+<dd>
+    Specifies a shared library that the application must be linked against.
+    This element tells the system to include the library's code in the class
+    loader for the package.
+    <p>
+        All of the {@code mindorid} packages (such as {@link mindroid.app},
+        {@link mindroid.content}, and {@link mindroid.os})
+        are in the default library that all applications are automatically linked
+        against.  However, additional packages are
+        in separate libraries that are not automatically linked.  Consult the
+        documentation for the packages you're using to determine which library
+        contains the package code.
+    </p>    
+    <dl>
+        <dt><em>Installation</em></dt>
+        <dd>
+            If this element is present and its {@code mindroid:required} attribute is set to
+            {@code true}, the Mindroid package manager framework won't let the user
+            install the application unless the library is present on the user's device.
+        </dd>
+    </dl>
+    <p>
+        The {@code mindroid:required} attribute is described in detail in the following section.
+    </p>
+</dd>
+<dt>attributes:</dt>
+<dd>
+    <dl class="attr">
+        <dt><a name="nm"></a>{@code mindroid:name}</dt>
+        <dd>
+            The name of the library. The name is provided by the
+            documentation for the package you are using.
+        </dd>
+        <dt><a name="rq"></a>{@code mindroid:required}</dt>
+        <dd>
+            Boolean value that indicates whether the application requires the
+            library specified by {@code mindroid:name}:
+            <ul>
+                <li>
+                    <code>&quot;true&quot;</code>: The application does not function without this
+                    library. The system will not allow the application on a device that does not
+                    have the library.
+                </li>
+                <li>
+                    <code>&quot;false&quot;</code>: The application can use the
+                    library if present, but is designed to function without it if necessary.
+                    The system will allow the application to be installed, even if the library is
+                    not present. If you use <code>&quot;false&quot;</code>, you are responsible for
+                    checking at runtime that the library is available.
+                    <p>
+                        To check for a library, you can use reflection to determine
+                        if a particular class is available.
+                    </p>
+                </li>
+            </ul>
+            <p>
+                The default is <code>&quot;true&quot;</code>.
+            </p>            
+        </dd>
+    </dl>
+</dd>
+
+</dl>

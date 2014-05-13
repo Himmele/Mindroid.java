@@ -166,7 +166,7 @@ public abstract class AsyncTask {
 		mWorkerRunnable = new WorkerRunnable(this);
     }
     
-    public AsyncTask execute(Object params) {
+    public AsyncTask execute(Object[] params) {
 		if (mExecutor == null) {
 			mExecutor = SERIAL_EXECUTOR;
 			onPreExecute();
@@ -178,7 +178,7 @@ public abstract class AsyncTask {
 		}
 	}
     
-    public AsyncTask executeOnExecutor(Executor executor, Object params) {
+    public AsyncTask executeOnExecutor(Executor executor, Object[] params) {
 		if (mExecutor == null) {
 			mExecutor = executor;
 			onPreExecute();
@@ -206,7 +206,7 @@ public abstract class AsyncTask {
      * @see #onPostExecute
      * @see #publishProgress
      */
-    protected abstract Object doInBackground(Object params);
+    protected abstract Object doInBackground(Object[] params);
 
     /**
      * Runs on the UI thread before {@link #doInBackground}.
@@ -241,7 +241,7 @@ public abstract class AsyncTask {
      * @see #publishProgress
      * @see #doInBackground
      */    
-    protected void onProgressUpdate(Object values) {
+    protected void onProgressUpdate(Object[] values) {
     }
 
     /**
@@ -326,14 +326,12 @@ public abstract class AsyncTask {
 		boolean isAlreadyCancelled = isCancelled();
 		synchronized (this) {
 			if (mExecutor != null && !isAlreadyCancelled) {
-				boolean result = mExecutor.cancel(mWorkerRunnable);
-				if (result) {
-					mCancelled = true;
-					Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
-					message.obj = mWorkerRunnable;
-					message.sendToTarget();
-				}
-				return result;
+				mExecutor.cancel(mWorkerRunnable);
+				mCancelled = true;
+				Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
+				message.obj = mWorkerRunnable;
+				message.sendToTarget();
+				return true;
 			} else {
 				return false;
 			}
@@ -366,7 +364,7 @@ public abstract class AsyncTask {
      * @see #onProgressUpdate
      * @see #doInBackground
      */
-    protected final void publishProgress(Object values) {
+    protected final void publishProgress(Object[] values) {
         if (!isCancelled()) {
         	Message message = mHandler.obtainMessage(ON_PROGRESS_UPDATE_MESSAGE);
     		message.obj = new AsyncTaskResult(this, values);
@@ -402,7 +400,7 @@ public abstract class AsyncTask {
 	
 	class WorkerRunnable implements Runnable {
 		private AsyncTask mTask;
-		private Object mParams;
+		private Object[] mParams;
 		private Object mResult;
 		
 		public WorkerRunnable(AsyncTask task) {
@@ -411,17 +409,19 @@ public abstract class AsyncTask {
 	
 		public void run() {
 			mResult = mTask.doInBackground(mParams);
-			Message message = mTask.mHandler.obtainMessage(ON_POST_EXECUTE_MESSAGE);
-			message.obj = this;
-			message.sendToTarget();
+			if (!isCancelled()) {
+				Message message = mTask.mHandler.obtainMessage(ON_POST_EXECUTE_MESSAGE);
+				message.obj = this;
+				message.sendToTarget();
+			}
 		}
 	}
 	
 	class AsyncTaskResult {
 		private AsyncTask mTask;
-		private Object mValues;
-			
-		public AsyncTaskResult(AsyncTask task, Object values) {
+		private Object[] mValues;
+		
+		public AsyncTaskResult(AsyncTask task, Object[] values) {
 			mTask = task;
 			mValues = values;
 		}

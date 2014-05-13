@@ -56,6 +56,8 @@ public final class Log {
     public static final int WARN = 3;
     public static final int ERROR = 4;
     public static final int WTF = 5;
+    
+    private static final int MAX_STACK_TRACE_SIZE = 4096;
 
     private Log() {
     }
@@ -224,7 +226,12 @@ public final class Log {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         tr.printStackTrace(pw);
-        return sw.toString();
+        String stackTrace = sw.toString();
+        if (stackTrace.length() > MAX_STACK_TRACE_SIZE) {
+            return stackTrace.substring(0, MAX_STACK_TRACE_SIZE - 4) + " ...";
+        } else {
+            return stackTrace;
+        }
     }
     
     /** @hide */
@@ -322,7 +329,8 @@ public final class Log {
     /** @hide */ public static final int LOG_ID_MAIN = 0;
     /** @hide */ public static final int LOG_ID_TASK_MANAGER = 1;
     
-    private static final int SIZE_256_KB = 262144;
-	private static LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, SIZE_256_KB);
-	private static LogBuffer sTaskManagerLogBuffer = new LogBuffer(LOG_ID_TASK_MANAGER, SIZE_256_KB);
+    private static final int LOG_BUFFER_SIZE_256KB = 262144;
+    private static final int LOG_BUFFER_SIZE_512KB = 524288;
+	private static LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, LOG_BUFFER_SIZE_512KB);
+	private static LogBuffer sTaskManagerLogBuffer = new LogBuffer(LOG_ID_TASK_MANAGER, LOG_BUFFER_SIZE_256KB);
 }

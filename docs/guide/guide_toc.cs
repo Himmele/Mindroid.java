@@ -43,6 +43,7 @@
           <li><a href="<?cs var:toroot ?>guide/topics/manifest/application-element.html">&lt;application&gt;</a></li>
           <li><a href="<?cs var:toroot ?>guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></li>
           <li><a href="<?cs var:toroot ?>guide/topics/manifest/service-element.html">&lt;service&gt;</a></li>
+		  <li><a href="<?cs var:toroot ?>guide/topics/manifest/uses-library-element.html">&lt;uses-library&gt;</a></li>
         </ul>
       </li>
     </ul>
@@ -57,7 +58,7 @@
             <span class="en">Storage Options</span>
            </a></li>
       </ul>
-  </li>
+  </li>  
 </ul>
 
 

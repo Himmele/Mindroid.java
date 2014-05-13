@@ -21,7 +21,8 @@ public class SerialExecutor extends Executor {
 	private Handler mHandler;
 	
 	public SerialExecutor() {
-		mHandlerThread = new HandlerThread();
+		mHandlerThread = new HandlerThread("SerialExecutor");
+		mHandlerThread.setPriority(Thread.MIN_PRIORITY);
 		mHandlerThread.start();
 		mHandler = new Handler(mHandlerThread.getLooper());
 	}
@@ -31,7 +32,7 @@ public class SerialExecutor extends Executor {
 		try {
 			mHandlerThread.join();
 		} catch (InterruptedException e) {
-			// Ignore exceptions while shutting down.
+			// Ignore exceptions during shutdown.
 		}
 	}
 
@@ -40,6 +41,7 @@ public class SerialExecutor extends Executor {
 	}
 
 	public boolean cancel(Runnable runnable) {
-		return mHandler.removeCallbacks(runnable);
+		mHandler.removeCallbacks(runnable);
+		return true;
 	}
 }

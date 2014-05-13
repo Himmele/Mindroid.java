@@ -8,6 +8,10 @@ page.title=The MindroidManifest.xml File
 <ol>
 <li><a href="#filestruct">Structure of the Manifest File</a></li>
 <li><a href="#filec">File Conventions</a>
+<li><a href="#filef">File Features</a>
+	<ol>
+	<li><a href="#libs">Libraries</a></li>
+	</ol></li>
 </ol>
 </div>
 </div>
@@ -57,6 +61,8 @@ other mention of the element name.
         <a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a>
         <a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;/service&gt;</a>
 
+        <a href="{@docRoot}guide/topics/manifest/uses-library-element.html">&lt;uses-library /&gt;</a>		
+
     <a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;/application&gt;</a>
 
 <a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;/manifest&gt;</a>
@@ -72,6 +78,7 @@ add your own elements or attributes.
 <code><a href="{@docRoot}guide/topics/manifest/application-element.html">&lt;application&gt;</a></code>
 <br/><code><a href="{@docRoot}guide/topics/manifest/manifest-element.html">&lt;manifest&gt;</a></code>
 <br/><code><a href="{@docRoot}guide/topics/manifest/service-element.html">&lt;service&gt;</a></code>
+<br/><code><a href="{@docRoot}guide/topics/manifest/uses-library-element.html">&lt;uses-library&gt;</a></code>
 </p>
 
 
@@ -165,3 +172,27 @@ When starting a component, Mindroid creates an instance of the named subclass.
 If a subclass isn't specified, it creates an instance of the base class.
 </p></dd>
 
+
+<h2 id="filef">File Features</h2>
+
+<p>
+The following sections describe how some Mindroid features are reflected 
+in the manifest file.
+</p>
+
+
+<h3 id="libs">Libraries</h3>
+
+<p>
+Every application is linked against the default Mindroid library, which 
+includes the basic packages for building applications (with common classes 
+such as Service, Intent, and so on).
+</p>
+
+<p>
+However, some packages reside in their own libraries.  If your application 
+uses code from any of these packages, it must explicitly asked to be linked 
+against them.  The manifest must contain a separate 
+<code><a href="{@docRoot}guide/topics/manifest/uses-library-element.html">&lt;uses-library&gt;</a></code> 
+element to name each of the libraries.
+</p>

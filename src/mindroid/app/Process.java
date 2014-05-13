@@ -19,8 +19,10 @@ package mindroid.app;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
@@ -262,7 +264,15 @@ public class Process {
 	        	Class clazz = Class.forName(componentName);
 				service = (Service) clazz.newInstance();
         	} else {
-				URLClassLoader classLoader = new URLClassLoader(new URL[]{ new File(serviceInfo.applicationInfo.fileName).toURL() },
+        		List urls = new ArrayList();
+        		if (serviceInfo.applicationInfo.libraries != null) {
+        			for (int i = 0; i < serviceInfo.applicationInfo.libraries.length; i++) {
+        				urls.add(new File(serviceInfo.applicationInfo.libraries[i]).toURI().toURL());
+        			}
+        		}
+        		urls.add(new File(serviceInfo.applicationInfo.fileName).toURI().toURL());
+        		
+				URLClassLoader classLoader = new URLClassLoader((URL[]) urls.toArray(new URL[urls.size()]),
 						getClass().getClassLoader());
 				Class clazz = Class.forName(componentName, true, classLoader);
 				service = (Service) clazz.newInstance();

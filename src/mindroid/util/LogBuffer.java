@@ -91,7 +91,7 @@ public class LogBuffer {
 		}
 		
 		private String toHexString(int value) {
-			String hexString = Integer.toHexString(mThreadId);
+			String hexString = Integer.toHexString(value);
 			switch (hexString.length()) {
 			case 1:
 				return "0000000" + hexString;

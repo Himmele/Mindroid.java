@@ -138,9 +138,7 @@ def:custom_left_nav() ?><?cs
   if:fullpage ?><?cs 
     call:fullpage() ?><?cs 
   elif:guide ?><?cs 
-    call:guide_nav() ?><?cs 
-  elif:test ?><?cs 
-    call:test_nav() ?><?cs
+    call:guide_nav() ?><?cs   
   else ?><?cs 
     call:default_left_nav() ?> <?cs 
   /if ?><?cs 

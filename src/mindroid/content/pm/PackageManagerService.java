@@ -49,6 +49,7 @@ public class PackageManagerService extends Service {
 	private static final String LOG_TAG = "PackageManager";
 	private static final String MANIFEST_TAG = "manifest";
 	private static final String APPLICATION_TAG = "application";
+	private static final String USES_LIBRARY_TAG = "uses-library";
 	private static final String SERVICE_TAG = "service";
 	private static final int MSG_PUBLISH_SERVICES = 1;
 	private static final int MSG_BOOT_COMPLETED = 2;
@@ -299,12 +300,18 @@ public class PackageManagerService extends Service {
 		ai.processName = appProcessName;
 		ai.enabled = appEnabled;
 		
+		List libraries = new ArrayList();
 		List services = new ArrayList();
 		for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
 			}
-			if (parser.getName().equals(SERVICE_TAG)) {
+			if (parser.getName().equals(USES_LIBRARY_TAG)) {
+				String library = parseLibrary(parser);
+				if (library != null) {
+					libraries.add(library);
+				}
+			} else if (parser.getName().equals(SERVICE_TAG)) {
 				ServiceInfo si = parseService(parser, ai);
 				if (si != null) {
 					services.add(si);
@@ -317,7 +324,43 @@ public class PackageManagerService extends Service {
 		}
 		
 		parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);
+		
+		if (libraries.size() > 0) {
+			ai.libraries = (String[]) libraries.toArray(new String[libraries.size()]);
+		}
+		
 		return services;
+	}
+	
+	String parseLibrary(KXmlParser parser) throws IOException, XmlPullParserException {
+		parser.require(XmlPullParser.START_TAG, null, USES_LIBRARY_TAG);
+
+		String libraryName = null;
+		for (int i = 0; i < parser.getAttributeCount(); i++) {
+			String attributeName = parser.getAttributeName(i);
+			String attributeValue = parser.getAttributeValue(i);
+			if (attributeName.equals("name")) {
+				libraryName = attributeValue + ".jar";
+			}
+		}
+		
+		for (int eventType = parser.nextTag(); !parser.getName().equals(USES_LIBRARY_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+			if (eventType == XmlPullParser.END_TAG) {
+				throw new XmlPullParserException("Invalid XML format");
+			}
+			String tag = parser.getName();
+			parser.skipSubTree();
+			parser.require(XmlPullParser.END_TAG, null, tag);
+		}
+		
+		
+		parser.require(XmlPullParser.END_TAG, null, USES_LIBRARY_TAG);
+		
+		if (libraryName != null) {
+			return new File(Environment.getAppsDirectory() + File.separator + libraryName).getAbsolutePath();
+		} else {
+			return null;
+		}
 	}
 	
 	ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
@@ -366,7 +409,7 @@ public class PackageManagerService extends Service {
 		}
 		
 		boolean classNotFound = false;
-		URLClassLoader classLoader = new URLClassLoader(new URL[]{ new File(ai.fileName).toURL() },
+		URLClassLoader classLoader = new URLClassLoader(new URL[]{ new File(ai.fileName).toURI().toURL() },
 				getClass().getClassLoader());
 		try {
 			Class clazz = Class.forName(serviceName, false, classLoader);

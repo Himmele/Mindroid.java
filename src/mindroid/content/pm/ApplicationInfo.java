@@ -41,6 +41,8 @@ public class ApplicationInfo {
     
     public String fileName = null;
     
+    public String[] libraries = null;
+    
     public ApplicationInfo() {
     }
 }

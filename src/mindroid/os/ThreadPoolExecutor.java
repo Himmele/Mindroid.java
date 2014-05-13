@@ -34,7 +34,8 @@ public class ThreadPoolExecutor extends Executor {
 	
 	public void start() {
 		for (int i = 0; i < THREAD_POOL_SIZE; i++) {
-			mWorkerThreads[i] = new WorkerThread();
+			mWorkerThreads[i] = new WorkerThread("ThreadPoolExecutor[Worker " + i + "]");
+			mWorkerThreads[i].setPriority(Thread.MIN_PRIORITY);
 			mWorkerThreads[i].setQueue(mQueue);
 			mWorkerThreads[i].start();
 		}
@@ -58,7 +59,8 @@ public class ThreadPoolExecutor extends Executor {
 	}
 	
 	public boolean cancel(Runnable runnable) {
-		return mQueue.remove(runnable);
+		mQueue.remove(runnable);
+		return true;
 	}
 	
 	class AtomicBoolean {
@@ -95,7 +97,8 @@ public class ThreadPoolExecutor extends Executor {
 		private LinkedBlockingQueue mQueue;
 		private AtomicBoolean mIsInterrupted;
 
-		public WorkerThread() {
+		public WorkerThread(String name) {
+			super(name);
 			mIsInterrupted = new AtomicBoolean(false);
 		}
 		
