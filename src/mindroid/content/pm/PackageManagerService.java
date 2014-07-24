@@ -325,10 +325,31 @@ public class PackageManagerService extends Service {
 		
 		parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);
 		
+		URL[] urls = new URL[libraries.size() + 1];
 		if (libraries.size() > 0) {
 			ai.libraries = (String[]) libraries.toArray(new String[libraries.size()]);
+			for (int i = 0; i < ai.libraries.length; i++) {
+				urls[i] = new File(ai.libraries[i]).toURI().toURL();
+			}
 		}
-		
+
+		for (Iterator itr = services.iterator(); itr.hasNext();) {
+			ServiceInfo serviceInfo = (ServiceInfo) itr.next();
+
+			urls[urls.length - 1] = new File(ai.fileName).toURI().toURL();
+			boolean classNotFound = false;
+			URLClassLoader classLoader = new URLClassLoader(urls, getClass().getClassLoader());
+			try {
+				Class clazz = Class.forName(serviceInfo.serviceName, false, classLoader);
+			} catch (ClassNotFoundException e) {
+				Log.e(LOG_TAG, "Cannot find service " + serviceInfo.serviceName + " in file " + ai.fileName, e);
+				classNotFound = true;
+			}
+			if (classNotFound) {
+				itr.remove();
+			}
+		}
+
 		return services;
 	}
 	
@@ -352,7 +373,6 @@ public class PackageManagerService extends Service {
 			parser.skipSubTree();
 			parser.require(XmlPullParser.END_TAG, null, tag);
 		}
-		
 		
 		parser.require(XmlPullParser.END_TAG, null, USES_LIBRARY_TAG);
 		
@@ -399,7 +419,7 @@ public class PackageManagerService extends Service {
 				} else if (attributeValue.equals("false")) {
 					autostart = false;
 				} else {
-					throw new XmlPullParserException("Unknwon value for service attribute 'autostart'");
+					throw new XmlPullParserException("Unknown value for service attribute 'autostart'");
 				}
 			}
 		}
@@ -407,26 +427,14 @@ public class PackageManagerService extends Service {
 		if (serviceName == null) {
 			throw new XmlPullParserException("Undefined serviceName");
 		}
-		
-		boolean classNotFound = false;
-		URLClassLoader classLoader = new URLClassLoader(new URL[]{ new File(ai.fileName).toURI().toURL() },
-				getClass().getClassLoader());
-		try {
-			Class clazz = Class.forName(serviceName, false, classLoader);
-		} catch (ClassNotFoundException e) {
-			Log.e(LOG_TAG, "Cannot find service " + serviceName + " in file " + ai.fileName);
-			classNotFound = true;
-		}
-		ServiceInfo si = null;
-		if (!classNotFound) {
-			si = new ServiceInfo();
-			si.applicationInfo = ai;
-			si.processName = processName;
-			si.serviceName = serviceName;
-			si.enabled = enabled;
-			si.autostart = autostart;
-		}
-		
+
+		ServiceInfo si = new ServiceInfo();
+		si.applicationInfo = ai;
+		si.processName = processName;
+		si.serviceName = serviceName;
+		si.enabled = enabled;
+		si.autostart = autostart;
+
 		for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			if (eventType == XmlPullParser.END_TAG) {
 				throw new XmlPullParserException("Invalid XML format");
