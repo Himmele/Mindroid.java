@@ -261,8 +261,14 @@ public class Process {
         try {
         	componentName = intent.getComponent().getPackageName() + "." + intent.getComponent().getClassName();
         	if (serviceInfo.systemService) {
-	        	Class clazz = Class.forName(componentName);
-				service = (Service) clazz.newInstance();
+        		try {
+		        	Class clazz = Class.forName(componentName);
+					service = (Service) clazz.newInstance();
+        		} catch (Exception e) {
+        			Log.e(LOG_TAG, "Cannot find class \'" + componentName + "\': "+ e.getMessage(), e);
+        		} catch (LinkageError e) {
+        			Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
+        		}
         	} else {
         		List urls = new ArrayList();
         		if (serviceInfo.applicationInfo.libraries != null) {
@@ -274,8 +280,14 @@ public class Process {
         		
 				URLClassLoader classLoader = new URLClassLoader((URL[]) urls.toArray(new URL[urls.size()]),
 						getClass().getClassLoader());
-				Class clazz = Class.forName(componentName, true, classLoader);
-				service = (Service) clazz.newInstance();
+				try {
+					Class clazz = Class.forName(componentName, true, classLoader);
+					service = (Service) clazz.newInstance();
+				} catch (Exception e) {
+					Log.e(LOG_TAG, "Cannot find class \'" + componentName + "\': "+ e.getMessage(), e);
+				} catch (LinkageError e) {
+					Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
+        		}	
         	}
         	if (service != null) {
 				service.attach(new ContextImpl(mMainThread, intent.getComponent()), this, intent.getComponent());

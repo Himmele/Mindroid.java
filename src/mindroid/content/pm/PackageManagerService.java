@@ -341,8 +341,11 @@ public class PackageManagerService extends Service {
 			URLClassLoader classLoader = new URLClassLoader(urls, getClass().getClassLoader());
 			try {
 				Class clazz = Class.forName(serviceInfo.serviceName, false, classLoader);
-			} catch (ClassNotFoundException e) {
+			} catch (Exception e) {
 				Log.e(LOG_TAG, "Cannot find service " + serviceInfo.serviceName + " in file " + ai.fileName, e);
+				classNotFound = true;
+			} catch (LinkageError e) {
+				Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
 				classNotFound = true;
 			}
 			if (classNotFound) {

@@ -130,7 +130,6 @@ public interface IPackageManager extends IInterface {
 			public IBinder asBinder() {
 				return mBinder;
 			}
-
 			
 			public ServiceInfo resolveService(Intent service) {
 				if (mBinder.checkThread()) {
