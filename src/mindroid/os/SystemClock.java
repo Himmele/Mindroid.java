@@ -132,6 +132,15 @@ public final class SystemClock {
     }
     
     /**
+     * Returns milliseconds since boot, including time spent in sleep.
+     *
+     * @return elapsed milliseconds since boot.
+     */
+    public static long elapsedRealtime() {
+    	return System.currentTimeMillis();
+    }
+    
+    /**
      * Returns nanoseconds since boot, including time spent in sleep.
      *
      * @return elapsed nanoseconds since boot.

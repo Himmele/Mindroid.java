@@ -59,10 +59,15 @@ public class Process {
 		mServices = new HashMap();
 		mThreadGroup = new ThreadGroup("Process {" + name + "}") {
 			public void uncaughtException(Thread thread, Throwable e) {
-				Log.e(LOG_TAG, "Uncaught exception: " + e.getMessage(), e);
 				synchronized (this) {
 					if (mUncaughtExceptionHandler != null) {
 						mUncaughtExceptionHandler.uncaughtException(Process.this, e);
+					} else {
+						String message = e.getMessage();
+						if (message == null) {
+							message = e.toString();
+						}
+						Log.e(LOG_TAG, "Uncaught exception: " + message, e);
 					}
 				}
 				synchronized (mServices) {

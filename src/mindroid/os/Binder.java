@@ -80,7 +80,7 @@ public class Binder extends Handler implements IBinder {
 		return mDescriptor;
 	}
 	
-	public boolean checkThread() {
+	public boolean sameThread() {
 		return (mThread == Thread.currentThread());
     }
 }

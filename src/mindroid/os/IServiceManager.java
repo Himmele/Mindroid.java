@@ -221,7 +221,7 @@ public interface IServiceManager extends IInterface {
 
 			
 			public ComponentName startService(Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.startService(service);
 				} else {
 					return mProxy.startService(service);
@@ -229,7 +229,7 @@ public interface IServiceManager extends IInterface {
 			}
 			
 			public boolean stopService(Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.stopService(service);
 				} else {
 					return mProxy.stopService(service);
@@ -237,7 +237,7 @@ public interface IServiceManager extends IInterface {
 			}
 			
 			public ComponentName startService(ComponentName caller, Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.startService(caller, service);
 				} else {
 					return mProxy.startService(caller, service);
@@ -245,7 +245,7 @@ public interface IServiceManager extends IInterface {
 			}
 			
 			public boolean stopService(ComponentName caller, Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.stopService(caller, service);
 				} else {
 					return mProxy.stopService(caller, service);
@@ -253,7 +253,7 @@ public interface IServiceManager extends IInterface {
 			}
 			
 			public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.bindService(caller, service, conn, flags);
 				} else {
 					return mProxy.bindService(caller, service, conn, flags);
@@ -261,7 +261,7 @@ public interface IServiceManager extends IInterface {
 			}
 			
 			public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					mServiceReference.unbindService(caller, service, conn);
 				} else {
 					mProxy.unbindService(caller, service, conn);
@@ -269,7 +269,7 @@ public interface IServiceManager extends IInterface {
 			}
 
 			public ComponentName startSystemService(Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.startSystemService(service);
 				} else {
 					return mProxy.startSystemService(service);
@@ -277,7 +277,7 @@ public interface IServiceManager extends IInterface {
 			}
 
 			public boolean stopSystemService(Intent service) {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					return mServiceReference.stopSystemService(service);
 				} else {
 					return mProxy.stopSystemService(service);

@@ -84,7 +84,7 @@ public interface IPackageManagerListener extends IInterface {
 			}
 
 			public void onBootCompleted() {
-				if (mBinder.checkThread()) {
+				if (mBinder.sameThread()) {
 					mServiceReference.onBootCompleted();
 				} else {
 					mProxy.onBootCompleted();

@@ -50,7 +50,11 @@ public final class ServiceManager {
 			synchronized (mProcesses) {
 				processRecord = (ProcessRecord) mProcesses.get(process.getName());
 			}
-			System.out.println("Uncaught exception in process " + processRecord.processName + ": " + e.getMessage());
+			String message = e.getMessage();
+			if (message == null) {
+				message = e.toString();
+			}
+			System.out.println("Uncaught exception in process " + processRecord.processName + ": " + message);
 		}
 	};
 	
