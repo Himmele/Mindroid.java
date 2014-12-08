@@ -61,9 +61,9 @@ public class Main {
 		ArrayList logIds = new ArrayList();
 		logIds.add(new Integer(Log.LOG_ID_MAIN));
 		serviceManager.startSystemService(new Intent()
-				.setComponent(Consts.CONSOLE_LOGGER_SERVICE)
+				.setComponent(Consts.SYSTEM_LOGGER_SERVICE)
 				.putExtra("processName", "main")
-				.putExtra("serviceName", Context.CONSOLE_LOGGER_SERVICE)
+				.putExtra("serviceName", Context.SYSTEM_LOGGER_SERVICE)
 				.putExtra("timestamps", false)
 				.putExtra("priority", Log.INFO)
 				.putIntegerArrayListExtra("logIds", logIds));
@@ -94,9 +94,9 @@ public class Main {
 				.setComponent(Consts.PACKAGE_MANAGER));
 		
 		serviceManager.stopSystemService(new Intent()
-			.setComponent(Consts.CONSOLE_LOGGER_SERVICE));
+			.setComponent(Consts.SYSTEM_LOGGER_SERVICE));
 
 		ServiceManager.waitForSystemServiceShutdown(Context.PACKAGE_MANAGER);
-		ServiceManager.waitForSystemServiceShutdown(Context.CONSOLE_LOGGER_SERVICE);
+		ServiceManager.waitForSystemServiceShutdown(Context.SYSTEM_LOGGER_SERVICE);
 	}
 }

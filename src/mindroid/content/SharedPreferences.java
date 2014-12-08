@@ -19,6 +19,8 @@ package mindroid.content;
 
 import java.util.Map;
 import java.util.Set;
+import mindroid.os.Handler;
+import mindroid.os.Looper;
 
 /**
  * Interface for accessing and modifying preference data returned by {@link
@@ -41,6 +43,40 @@ import java.util.Set;
  * @see Context#getSharedPreferences
  */
 public interface SharedPreferences {
+	/**
+     * Interface definition for a callback to be invoked when a shared
+     * preference is changed.
+     */
+    public abstract class OnSharedPreferenceChangeListener {
+    	private final Handler mHandler;
+    	
+    	public OnSharedPreferenceChangeListener(Looper looper) {
+    		mHandler = new Handler(looper);
+    	}
+    	
+        /**
+         * Called when a shared preference is changed, added, or removed. This
+         * may be called even if a preference is set to its existing value.
+         *
+         * <p>This callback will be run on the specified looper thread.
+         *
+         * @param sharedPreferences The {@link SharedPreferences} that received
+         *            the change.
+         * @param key The key of the preference that was changed, added, or
+         *            removed.
+         */
+        public abstract void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key);
+        
+        /** {@hide} */
+        public void notifySharedPreferenceChangeListener(final SharedPreferences sharedPreferences, final String key) {
+        	mHandler.post(new Runnable() {
+				public void run() {
+					onSharedPreferenceChanged(sharedPreferences, key);
+				}
+        	});
+        }
+    }
+    
     /**
      * Interface used for modifying values in a {@link SharedPreferences}
      * object.  All changes you make in an editor are batched, and not copied
@@ -330,4 +366,20 @@ public interface SharedPreferences {
      * you to modify the values in this SharedPreferences object.
      */
     Editor edit();
+    
+    /**
+     * Registers a callback to be invoked when a change happens to a preference.
+     * 
+     * @param listener The callback that will run.
+     * @see #unregisterOnSharedPreferenceChangeListener
+     */
+    void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener);
+    
+    /**
+     * Unregisters a previous callback.
+     * 
+     * @param listener The callback that should be unregistered.
+     * @see #registerOnSharedPreferenceChangeListener
+     */
+    void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener);
 }

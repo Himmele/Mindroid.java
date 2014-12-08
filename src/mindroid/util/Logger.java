@@ -16,6 +16,10 @@
 
 package mindroid.util;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import mindroid.app.Service;
@@ -23,9 +27,10 @@ import mindroid.content.Intent;
 import mindroid.os.IBinder;
 import mindroid.util.LogBuffer.LogMessage;
 
-public class ConsoleLogger extends Service {
-	private static final String LOG_TAG = "ConsoleLogger";
-	private static final int MAX_SYSOUT_LINE_LENGTH = 256;
+public class Logger extends Service {
+	private static final String LOG_TAG = "Logger";
+	private static final int MAX_SYSOUT_LINE_LENGTH = 255;
+	private static String LOG_SEPARATOR = "================================================================================";
 	private LoggerThread mMainLogThread = null;
 	private LoggerThread mTaskManagerLogThread = null;
 	private ArrayList mLogIds;
@@ -35,16 +40,23 @@ public class ConsoleLogger extends Service {
 		private boolean mUseTimestamps;
 		private HashMap mTags;
 		private int mPriority;
+		private String mLogPath;
+		private BufferedWriter mLogFileWriter;
 		
-		public LoggerThread(String name, int logId, boolean useTimeStamps, HashMap tags, int priority) {
+		public LoggerThread(String name, int logId, boolean useTimeStamps, HashMap tags, int priority, String logPath) {
 			super(name);
 			mLogBuffer = Log.getLogBuffer(logId);
 			mUseTimestamps = useTimeStamps;
 			mTags = tags;
 			mPriority = priority;
+			if (logPath != null && logPath.length() > 0) {
+				mLogPath = logPath;
+			}
 		}
 		
 		public void run() {
+			open();
+			
 			while (!isInterrupted()) {
 				LogMessage logMessage;
 				try {
@@ -54,14 +66,12 @@ public class ConsoleLogger extends Service {
 				}
 				if ((logMessage != null) && (mTags == null || mTags.containsKey(logMessage.getTag()))) {
 					String output = logMessage.toString(mUseTimestamps);
-					for (int i = 0; i < output.length(); i += MAX_SYSOUT_LINE_LENGTH) {
-						String o = output.substring(i, Math.min(output.length(), i + MAX_SYSOUT_LINE_LENGTH));
-						System.out.print(o);
-						System.out.flush();
-					}
-					System.out.println();
+					println(output);
+					write(output);
 				}
 			}
+			
+			close();
 		}
 		
 		public void enableTimestamps(boolean useTimestamps) {
@@ -72,6 +82,66 @@ public class ConsoleLogger extends Service {
 		public void setLogPriority(int priority) {
 			mPriority = priority;
 			mLogBuffer.resume();
+		}
+		
+		private void println(String output) {
+			for (int i = 0; i < output.length(); i += MAX_SYSOUT_LINE_LENGTH) {
+				String o = output.substring(i, Math.min(output.length(), i + MAX_SYSOUT_LINE_LENGTH));
+				System.out.print(o);
+				System.out.flush();
+			}
+			System.out.println();
+		}
+		
+		private void open() {
+			if (mLogPath != null) {
+				try {
+					File logDirectory = new File(mLogPath).getParentFile();
+					if (!logDirectory.exists()) {
+						logDirectory.mkdir();
+					}
+					File logPath = new File(mLogPath);
+					if (!logPath.exists()) {
+						try {
+							logPath.createNewFile();
+							mLogFileWriter = new BufferedWriter(new FileWriter(logPath, true));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} else {
+						mLogFileWriter = new BufferedWriter(new FileWriter(logPath, true));
+						mLogFileWriter.newLine();
+						mLogFileWriter.write(LOG_SEPARATOR, 0, LOG_SEPARATOR.length());
+						mLogFileWriter.newLine();
+						mLogFileWriter.newLine();
+						mLogFileWriter.flush();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		private void close() {
+			if (mLogFileWriter != null) {
+				try {
+					mLogFileWriter.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		private void write(String output) {
+			if (mLogFileWriter != null) {
+				try {
+					mLogFileWriter.write(output, 0, output.length());
+					mLogFileWriter.newLine();
+					mLogFileWriter.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 
@@ -98,8 +168,16 @@ public class ConsoleLogger extends Service {
 				}
 				
 				int priority = intent.getIntExtra("priority", Log.ERROR);
+				String logDirectory = intent.getStringExtra("logDirectory");
+				String logFileName = intent.getStringExtra("logFileName");
+				String logPath = null;
+				if (logDirectory != null && logDirectory.length() > 0) {
+					if (logFileName != null && logFileName.length() > 0) {
+						logPath = logDirectory + File.separator + logFileName;
+					}
+				}
 				
-				mMainLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_MAIN, useTimestamps, tags, priority);
+				mMainLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_MAIN, useTimestamps, tags, priority, logPath);
 				mMainLogThread.setPriority(threadPriority);
 				mMainLogThread.start();
 			} else {
@@ -112,7 +190,7 @@ public class ConsoleLogger extends Service {
 		
 		if ((mLogIds != null) && mLogIds.contains(new Integer(Log.LOG_ID_TASK_MANAGER))) {
 			if (mTaskManagerLogThread == null) {
-				mTaskManagerLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_TASK_MANAGER, true, null, Log.DEBUG);
+				mTaskManagerLogThread = new LoggerThread(LOG_TAG, Log.LOG_ID_TASK_MANAGER, true, null, Log.DEBUG, null);
 				mTaskManagerLogThread.setPriority(threadPriority);
 				mTaskManagerLogThread.start();
 			}
