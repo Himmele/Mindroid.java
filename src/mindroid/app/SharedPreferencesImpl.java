@@ -17,6 +17,7 @@
 
 package mindroid.app;
 
+import mindroid.content.Context;
 import mindroid.content.SharedPreferences;
 import mindroid.util.Log;
 import java.io.BufferedInputStream;
@@ -58,58 +59,18 @@ final class SharedPreferencesImpl implements SharedPreferences {
     private final File mFile;
     private final File mBackupFile;
     private Map mMap;
+    private int mMode;
     private List mListeners = new ArrayList();
     private Object mLock = new Object();
 
     SharedPreferencesImpl(File file, int mode) {
         mFile = file;
+        mMode = mode;
         mBackupFile = makeBackupFile(file);
         mMap = null;
         synchronized (mLock) {
         	loadSharedPrefs();
         }
-    }
-
-    private void loadSharedPrefs() {
-        if (mMap != null) {
-            return;
-        }
-        if (mBackupFile.exists()) {
-            mFile.delete();
-            mBackupFile.renameTo(mFile);
-        }
-        
-        Map map = null;
-        try {
-            if (mFile.canRead()) {
-                BufferedInputStream is = null;
-                try {
-                	is = new BufferedInputStream(new FileInputStream(mFile), SIZE_16_KB);
-                    map = readMap(is);
-                } catch (XmlPullParserException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
-                } catch (FileNotFoundException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
-                } catch (IOException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
-                } finally {
-                	if (is != null) {
-                		is.close();
-                	}
-                }
-            }
-        } catch (Exception e) {
-        	Log.e(LOG_TAG, "Cannot read file: " + mFile.getName());
-        }
-        if (map != null) {
-            mMap = map;
-        } else {
-            mMap = new HashMap();
-        }
-    }
-
-    private static File makeBackupFile(File prefsFile) {
-        return new File(prefsFile.getPath() + ".bak");
     }
 
     public Map getAll() {
@@ -278,42 +239,91 @@ final class SharedPreferencesImpl implements SharedPreferences {
 
     		    mModifications.clear();
     		    
+    		    boolean result = false;
     		    if (modifications) {
-    		    	if (mFile.exists()) {
-    		    		if (!mBackupFile.exists()) {
-    		                if (!mFile.renameTo(mBackupFile)) {
-    		                    Log.e(LOG_TAG, "Cannot rename file " + mFile + " to backup file " + mBackupFile);
-    		                    return false;
-    		                }
-    		            } else {
-    		                mFile.delete();
-    		            }
+    		    	result = storeSharedPrefs();
+    		    	if (result && hasListeners) {
+    		    		notifySharedPreferenceChangeListeners(modifiedKeys);
     		    	}
-    		    	
-	    		    try {
-	    	            writeMap(mFile, mMap);
-	    	            mBackupFile.delete();
-	    	            if (hasListeners) {
-	    	            	notifySharedPreferenceChangeListeners(modifiedKeys);
-	    	            }
-	    	            return true;
-	    	        } catch (XmlPullParserException e) {
-	    	            Log.w(LOG_TAG, "commit", e);
-	    	        } catch (IOException e) {
-	    	            Log.w(LOG_TAG, "commit", e);
-	    	        }
-	    		    
-	    	        // Clean up an unsuccessfully written file
-	    	        if (mFile.exists()) {
-	    	            if (!mFile.delete()) {
-	    	                Log.e(LOG_TAG, "Cannot clean up partially-written file " + mFile);
-	    	            }
-	    	        }
     		    }
     		    
-    		    return false;
+    		    return result;
         	}
         }
+    }
+    
+    private void loadSharedPrefs() {
+        if (mMap != null) {
+            return;
+        }
+        if (mBackupFile.exists()) {
+            mFile.delete();
+            mBackupFile.renameTo(mFile);
+        }
+        
+        Map map = null;
+        try {
+            if (mFile.canRead()) {
+                BufferedInputStream is = null;
+                try {
+                	is = new BufferedInputStream(new FileInputStream(mFile), SIZE_16_KB);
+                    map = readMap(is);
+                } catch (XmlPullParserException e) {
+                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                } catch (FileNotFoundException e) {
+                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                } catch (IOException e) {
+                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                } finally {
+                	if (is != null) {
+                		is.close();
+                	}
+                }
+            }
+        } catch (Exception e) {
+        	Log.e(LOG_TAG, "Cannot read file: " + mFile.getName());
+        }
+        if (map != null) {
+            mMap = map;
+        } else {
+            mMap = new HashMap();
+        }
+    }
+    
+    private boolean storeSharedPrefs() {
+    	if (mMode == Context.MODE_TEMPORARY) {
+    		return true;
+    	}
+    	
+    	if (mFile.exists()) {
+    		if (!mBackupFile.exists()) {
+                if (!mFile.renameTo(mBackupFile)) {
+                    Log.e(LOG_TAG, "Cannot rename file " + mFile + " to backup file " + mBackupFile);
+                    return false;
+                }
+            } else {
+                mFile.delete();
+            }
+    	}
+    	
+	    try {
+            writeMap(mFile, mMap);
+            mBackupFile.delete();
+            return true;
+        } catch (XmlPullParserException e) {
+            Log.w(LOG_TAG, "commit", e);
+        } catch (IOException e) {
+            Log.w(LOG_TAG, "commit", e);
+        }
+	    
+        // Clean up an unsuccessfully written file
+        if (mFile.exists()) {
+            if (!mFile.delete()) {
+                Log.e(LOG_TAG, "Cannot clean up partially-written file " + mFile);
+            }
+        }
+        
+        return false;
     }
     
     public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
@@ -328,6 +338,10 @@ final class SharedPreferencesImpl implements SharedPreferences {
         synchronized (mLock) {
             mListeners.remove(listener);
         }
+    }
+    
+    private static File makeBackupFile(File prefsFile) {
+        return new File(prefsFile.getPath() + ".bak");
     }
     
     private void notifySharedPreferenceChangeListeners(List keys) {

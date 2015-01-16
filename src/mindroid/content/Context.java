@@ -39,6 +39,16 @@ public abstract class Context {
 	public static final String SYSTEM_LOGGER_SERVICE = "systemLogger";
 	
 	/**
+     * File creation mode: the default mode.
+     */
+    public static final int MODE_PRIVATE = 0x0000;
+    
+    /**
+     * File creation mode: create temporary (no persistent storage).
+     */
+    public static final int MODE_TEMPORARY = 0x4000;
+    
+	/**
      * File creation mode: for use with {@link #openFileOutput}, if the file
      * already exists then write data to the end of the existing file
      * instead of erasing it.
@@ -74,7 +84,8 @@ public abstract class Context {
      * @param name Desired preferences file. If a preferences file by this name
      * does not exist, it will be created when you retrieve an
      * editor (SharedPreferences.edit()) and then commit changes (Editor.commit()).
-     * @param mode Operating mode.  Currently not used. Should be 0.
+     * @param mode Operating mode.  Use 0 or {@link #MODE_PRIVATE} for the
+     * default operation.
      *
      * @return Returns the single SharedPreferences instance that can be used
      *         to retrieve and modify the preference values.

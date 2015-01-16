@@ -44,7 +44,7 @@ public class Runtime {
     /**
      * Prevent this class from being instantiated.
      */
-    private Runtime(){
+    private Runtime() {
     }
     
     /**
@@ -104,6 +104,10 @@ public class Runtime {
     }
     
     public void exit(int code, String reason) {
+    	exit(code, reason, 0);
+    }
+    
+    public void exit(int code, String reason, int delay) {
     	synchronized(this) {
             if (!mShuttingDown) {
            	 mShuttingDown = true;
@@ -116,6 +120,7 @@ public class Runtime {
 
                 for (int i = 0; i < hooks.length; i++) {
                 	hooks[i].arg1 = code;
+                	hooks[i].arg2 = delay;
                 	hooks[i].obj = reason;
                 	try {
                 		hooks[i].sendToTarget();
@@ -125,7 +130,7 @@ public class Runtime {
                 }
             }
     	}
-   }
+    }
     
     /**
      * Causes the VM to stop running, and the program to exit.
