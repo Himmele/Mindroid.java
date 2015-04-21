@@ -269,11 +269,11 @@ final class SharedPreferencesImpl implements SharedPreferences {
                 	is = new BufferedInputStream(new FileInputStream(mFile), SIZE_16_KB);
                     map = readMap(is);
                 } catch (XmlPullParserException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                    Log.w(LOG_TAG, "Cannot read file: " + mFile.getName(), e);
                 } catch (FileNotFoundException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                    Log.w(LOG_TAG, "Cannot read file: " + mFile.getName(), e);
                 } catch (IOException e) {
-                    Log.w(LOG_TAG, "loadSharedPrefs", e);
+                    Log.w(LOG_TAG, "Cannot read file: " + mFile.getName(), e);
                 } finally {
                 	if (is != null) {
                 		is.close();
@@ -311,9 +311,9 @@ final class SharedPreferencesImpl implements SharedPreferences {
             mBackupFile.delete();
             return true;
         } catch (XmlPullParserException e) {
-            Log.w(LOG_TAG, "commit", e);
+            Log.w(LOG_TAG, "Cannot write file: " + mFile.getName(), e);
         } catch (IOException e) {
-            Log.w(LOG_TAG, "commit", e);
+            Log.w(LOG_TAG, "Cannot write file: " + mFile.getName(), e);
         }
 	    
         // Clean up an unsuccessfully written file
@@ -580,6 +580,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
     		doc.addChild(0, Node.ELEMENT, rootTag);
     		
     		KXmlSerializer serializer = new KXmlSerializer();
+    		serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
     		serializer.setOutput(os, UTF_8);
     		doc.write(serializer);
     		serializer.flush();
