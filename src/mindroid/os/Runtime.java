@@ -108,7 +108,7 @@ public class Runtime {
     }
     
     public void exit(int code, String reason, int delay) {
-    	synchronized(this) {
+    	synchronized (this) {
             if (!mShuttingDown) {
            	 mShuttingDown = true;
 

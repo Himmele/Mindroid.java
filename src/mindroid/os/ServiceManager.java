@@ -496,7 +496,7 @@ public final class ServiceManager {
 		}
 	}
 	
-	public static IServiceManager getIServiceManager() {
+	public static synchronized IServiceManager getIServiceManager() {
         if (sServiceManager != null) {
             return sServiceManager;
         }

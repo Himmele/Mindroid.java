@@ -19,5 +19,5 @@ package mindroid.os;
 public abstract class Executor {
 	public abstract void execute(Runnable runnable);
 	public abstract boolean cancel(Runnable runnable);
-	public abstract void finalize();
+	protected abstract void finalize();
 }

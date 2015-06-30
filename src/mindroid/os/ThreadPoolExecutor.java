@@ -28,7 +28,7 @@ public class ThreadPoolExecutor extends Executor {
 		start();
 	}
 	
-	public void finalize() {
+	protected void finalize() {
 		shutdown();
 	}
 	

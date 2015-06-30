@@ -27,7 +27,7 @@ public class SerialExecutor extends Executor {
 		mHandler = new Handler(mHandlerThread.getLooper());
 	}
 	
-	public void finalize() {
+	protected void finalize() {
 		mHandlerThread.getLooper().quit();
 		try {
 			mHandlerThread.join();

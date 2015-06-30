@@ -249,9 +249,6 @@ public class PackageManagerService extends Service {
 			List services = null;
 			boolean applicationTagDone = false;
 			for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-				if (eventType == XmlPullParser.END_TAG) {
-					throw new XmlPullParserException("Invalid XML format");
-				}
 				if (parser.getName().equals(APPLICATION_TAG)) {
 					if (applicationTagDone) {
 						throw new XmlPullParserException("Only one application is allowed per manifest");
@@ -303,9 +300,6 @@ public class PackageManagerService extends Service {
 		List libraries = new ArrayList();
 		List services = new ArrayList();
 		for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-			if (eventType == XmlPullParser.END_TAG) {
-				throw new XmlPullParserException("Invalid XML format");
-			}
 			if (parser.getName().equals(USES_LIBRARY_TAG)) {
 				String library = parseLibrary(parser);
 				if (library != null) {
@@ -369,9 +363,6 @@ public class PackageManagerService extends Service {
 		}
 		
 		for (int eventType = parser.nextTag(); !parser.getName().equals(USES_LIBRARY_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-			if (eventType == XmlPullParser.END_TAG) {
-				throw new XmlPullParserException("Invalid XML format");
-			}
 			String tag = parser.getName();
 			parser.skipSubTree();
 			parser.require(XmlPullParser.END_TAG, null, tag);
@@ -439,9 +430,6 @@ public class PackageManagerService extends Service {
 		si.autostart = autostart;
 
 		for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-			if (eventType == XmlPullParser.END_TAG) {
-				throw new XmlPullParserException("Invalid XML format");
-			}
 			String tag = parser.getName();
 			parser.skipSubTree();
 			parser.require(XmlPullParser.END_TAG, null, tag);
