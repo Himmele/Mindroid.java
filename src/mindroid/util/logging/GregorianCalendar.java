@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-package mindroid.util;
+package mindroid.util.logging;
 
 /**
  * {@code GregorianCalendar} is a concrete subclass of {@link Calendar}

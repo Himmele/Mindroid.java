@@ -20,12 +20,11 @@ package mindroid.util;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.UnknownHostException;
-import mindroid.util.logging.LogBuffer;
 
 /**
- * Mindroid logger.
+ * Mindroid event logger.
  *
- * <p>Generally, use the Log.v() Log.d() Log.i() Log.w() and Log.e()
+ * <p>Generally, use the EventLog.v() EventLog.d() EventLog.i() EventLog.w() and EventLog.e()
  * methods.
  *
  * <p>The order in terms of verbosity, from least to most is
@@ -50,7 +49,7 @@ import mindroid.util.logging.LogBuffer;
  * That means that if your log message is filtered out, you might be doing
  * significant work and incurring significant overhead.
  */
-public final class Log {
+public final class EventLog {
     public static final int VERBOSE = 0;
     public static final int DEBUG = 1;
     public static final int INFO = 2;
@@ -60,7 +59,7 @@ public final class Log {
     
     private static final int MAX_STACK_TRACE_SIZE = 4096;
 
-    private Log() {
+    private EventLog() {
     }
 
     /**
@@ -70,7 +69,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int v(String tag, String msg) {
-        return println(LOG_ID_MAIN, VERBOSE, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, VERBOSE, tag, msg);
     }
 
     /**
@@ -81,7 +80,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int v(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, VERBOSE, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, VERBOSE, tag, msg + " \n" + getStackTraceString(tr));
     }
 
     /**
@@ -91,7 +90,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int d(String tag, String msg) {
-    	return println(LOG_ID_MAIN, DEBUG, tag, msg);
+    	return Log.println(Log.LOG_ID_EVENTS, DEBUG, tag, msg);
     }
 
     /**
@@ -102,7 +101,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int d(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, DEBUG, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, DEBUG, tag, msg + " \n" + getStackTraceString(tr));
     }
 
     /**
@@ -112,7 +111,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int i(String tag, String msg) {
-    	return println(LOG_ID_MAIN, INFO, tag, msg);
+    	return Log.println(Log.LOG_ID_EVENTS, INFO, tag, msg);
     }
 
     /**
@@ -123,7 +122,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int i(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, INFO, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, INFO, tag, msg + " \n" + getStackTraceString(tr));
     }
 
     /**
@@ -133,7 +132,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int w(String tag, String msg) {
-    	return println(LOG_ID_MAIN, WARN, tag, msg);
+    	return Log.println(Log.LOG_ID_EVENTS, WARN, tag, msg);
     }
 
     /**
@@ -144,7 +143,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int w(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, WARN, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, WARN, tag, msg + " \n" + getStackTraceString(tr));
     }    
 
     /*
@@ -154,7 +153,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int w(String tag, Throwable tr) {
-    	return println(LOG_ID_MAIN, WARN, tag, getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, WARN, tag, getStackTraceString(tr));
     }
 
     /**
@@ -164,7 +163,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int e(String tag, String msg) {
-    	return println(LOG_ID_MAIN, ERROR, tag, msg);
+    	return Log.println(Log.LOG_ID_EVENTS, ERROR, tag, msg);
     }
 
     /**
@@ -175,7 +174,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int e(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, ERROR, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, ERROR, tag, msg + " \n" + getStackTraceString(tr));
     }
 
     /**
@@ -188,7 +187,7 @@ public final class Log {
      * @param msg The message you would like logged.
      */
     public static int wtf(String tag, String msg) {
-    	return println(LOG_ID_MAIN, WTF, tag, msg);
+    	return Log.println(Log.LOG_ID_EVENTS, WTF, tag, msg);
     }
 
     /**
@@ -198,11 +197,11 @@ public final class Log {
      * @param tr An exception to log.
      */
     public static int wtf(String tag, Throwable tr) {
-    	return println(LOG_ID_MAIN, WTF, tag, getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, WTF, tag, getStackTraceString(tr));
     }
     
     public static int wtf(String tag, String msg, Throwable tr) {
-    	return println(LOG_ID_MAIN, WTF, tag, msg + '\n' + getStackTraceString(tr));
+    	return Log.println(Log.LOG_ID_EVENTS, WTF, tag, msg + " \n" + getStackTraceString(tr));
     }
 
     /**
@@ -234,115 +233,4 @@ public final class Log {
             return stackTrace;
         }
     }
-    
-    /** @hide */
-    public static LogBuffer getLogBuffer(int logId) {
-    	switch (logId) {
-    	case LOG_ID_MAIN:
-    		return sMainLogBuffer;
-    	case LOG_ID_EVENTS:
-    		return sEventLogBuffer;
-    	case LOG_ID_PERFORMANCE_MONITORING:
-    		return sPerformanceMonitoringLogBuffer;
-    	default:
-    		return null;
-    	}
-    }
-    
-    /** @hide */
-    public static void reset(int logId) {
-    	switch (logId) {
-    	case LOG_ID_MAIN:
-    		sMainLogBuffer.reset();
-    		break;
-    	case LOG_ID_EVENTS:
-    		sEventLogBuffer.reset();
-    		break;
-    	case LOG_ID_PERFORMANCE_MONITORING:
-    		sPerformanceMonitoringLogBuffer.reset();
-    		break;
-    	}
-    }
-
-	public static Integer parsePriority(String priority) {
-		char c;
-		if (priority.length() > 1 && priority.toUpperCase().equals("WTF")) {
-			c = 'A';
-		} else {
-			c = priority.charAt(0);
-		}
-
-		switch (c) {
-			case 'V': return new Integer(Log.VERBOSE);
-			case 'D': return new Integer(Log.DEBUG);
-			case 'I': return new Integer(Log.INFO);
-			case 'W': return new Integer(Log.WARN);
-			case 'E': return new Integer(Log.ERROR);
-			case 'A': return new Integer(Log.WTF);
-			default: return null;
-		}
-	}
-	
-	public static String toPriority(int priority) {
-		String[] logLevels = { "V", "D", "I", "W", "E", "A" };
-		if (priority >= 0 && priority < logLevels.length) {
-			return logLevels[priority];
-		} else {
-			return null;
-		}
-	}
-	
-	/**
-     * Low-level logging call.
-     * @param priority The priority/type of this log message
-     * @param tag Used to identify the source of a log message.  It usually identifies
-     *        the class or activity where the log call occurs.
-     * @param msg The message you would like logged.
-     * @return The number of bytes written.
-     */
-    public static int println(int priority, String tag, String msg) {
-    	return println(LOG_ID_MAIN, priority, tag, msg);
-    }
-    
-    /** @hide */
-    public static int println(int logId, int priority, String tag, String msg) {
-    	switch (logId) {
-    	case LOG_ID_MAIN:
-    		sMainLogBuffer.offer(priority, tag, msg);
-    		return 0;
-    	case LOG_ID_EVENTS:
-    		sEventLogBuffer.offer(priority, tag, msg);
-    		return 0;
-    	case LOG_ID_PERFORMANCE_MONITORING:
-    		sPerformanceMonitoringLogBuffer.offer(priority, tag, msg);
-    		return 0;
-    	default:
-    		return -1;
-    	}
-    }
-    
-    /** @hide */
-    public static int println(int logId, long timestamp, int threadId, int priority, String tag, String msg) {
-    	switch (logId) {
-    	case LOG_ID_MAIN:
-    		sMainLogBuffer.offer(timestamp, threadId, priority, tag, msg);
-    		return 0;
-    	case LOG_ID_EVENTS:
-    		sEventLogBuffer.offer(timestamp, threadId, priority, tag, msg);
-    		return 0;
-    	case LOG_ID_PERFORMANCE_MONITORING:
-    		sPerformanceMonitoringLogBuffer.offer(timestamp, threadId, priority, tag, msg);
-    		return 0;
-    	default:
-    		return -1;
-    	}
-    }
-    
-    /** @hide */ public static final int LOG_ID_MAIN = 0;
-    /** @hide */ public static final int LOG_ID_EVENTS = 1;
-    /** @hide */ public static final int LOG_ID_PERFORMANCE_MONITORING = 2;
-    
-	private static LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, 262144); // 256KB
-	private static LogBuffer sEventLogBuffer = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
-	private static LogBuffer sPerformanceMonitoringLogBuffer = new LogBuffer(LOG_ID_PERFORMANCE_MONITORING, 262144); // 256KB
 }

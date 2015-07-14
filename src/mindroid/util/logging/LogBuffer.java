@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mindroid.util;
+package mindroid.util.logging;
 
 import java.io.UnsupportedEncodingException;
 
@@ -53,17 +53,13 @@ public class LogBuffer {
 			mMessage = message;
 		}
 		
-		public String toString() {
+		public String toShortString() {
 			return mLogLevels[mPriority] + "/" + mTag + "(" + toHexString(mThreadId) + "): " + mMessage;
 		}
 		
-		public String toString(boolean timestamp) {
-			if (timestamp) {
-				mCalendar.setTimeInMillis(mTimestamp);
-				return mCalendar.toString() + "  " + toHexString(mThreadId) + "  " +  mLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
-			} else {
-				return toString();
-			}
+		public String toString() {
+			mCalendar.setTimeInMillis(mTimestamp);
+			return mCalendar.toString() + "  " + toHexString(mThreadId) + "  " +  mLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
 		}
 		
 		public int getLogId() {
@@ -236,7 +232,7 @@ public class LogBuffer {
 		}
 	}
 	
-	synchronized void reset() {
+	public synchronized void reset() {
 		mReadIndex = 0;
         mWriteIndex = 0;
 	}

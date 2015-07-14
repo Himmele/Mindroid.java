@@ -36,7 +36,7 @@ public abstract class Context {
 	public static final String PACKAGE_MANAGER = "packageManager";
 	public static final String LOCATION_SERVICE = "locationService";
 	public static final String TELEPHONY_SERVICE = "telephonyService";
-	public static final String SYSTEM_LOGGER_SERVICE = "systemLogger";
+	public static final String LOGGER_SERVICE = "logger";
 	
 	/**
      * File creation mode: the default mode.
