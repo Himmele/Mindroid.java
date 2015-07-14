@@ -58,15 +58,15 @@ public class Main {
 	public static void startSystemServices() throws InterruptedException {
 		IServiceManager serviceManager = ServiceManager.getIServiceManager();
 
-		ArrayList logIds = new ArrayList();
-		logIds.add(new Integer(Log.LOG_ID_MAIN));
+		ArrayList logBuffers = new ArrayList();
+		logBuffers.add(new String("main"));
 		serviceManager.startSystemService(new Intent()
-				.setComponent(Consts.SYSTEM_LOGGER_SERVICE)
+				.setComponent(Consts.LOGGER_SERVICE)
 				.putExtra("processName", "main")
-				.putExtra("serviceName", Context.SYSTEM_LOGGER_SERVICE)
+				.putExtra("serviceName", Context.LOGGER_SERVICE)
+				.putStringArrayListExtra("logBuffers", logBuffers)
 				.putExtra("timestamps", false)
-				.putExtra("priority", Log.INFO)
-				.putIntegerArrayListExtra("logIds", logIds));
+				.putExtra("priority", Log.INFO));
 
 		serviceManager.startSystemService(new Intent()
 				.setComponent(Consts.PACKAGE_MANAGER)
@@ -94,9 +94,9 @@ public class Main {
 				.setComponent(Consts.PACKAGE_MANAGER));
 		
 		serviceManager.stopSystemService(new Intent()
-			.setComponent(Consts.SYSTEM_LOGGER_SERVICE));
+			.setComponent(Consts.LOGGER_SERVICE));
 
 		ServiceManager.waitForSystemServiceShutdown(Context.PACKAGE_MANAGER);
-		ServiceManager.waitForSystemServiceShutdown(Context.SYSTEM_LOGGER_SERVICE);
+		ServiceManager.waitForSystemServiceShutdown(Context.LOGGER_SERVICE);
 	}
 }
