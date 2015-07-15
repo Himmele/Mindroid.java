@@ -24,9 +24,10 @@ import java.io.File;
  */
 public class Environment {
     private static File ROOT_DIRECTORY = new File(".");
-    private static File DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
     private static File APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
+    private static File DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
     private static File PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+    private static File LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
     
     /**
      * Sets the Mindroid root directory.
@@ -35,9 +36,10 @@ public class Environment {
      */
     public static void setRootDirectory(String rootDirectory) {
         ROOT_DIRECTORY = new File(rootDirectory);
-        DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
         APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
+        DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
         PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+        LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
     }
 
     /**
@@ -48,13 +50,6 @@ public class Environment {
     }
 
     /**
-     * Gets the Mindroid data directory.
-     */
-    public static File getDataDirectory() {
-        return DATA_DIRECTORY;
-    }
-    
-    /**
      * Gets the Mindroid apps directory.
      */
     public static File getAppsDirectory() {
@@ -62,9 +57,30 @@ public class Environment {
     }
     
     /**
+     * Gets the Mindroid data directory.
+     */
+    public static File getDataDirectory() {
+        return DATA_DIRECTORY;
+    }
+    
+    /**
      * Gets the Mindroid preferences directory.
      */
     public static File getPreferencesDirectory() {
         return PREFERENCES_DIRECTORY;
+    }
+    
+    /**
+     * Gets the Mindroid log directory.
+     */
+    public static File getLogDirectory() {
+        return LOG_DIRECTORY;
+    }
+    
+    /**
+     * Sets the Mindroid log directory.
+     */
+    public static void setLogDirectory(String directory) {
+        LOG_DIRECTORY = new File(directory);
     }
 }

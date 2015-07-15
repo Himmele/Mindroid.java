@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import mindroid.app.Service;
 import mindroid.content.Intent;
+import mindroid.os.Environment;
 import mindroid.os.IBinder;
 import mindroid.util.Log;
 import mindroid.util.logging.LogBuffer.LogMessage;
@@ -120,7 +121,7 @@ public class Logger extends Service {
 			if (logBuffers.contains("main")) {
 				boolean timestamps = intent.getBooleanExtra("timestamps", false);
 				int priority = intent.getIntExtra("priority", Log.ERROR);
-				String logDirectory = intent.getStringExtra("logDirectory");
+				String logDirectory = Environment.getLogDirectory().getAbsolutePath();
 				String logFileName = intent.getStringExtra("logFileName");
 				int logFileSizeLimit = intent.getIntExtra("logFileSizeLimit", 0);
 				int logFileCount = intent.getIntExtra("logFileCount", 1);
@@ -132,10 +133,10 @@ public class Logger extends Service {
 			}
 			
 			if (logBuffers.contains("events")) {
-				String logDirectory = intent.getStringExtra("logDirectory");
+				String logDirectory = Environment.getLogDirectory().getAbsolutePath();
 				String logFileName = intent.getStringExtra("eventLogFileName");
-				int logFileSizeLimit = 262144;
-				int logFileCount = 4;
+				int logFileSizeLimit = intent.getIntExtra("eventLogFileSizeLimit", 262144);
+				int logFileCount = intent.getIntExtra("eventLogFileCount", 4);
 				boolean fileLogging = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
 				
 				mEventLogThread = new LoggerThread(LOG_TAG + " {events}", Log.LOG_ID_EVENTS, false, fileLogging, true, Log.DEBUG, logDirectory, logFileName, logFileSizeLimit, logFileCount);
