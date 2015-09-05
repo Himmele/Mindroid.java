@@ -553,7 +553,7 @@ public final class ServiceManager {
     			long curTime = System.currentTimeMillis();
     			if (curTime - refTime >= TIMEOUT) {
 	    			if (!sSystemServices.containsKey(name)) {
-	    				Log.e(LOG_TAG, "Starting " + name + " takes very long");
+	    				Log.w(LOG_TAG, "Starting " + name + " takes very long");
 	    				timeout = TIMEOUT;
 	    				refTime = System.currentTimeMillis();
 	    			} else {
@@ -580,7 +580,7 @@ public final class ServiceManager {
     			long curTime = System.currentTimeMillis();
     			if (curTime - refTime >= TIMEOUT) {
 	    			if (sSystemServices.containsKey(name)) {
-	    				Log.e(LOG_TAG, "Stopping " + name + " takes very long");
+	    				Log.w(LOG_TAG, "Stopping " + name + " takes very long");
 	    				timeout = TIMEOUT;
 	    				refTime = System.currentTimeMillis();
 	    				numAttempts--;
