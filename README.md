@@ -6,7 +6,6 @@ these classes also form the mind of Android.
 Mindroid is almost completely Android API-compliant with minor exceptions since Mindroid even runs on Java v1.4 (Java SE and Jave ME CDC) targets.
 Mindroid also includes an application framework <a href="http://esrlabs.com/mindroid">documentation</a>.
 The application framework is mainly intended for machine-to-machine (M2M) communication projects and the Internet of Things.
-We also plan to make this application framework work on Java ME 8 and CLDC 8 (JSR 360).
 
 #### [Mindroid Developer Guide](http://esrlabs.com/Mindroid) ####
 
