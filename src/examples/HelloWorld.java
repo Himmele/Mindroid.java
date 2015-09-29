@@ -1,4 +1,4 @@
-package tests;
+package examples;
 
 import mindroid.app.Service;
 import mindroid.content.Intent;
