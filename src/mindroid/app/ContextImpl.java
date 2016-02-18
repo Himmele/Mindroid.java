@@ -169,7 +169,8 @@ class ContextImpl extends Context {
             Map.Entry pair = (Map.Entry) itr.next();
             ServiceConnection conn = (ServiceConnection) pair.getKey();
             Intent service = (Intent) pair.getValue();
-            unbindService(conn);
+            itr.remove();
+            mServiceManager.unbindService(mComponent, service, conn);
             Log.w(LOG_TAG, "Service " + mComponent + " is leaking a ServiceConnection to " + service.getComponent());
         }
     }

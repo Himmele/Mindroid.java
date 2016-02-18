@@ -120,7 +120,7 @@ public class Process {
 		} catch (InterruptedException e) {			
 		}
 		
-		Log.d(LOG_TAG, "Process " + mName + " has been stopped.");
+		Log.d(LOG_TAG, "Process " + mName + " has been stopped");
 	}
 	
 	public void createService(Intent intent, ServiceInfo serviceInfo, Message reply) {

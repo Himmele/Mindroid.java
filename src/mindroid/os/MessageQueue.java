@@ -30,7 +30,7 @@ import mindroid.util.Log;
 public class MessageQueue {
     private static final String LOG_TAG = "MessageQueue";
     private static final boolean DEBUG = false;
-    private static final int STARVATION_DELAY = 500; //ms
+    private static final int STARVATION_DELAY = 1000; //ms
     private final boolean mAllowQuitMessage;
 
     Message mMessages;
@@ -42,7 +42,7 @@ public class MessageQueue {
 
     final void quit() {
         if (!mAllowQuitMessage) {
-            throw new RuntimeException("Looper thread is not allowed to quit.");
+            throw new RuntimeException("Looper thread is not allowed to quit");
         }
 
         synchronized (this) {
@@ -56,10 +56,10 @@ public class MessageQueue {
 
     final boolean enqueueMessage(Message message, long when) {
         if (message.when != 0) {
-            throw new RuntimeException(message + ": This message is already in use.");
+            throw new RuntimeException(message + ": This message is already in use");
         }
         if (message.target == null) {
-            throw new RuntimeException("Message must have a target.");
+            throw new RuntimeException("Message must have a target");
         }
 
         synchronized (this) {
@@ -118,7 +118,7 @@ public class MessageQueue {
                     } else {
                     	if (DEBUG) {
                     		if ((now - message.when) > STARVATION_DELAY) {
-	                        	Log.w(LOG_TAG, "Thread '" + Thread.currentThread().getName() + "' has starved " + (now - message.when) + "ms for CPU time");
+	                        	Log.w(LOG_TAG, "Thread '" + Thread.currentThread().getName() + "' starvation delay: " + (now - message.when) + "ms");
 	                        }
                     	}
 

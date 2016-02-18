@@ -27,5 +27,5 @@ public interface IInterface {
      * You must use this instead of a plain cast, so that proxy objects
      * can return the correct result.
      */
-	public abstract IBinder asBinder();
+	public IBinder asBinder();
 }

@@ -81,7 +81,7 @@ public class Looper {
     public static void loop() {
         final Looper me = myLooper();
         if (me == null) {
-            throw new RuntimeException("No Looper; Looper.prepare() wasn't called on this thread.");
+            throw new RuntimeException("No Looper; Looper.prepare() wasn't called on this thread");
         }
         final MessageQueue mq = me.mMessageQueue;
 

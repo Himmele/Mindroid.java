@@ -31,7 +31,7 @@ public interface IBinder {
 	/**
      * Get the canonical name of the interface supported by this binder.
      */
-	public abstract String getInterfaceDescriptor();
+	public String getInterfaceDescriptor() throws RemoteException;
 	
-	public abstract IInterface queryInterface(String descriptor);
+	public IInterface queryInterface(String descriptor);
 }

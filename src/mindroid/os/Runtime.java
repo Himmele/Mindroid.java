@@ -67,7 +67,7 @@ public class Runtime {
         
     	synchronized (mShutdownHooks) {
             if (mShutdownHooks.contains(hook)) {
-                throw new IllegalArgumentException("Hook already registered.");
+                throw new IllegalArgumentException("Hook already registered");
             }
 
             mShutdownHooks.add(hook);
