@@ -34,6 +34,7 @@ import mindroid.os.HandlerThread;
 import mindroid.os.IBinder;
 import mindroid.os.IServiceManager;
 import mindroid.os.Looper;
+import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
 
@@ -50,7 +51,7 @@ class ContextImpl extends Context {
     private HashMap mServiceConnections = new HashMap();
 
     ContextImpl(HandlerThread mainThread, ComponentName component) {
-    	mServiceManager = ServiceManager.getIServiceManager();
+    	mServiceManager = ServiceManager.getServiceManager();
     	mMainThread = mainThread;
     	mComponent = component;
     }
@@ -113,7 +114,11 @@ class ContextImpl extends Context {
     
     public ComponentName startService(Intent service) {
     	if (service != null) {
-    		return mServiceManager.startService(mComponent, service);
+    		try {
+				return mServiceManager.startService(mComponent, service);
+			} catch (RemoteException e) {
+				throw new RuntimeException("System failure");
+			}
     	} else {
     		return null;
     	}
@@ -121,7 +126,11 @@ class ContextImpl extends Context {
     
     public boolean stopService(Intent service) {
     	if (service != null) {
-    		return mServiceManager.stopService(mComponent, service);
+    		try {
+				return mServiceManager.stopService(mComponent, service);
+			} catch (RemoteException e) {
+				throw new RuntimeException("System failure");
+			}
     	} else {
     		return false;
     	}
@@ -133,7 +142,11 @@ class ContextImpl extends Context {
 				return true;
 			}
     		mServiceConnections.put(conn, service);
-    		return mServiceManager.bindService(mComponent, service, conn, flags);
+    		try {
+				return mServiceManager.bindService(mComponent, service, conn, flags);
+			} catch (RemoteException e) {
+				throw new RuntimeException("System failure");
+			}
     	} else {
     		return false;
     	}
@@ -144,7 +157,10 @@ class ContextImpl extends Context {
     		if (mServiceConnections.containsKey(conn)) {
     			Intent service = (Intent) mServiceConnections.get(conn);
     			mServiceConnections.remove(conn);
-    			mServiceManager.unbindService(mComponent, service, conn);
+    			try {
+					mServiceManager.unbindService(mComponent, service, conn);
+				} catch (RemoteException e) {
+				}
     		}
     	}
     }
@@ -170,7 +186,10 @@ class ContextImpl extends Context {
             ServiceConnection conn = (ServiceConnection) pair.getKey();
             Intent service = (Intent) pair.getValue();
             itr.remove();
-            mServiceManager.unbindService(mComponent, service, conn);
+            try {
+				mServiceManager.unbindService(mComponent, service, conn);
+			} catch (RemoteException e) {
+			}
             Log.w(LOG_TAG, "Service " + mComponent + " is leaking a ServiceConnection to " + service.getComponent());
         }
     }

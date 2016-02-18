@@ -16,10 +16,11 @@
 
 package mindroid.content.pm;
 
+import mindroid.os.Bundle;
 import mindroid.os.IInterface;
 import mindroid.os.IBinder;
 import mindroid.os.Binder;
-import mindroid.os.Message;
+import mindroid.os.RemoteException;
 
 public interface IPackageManagerListener extends IInterface {
 	public static abstract class Stub extends Binder implements IPackageManagerListener {
@@ -33,28 +34,28 @@ public interface IPackageManagerListener extends IInterface {
 			if (binder == null) {
 				return null;
 			}
-			return new IPackageManagerListener.Stub.SmartProxy((Binder) binder);
+			return new IPackageManagerListener.Stub.SmartProxy(binder);
 		}
 		
 		public IBinder asBinder() {
 			return this;
 		}
 		
-		public void handleMessage(Message msg) {
-			switch (msg.what) {
+		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+			switch (what) {
 			case MSG_NOTIFY_BOOT_COMPLETED: {
 				onBootCompleted();
-				break;
+				return null;
 			}
 			default:
-			    super.handleMessage(msg);
+			    return super.onTransact(what, arg1, arg2, obj, data);
 			}
 		}
 		
 		private static class Proxy implements IPackageManagerListener {
-			private final Binder mBinder;
+			private final IBinder mBinder;
 
-			Proxy(Binder binder) {
+			Proxy(IBinder binder) {
 				mBinder = binder;
 			}
 			
@@ -62,20 +63,19 @@ public interface IPackageManagerListener extends IInterface {
 				return mBinder;
 			}
 
-			public void onBootCompleted() {
-				Message msg = mBinder.obtainMessage(MSG_NOTIFY_BOOT_COMPLETED);
-				msg.sendToTarget();
+			public void onBootCompleted() throws RemoteException {
+				mBinder.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
 			}
 		}
 		
 		private static class SmartProxy implements IPackageManagerListener {
-			private final Binder mBinder;
-			private final IPackageManagerListener mServiceReference;
-			private final Proxy mProxy;
+			private final IBinder mBinder;
+			private final IPackageManagerListener mStub;
+			private final IPackageManagerListener mProxy;
 
-			SmartProxy(Binder binder) {
+			SmartProxy(IBinder binder) {
 				mBinder = binder;
-				mServiceReference = (mindroid.content.pm.IPackageManagerListener) binder.queryInterface(DESCRIPTOR);
+				mStub = (mindroid.content.pm.IPackageManagerListener) binder.queryLocalInterface(DESCRIPTOR);
 				mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(binder);
 			}
 			
@@ -83,9 +83,9 @@ public interface IPackageManagerListener extends IInterface {
 				return mBinder;
 			}
 
-			public void onBootCompleted() {
-				if (mBinder.sameThread()) {
-					mServiceReference.onBootCompleted();
+			public void onBootCompleted() throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					mStub.onBootCompleted();
 				} else {
 					mProxy.onBootCompleted();
 				}
@@ -95,5 +95,5 @@ public interface IPackageManagerListener extends IInterface {
 		static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
 	}
 	
-	public abstract void onBootCompleted();
+	public void onBootCompleted() throws RemoteException;
 }

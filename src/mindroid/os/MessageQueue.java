@@ -31,48 +31,52 @@ public class MessageQueue {
     private static final String LOG_TAG = "MessageQueue";
     private static final boolean DEBUG = false;
     private static final int STARVATION_DELAY = 1000; //ms
-    private final boolean mAllowQuitMessage;
+    private final boolean mQuitAllowed;
 
     Message mMessages;
-    private boolean mQuiting;
+    private boolean mQuitting;
 
-    MessageQueue(boolean allowQuitMessage) {
-        mAllowQuitMessage = allowQuitMessage;
+    MessageQueue(boolean quitAllowed) {
+        mQuitAllowed = quitAllowed;
     }
 
     final void quit() {
-        if (!mAllowQuitMessage) {
-            throw new RuntimeException("Looper thread is not allowed to quit");
+        if (!mQuitAllowed) {
+            throw new IllegalStateException("Looper thread is not allowed to quit");
         }
 
         synchronized (this) {
-            if (mQuiting) {
+            if (mQuitting) {
                 return;
             }
-            mQuiting = true;
+            mQuitting = true;
+            
+            Message curMessage = mMessages;
+            while (curMessage != null) {
+            	Message nextMessage = curMessage.nextMessage;
+            	curMessage.recycle();
+            	curMessage = nextMessage;
+            }
+            mMessages = null;
+            
             notify();
         }
     }
 
     final boolean enqueueMessage(Message message, long when) {
+    	if (message.target == null) {
+    		throw new IllegalArgumentException("Message must have a target");
+    	}
         if (message.when != 0) {
-            throw new RuntimeException(message + ": This message is already in use");
-        }
-        if (message.target == null) {
-            throw new RuntimeException("Message must have a target");
+            throw new IllegalStateException(message + ": This message is already in use");
         }
 
         synchronized (this) {
-            if (mQuiting) {
-                if (!(message.target instanceof Binder)) {
-                    RuntimeException e = new RuntimeException(message.target + " is sending a message to a Handler on a dead thread");
-                    Log.w(LOG_TAG, e.getMessage(), e);
-                    return false;
-                } else {
-                    RemoteException e = new RemoteException(message.target + " is sending a message to a dead Binder");
-                    Log.w(LOG_TAG, e.getMessage(), e);
-                    throw e;
-                }
+            if (mQuitting) {
+            	IllegalStateException e = new IllegalStateException(message.target + " is sending a message to a Handler on a dead thread");
+				Log.w(LOG_TAG, e.getMessage(), e);
+            	message.recycle();
+            	return false;
             }
 
             message.when = when;
@@ -101,7 +105,7 @@ public class MessageQueue {
     final Message dequeueMessage() {
         for (;;) {
             synchronized (this) {
-                if (mQuiting) {
+                if (mQuitting) {
                     return null;
                 }
 

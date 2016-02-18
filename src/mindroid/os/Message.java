@@ -17,8 +17,9 @@
 
 package mindroid.os;
 
+import mindroid.util.concurrent.SettableFuture;
+
 /**
- * 
  * Defines a message containing a description and arbitrary data object that can be
  * sent to a {@link Handler}.  This object contains two extra int fields and an
  * extra object field that allow you to not do allocations in many cases.  
@@ -217,6 +218,10 @@ public final class Message {
      * freed.
      */
     public void recycle() {
+    	if (future != null) {
+    		future.cancel();
+    	}
+    	
         clear();
 
         synchronized (sMessagePoolSync) {
@@ -323,7 +328,7 @@ public final class Message {
     public void sendToTarget() {
         target.sendMessage(this);
     }
-
+    
     /*package*/ void clear() {
         what = 0;
         arg1 = 0;
@@ -333,10 +338,17 @@ public final class Message {
         target = null;
         callback = null;
         data = null;
+        future = null;
     }    
 
     /** Constructor (but the preferred way to get a Message is to call {@link #obtain() Message.obtain()}).
     */
     public Message() {
-    }    
+    }
+    
+    /**
+     * Result of a Binder transaction.
+     * @hide
+     */
+    public SettableFuture future;
 }

@@ -14,7 +14,7 @@ public class TestService1 extends Service {
 
 	public void onCreate() {
 		final Intent intent = new Intent();
-		intent.setClassName("tests", "TestService2");
+		intent.setClassName("examples", "TestService2");
 		final ServiceConnection conn = new ServiceConnection() {
 			public void onServiceConnected(ComponentName name, IBinder service) {
 				Log.i(LOG_TAG, "onServiceConnected: " + service);

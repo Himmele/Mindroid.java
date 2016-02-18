@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2006 The Android Open Source Project
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2016 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +14,14 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
 
-/**
- * Parent exception for all Binder remote-invocation errors
- */
-public class RemoteException extends Exception {
-    public RemoteException() {
-        super();
-    }
+public interface Future {
+	public boolean cancel();
+	
+	public boolean isCancelled();
+	
+	public boolean isDone();
 
-    public RemoteException(String message) {
-        super(message);
-    }
-    
-    public RemoteException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public RemoteException(Exception cause) {
-        super(cause);
-    }
+	public Object get() throws CancellationException, ExecutionException, InterruptedException;
 }

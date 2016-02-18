@@ -9,13 +9,14 @@ import mindroid.content.pm.PackageManagerListener;
 import mindroid.os.Environment;
 import mindroid.os.IServiceManager;
 import mindroid.os.Looper;
+import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
 
 public class Main {
 	/**
-	 * e.g. Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=../../
-	 * e.g. Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=../../
+	 * e.g. Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
+	 * e.g. Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
 	 */
 	public static void main(String[] args) {
 		final String LOG_TAG = "main";
@@ -32,8 +33,10 @@ public class Main {
 
 		try {
 			startSystemServices();
+		} catch (RemoteException e) {
+			System.exit(-1);
 		} catch (InterruptedException e) {
-			// TODO: Restart.
+			System.exit(-1);
 		}
 
 		Looper.prepare();
@@ -41,22 +44,33 @@ public class Main {
 		PackageManagerListener packageManagerListener = new PackageManagerListener() {
 			public void onBootCompleted() {
 				Log.i(LOG_TAG, "Boot completed");
-				ComponentName[] services = packageManager.getAutostartServices();
-				IServiceManager serviceManager = ServiceManager.getIServiceManager();
+				ComponentName[] services = null;
+				try {
+					services = packageManager.getAutostartServices();
+				} catch (RemoteException e) {
+				}
+				IServiceManager serviceManager = ServiceManager.getServiceManager();
 				
 				for (int i = 0; i < services.length; i++) {
 					Intent intent = new Intent();
 					intent.setComponent(services[i]);
-					serviceManager.startService(intent);
+					try {
+						serviceManager.startService(intent);
+					} catch (RemoteException e) {
+					}
 				}
 			}
 		};
-		packageManager.addListener(packageManagerListener.asBinder());
+		try {
+			packageManager.addListener(packageManagerListener.asBinder());
+		} catch (RemoteException e) {
+			System.exit(-1);
+		}
 		Looper.loop();
 	}
 	
-	public static void startSystemServices() throws InterruptedException {
-		IServiceManager serviceManager = ServiceManager.getIServiceManager();
+	public static void startSystemServices() throws RemoteException, InterruptedException {
+		IServiceManager serviceManager = ServiceManager.getServiceManager();
 
 		ArrayList logBuffers = new ArrayList();
 		logBuffers.add(new String("main"));
@@ -76,8 +90,8 @@ public class Main {
 		ServiceManager.waitForSystemService(Context.PACKAGE_MANAGER);
 	}
 	
-	public static void shutdownApps() throws InterruptedException {
-		IServiceManager serviceManager = ServiceManager.getIServiceManager();
+	public static void shutdownApps() throws RemoteException, InterruptedException {
+		IServiceManager serviceManager = ServiceManager.getServiceManager();
 		IPackageManager packageManager = IPackageManager.Stub.asInterface(ServiceManager.getSystemService(Context.PACKAGE_MANAGER));
 		if (packageManager != null) {
 			ComponentName services[] = packageManager.getAutostartServices();
@@ -87,8 +101,8 @@ public class Main {
 		}
 	}
 	
-	public static void shutdownSystemServices() throws InterruptedException {
-		IServiceManager serviceManager = ServiceManager.getIServiceManager();
+	public static void shutdownSystemServices() throws RemoteException, InterruptedException {
+		IServiceManager serviceManager = ServiceManager.getServiceManager();
 
 		serviceManager.stopSystemService(new Intent()
 				.setComponent(Consts.PACKAGE_MANAGER));

@@ -28,10 +28,20 @@ package mindroid.os;
  * @see Binder
  */
 public interface IBinder {
+	public static final int FLAG_ONEWAY = 0x00000001;
+	
 	/**
      * Get the canonical name of the interface supported by this binder.
      */
 	public String getInterfaceDescriptor() throws RemoteException;
 	
-	public IInterface queryInterface(String descriptor);
+	public IInterface queryLocalInterface(String descriptor);
+	
+	public Object transact(int what, int flags) throws RemoteException;
+	public Object transact(int what, Object obj, int flags) throws RemoteException;
+	public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException;
+	public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException;
+	public Object transact(int what, Bundle bundle, int flags) throws RemoteException;
+
+	public boolean runsOnSameThread();
 }

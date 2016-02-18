@@ -173,7 +173,11 @@ public class PackageManagerService extends Service {
 		
 		if (deadListeners != null) {
 			for (Iterator itr = deadListeners.iterator(); itr.hasNext();) {
-				mBinder.removeListener((IPackageManagerListener) itr.next());
+				try {
+					mBinder.removeListener((IPackageManagerListener) itr.next());
+				} catch (RemoteException e) {
+					// Ignore exception
+				}
 			}
 		}
 	}

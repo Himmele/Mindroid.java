@@ -22,97 +22,84 @@ import mindroid.content.ServiceConnection;
 import mindroid.os.Binder;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
-import mindroid.os.Message;
-import mindroid.util.concurrent.SettableFuture;
 
 public interface IServiceManager extends IInterface {
 	public static abstract class Stub extends Binder implements IServiceManager {
 		private static final java.lang.String DESCRIPTOR = "mindroid.os.IServiceManager";
 		
-		public Stub(Looper looper) {
-			super(looper);
-			this.attachInterface(this, DESCRIPTOR, looper.getThread());
+		public Stub() {
+			this.attachInterface(this, DESCRIPTOR);
 		}
 		
 		public static IServiceManager asInterface(IBinder binder) {
-			if(binder == null) {
+			if (binder == null) {
 				return null;
 			}
-			return new IServiceManager.Stub.SmartProxy((Binder) binder);
+			return new IServiceManager.Stub.SmartProxy(binder);
 		}
 		
 		public IBinder asBinder() {
 			return this;
 		}
 		
-		public void handleMessage(Message msg) {
-			switch (msg.what) {
+		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+			switch (what) {
 			case MSG_START_SERVICE: {
-				ComponentName caller = (ComponentName) msg.getData().getObject("caller");
-				Intent service = (Intent) msg.getData().getObject("intent");
-				SettableFuture future = (SettableFuture) msg.getData().getObject("future");
+				ComponentName caller = (ComponentName) data.getObject("caller");
+				Intent service = (Intent) data.getObject("intent");
 				ComponentName component;
 				if (caller != null) {
 					component = startService(caller, service);
 				} else {
 					component = startService(service);
 				}
-				future.set(component);
-				break;
+				return component;
 			}
 			case MSG_STOP_SERVICE: {
-				ComponentName caller = (ComponentName) msg.getData().getObject("caller");
-				Intent service = (Intent) msg.getData().getObject("intent");
-				SettableFuture future = (SettableFuture) msg.getData().getObject("future");
+				ComponentName caller = (ComponentName) data.getObject("caller");
+				Intent service = (Intent) data.getObject("intent");
 				boolean result;
 				if (caller != null) {
 					result = stopService(caller, service);
 				} else {
 					result = stopService(service);
 				}
-				future.set(new Boolean(result));
-				break;
+				return new Boolean(result);
 			}
 			case MSG_BIND_SERVICE: {
-				ComponentName caller = (ComponentName) msg.getData().getObject("caller");
-				Intent service = (Intent) msg.getData().getObject("intent");
-				ServiceConnection conn = (ServiceConnection) msg.getData().getObject("conn");
-				int flags = msg.getData().getInt("flags");
-				SettableFuture future = (SettableFuture) msg.getData().getObject("future");
+				ComponentName caller = (ComponentName) data.getObject("caller");
+				Intent service = (Intent) data.getObject("intent");
+				ServiceConnection conn = (ServiceConnection) data.getObject("conn");
+				int flags = data.getInt("flags");
 				boolean result = bindService(caller, service, conn, flags);
-				future.set(new Boolean(result));
-				break;
+				return new Boolean(result);
 			}
 			case MSG_UNBIND_SERVICE: {
-				ComponentName caller = (ComponentName) msg.getData().getObject("caller");
-				Intent service = (Intent) msg.getData().getObject("service");
-				ServiceConnection conn = (ServiceConnection) msg.getData().getObject("conn");
+				ComponentName caller = (ComponentName) data.getObject("caller");
+				Intent service = (Intent) data.getObject("service");
+				ServiceConnection conn = (ServiceConnection) data.getObject("conn");
 				unbindService(caller, service, conn);
-				break;
+				return null;
 			}
 			case MSG_START_SYSTEM_SERVICE: {
-				Intent service = (Intent) msg.getData().getObject("intent");
-				SettableFuture future = (SettableFuture) msg.getData().getObject("future");
+				Intent service = (Intent) obj;
 				ComponentName component = startSystemService(service);
-				future.set(component);
-				break;
+				return component;
 			}
 			case MSG_STOP_SYSTEM_SERVICE: {
-				Intent service = (Intent) msg.getData().getObject("intent");
-				SettableFuture future = (SettableFuture) msg.getData().getObject("future");
+				Intent service = (Intent) obj;
 				boolean result = stopSystemService(service);
-				future.set(new Boolean(result));
-				break;
+				return new Boolean(result);
 			}
 			default:
-			    super.handleMessage(msg);
+			    return super.onTransact(what, arg1, arg2, obj, data);
 			}
 		}
 		
 		private static class Proxy implements IServiceManager {
-			private final Binder mBinder;
+			private final IBinder mBinder;
 			
-			Proxy(Binder binder) {
+			Proxy(IBinder binder) {
 				mBinder = binder;
 			}
 			
@@ -120,165 +107,132 @@ public interface IServiceManager extends IInterface {
 				return mBinder;
 			}
 			
-			public ComponentName startService(Intent service) {
+			public ComponentName startService(Intent service) throws RemoteException {
 				return startService(null, service);
 			}
 			
-			public boolean stopService(Intent service) {
+			public boolean stopService(Intent service) throws RemoteException {
 				return stopService(null, service);
 			}
 			
-			public ComponentName startService(ComponentName caller, Intent service) {
-				SettableFuture future = new SettableFuture();
-				Message msg = mBinder.obtainMessage(MSG_START_SERVICE);
+			public ComponentName startService(ComponentName caller, Intent service) throws RemoteException {
 				Bundle data = new Bundle();
 				data.putObject("caller", caller);
 				data.putObject("intent", service);
-				data.putObject("future", future);
-				msg.setData(data);
-				msg.sendToTarget();
-				ComponentName component = (ComponentName) future.get();
-				return component;
+				return (ComponentName) mBinder.transact(MSG_START_SERVICE, data, 0);
 			}
 			
-			public boolean stopService(ComponentName caller, Intent service) {
-				SettableFuture future = new SettableFuture();
-				Message msg = mBinder.obtainMessage(MSG_STOP_SERVICE);
+			public boolean stopService(ComponentName caller, Intent service) throws RemoteException {
 				Bundle data = new Bundle();
 				data.putObject("caller", caller);
 				data.putObject("intent", service);
-				data.putObject("future", future);
-				msg.setData(data);
-				msg.sendToTarget();
-				Boolean result = (Boolean) future.get();
+				Boolean result = (Boolean) mBinder.transact(MSG_STOP_SERVICE, data, 0);
 				return result.booleanValue();
 			}
 			
-			public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) {
-				SettableFuture future = new SettableFuture();
-				Message msg = mBinder.obtainMessage(MSG_BIND_SERVICE);
+			public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) throws RemoteException {
 				Bundle data = new Bundle();
 				data.putObject("caller", caller);
 				data.putObject("intent", service);
 				data.putObject("conn", conn);
 				data.putInt("flags", flags);
-				data.putObject("future", future);
-				msg.setData(data);
-				msg.sendToTarget();
-				Boolean result = (Boolean) future.get();
+				Boolean result = (Boolean) mBinder.transact(MSG_BIND_SERVICE, data, 0);
 				return result.booleanValue();
 			}
 			
-			public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) {
-				Message msg = mBinder.obtainMessage(MSG_UNBIND_SERVICE);
+			public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) throws RemoteException {
 				Bundle data = new Bundle();
 				data.putObject("caller", caller);
 				data.putObject("service", service);
 				data.putObject("conn", conn);
-				msg.setData(data);
-				msg.sendToTarget();
+				mBinder.transact(MSG_UNBIND_SERVICE, data, FLAG_ONEWAY);
 			}
 
-			public ComponentName startSystemService(Intent service) {
-				SettableFuture future = new SettableFuture();
-				Message msg = mBinder.obtainMessage(MSG_START_SYSTEM_SERVICE);
-				Bundle data = new Bundle();
-				data.putObject("intent", service);
-				data.putObject("future", future);
-				msg.setData(data);
-				msg.sendToTarget();
-				ComponentName component = (ComponentName) future.get();
+			public ComponentName startSystemService(Intent service) throws RemoteException {
+				ComponentName component = (ComponentName) mBinder.transact(MSG_START_SYSTEM_SERVICE, service, 0);
 				return component;
 			}
 
-			public boolean stopSystemService(Intent service) {
-				SettableFuture future = new SettableFuture();
-				Message msg = mBinder.obtainMessage(MSG_STOP_SYSTEM_SERVICE);
-				Bundle data = new Bundle();
-				data.putObject("intent", service);
-				data.putObject("future", future);
-				msg.setData(data);
-				msg.sendToTarget();
-				Boolean result = (Boolean) future.get();
+			public boolean stopSystemService(Intent service) throws RemoteException {
+				Boolean result = (Boolean) mBinder.transact(MSG_STOP_SYSTEM_SERVICE, service, 0);
 				return result.booleanValue();
 			}
 		}
 		
 		private static class SmartProxy implements IServiceManager {
-			private final Binder mBinder;
-			private final IServiceManager mServiceReference;
-			private final Proxy mProxy;
+			private final IBinder mBinder;
+			private final IServiceManager mStub;
+			private final IServiceManager mProxy;
 			
-			SmartProxy(Binder binder) {
+			SmartProxy(IBinder binder) {
 				mBinder = binder;
-				mServiceReference = (IServiceManager) binder.queryInterface(DESCRIPTOR);
+				mStub = (IServiceManager) binder.queryLocalInterface(DESCRIPTOR);
 				mProxy = new IServiceManager.Stub.Proxy(binder);
 			}
 			
 			public IBinder asBinder() {
 				return mBinder;
 			}
-
 			
-			public ComponentName startService(Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.startService(service);
+			public ComponentName startService(Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.startService(service);
 				} else {
 					return mProxy.startService(service);
 				}
 			}
 			
-			public boolean stopService(Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.stopService(service);
+			public boolean stopService(Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.stopService(service);
 				} else {
 					return mProxy.stopService(service);
 				}
 			}
 			
-			public ComponentName startService(ComponentName caller, Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.startService(caller, service);
+			public ComponentName startService(ComponentName caller, Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.startService(caller, service);
 				} else {
 					return mProxy.startService(caller, service);
 				}
 			}
 			
-			public boolean stopService(ComponentName caller, Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.stopService(caller, service);
+			public boolean stopService(ComponentName caller, Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.stopService(caller, service);
 				} else {
 					return mProxy.stopService(caller, service);
 				}
 			}
 			
-			public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.bindService(caller, service, conn, flags);
+			public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.bindService(caller, service, conn, flags);
 				} else {
 					return mProxy.bindService(caller, service, conn, flags);
 				}
 			}
 			
-			public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) {
-				if (mBinder.sameThread()) {
-					mServiceReference.unbindService(caller, service, conn);
+			public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					mStub.unbindService(caller, service, conn);
 				} else {
 					mProxy.unbindService(caller, service, conn);
 				}
 			}
 
-			public ComponentName startSystemService(Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.startSystemService(service);
+			public ComponentName startSystemService(Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.startSystemService(service);
 				} else {
 					return mProxy.startSystemService(service);
 				}
 			}
 
-			public boolean stopSystemService(Intent service) {
-				if (mBinder.sameThread()) {
-					return mServiceReference.stopSystemService(service);
+			public boolean stopSystemService(Intent service) throws RemoteException {
+				if (mBinder.runsOnSameThread()) {
+					return mStub.stopSystemService(service);
 				} else {
 					return mProxy.stopSystemService(service);
 				}
@@ -293,12 +247,12 @@ public interface IServiceManager extends IInterface {
 		static final int MSG_STOP_SYSTEM_SERVICE = 6;
 	}
 	
-	public abstract ComponentName startService(Intent service);
-	public abstract boolean stopService(Intent service);
-	public abstract ComponentName startService(ComponentName caller, Intent service);
-	public abstract boolean stopService(ComponentName caller, Intent service);
-	public abstract boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags);
-	public abstract void unbindService(ComponentName caller, Intent service, ServiceConnection conn);
-	public abstract ComponentName startSystemService(Intent service);
-	public abstract boolean stopSystemService(Intent service);
+	public ComponentName startService(Intent service) throws RemoteException;
+	public boolean stopService(Intent service) throws RemoteException;
+	public ComponentName startService(ComponentName caller, Intent service) throws RemoteException;
+	public boolean stopService(ComponentName caller, Intent service) throws RemoteException;
+	public boolean bindService(ComponentName caller, Intent service, ServiceConnection conn, int flags) throws RemoteException;
+	public void unbindService(ComponentName caller, Intent service, ServiceConnection conn) throws RemoteException;
+	public ComponentName startSystemService(Intent service) throws RemoteException;
+	public boolean stopSystemService(Intent service) throws RemoteException;
 }

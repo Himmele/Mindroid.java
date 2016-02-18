@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2006 The Android Open Source Project
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2016 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +14,16 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
 
 /**
- * Parent exception for all Binder remote-invocation errors
+ * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved because the task was stopped.
  */
-public class RemoteException extends Exception {
-    public RemoteException() {
-        super();
+public class ExecutionException extends IllegalStateException {
+    public ExecutionException() {
     }
 
-    public RemoteException(String message) {
-        super(message);
+    public ExecutionException(String name) {
+        super(name);
     }
-    
-    public RemoteException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public RemoteException(Exception cause) {
-        super(cause);
-    }
-}
+};

@@ -27,12 +27,15 @@ import mindroid.content.pm.ApplicationInfo;
 import mindroid.content.pm.IPackageManager;
 import mindroid.content.pm.ServiceInfo;
 import mindroid.util.Log;
+import mindroid.util.concurrent.CancellationException;
+import mindroid.util.concurrent.ExecutionException;
+import mindroid.util.concurrent.SettableFuture;
 
 public final class ServiceManager {
 	private static final String LOG_TAG = "ServiceManager";
 	private static final String SYSTEM_SERVICE = "systemService";
 	private static IServiceManager sServiceManager;
-	private static IServiceManager.Stub sMessenger = null;
+	private static IServiceManager.Stub sServiceManagerStub;
 	private static HashMap sSystemServices = new HashMap();
 	private static final int PREPARE_SERVICE_DONE = 1;
 	private static final int BIND_SERVICE_DONE = 2;
@@ -140,9 +143,23 @@ public final class ServiceManager {
 	public void start() {
 		mMainThread.start();
 		mMainHandler = new MainHandler(mMainThread.getLooper());
-		sMessenger = new Messenger(mMainThread.getLooper());
+		final SettableFuture future = new SettableFuture();
+		mMainHandler.post(new Runnable() {
+			public void run() {
+				future.set(new ServiceManagerStub());
+			}
+		});
+		try {
+			sServiceManagerStub = (IServiceManager.Stub) future.get();
+		} catch (CancellationException e) {
+			return;
+		} catch (ExecutionException e) {
+			return;
+		} catch (InterruptedException e) {
+			return;
+		}
 		
-		addService(Context.SERVICE_MANAGER, sMessenger);
+		addService(Context.SERVICE_MANAGER, sServiceManagerStub);
 	}
 	
 	public void shutdown() {
@@ -215,11 +232,7 @@ public final class ServiceManager {
 		}
 	}
 	
-	class Messenger extends IServiceManager.Stub {
-		public Messenger(Looper looper) {
-			super(looper);
-		}
-		
+	class ServiceManagerStub extends IServiceManager.Stub {
 		public ComponentName startService(Intent service) {
 			service.putExtra(SYSTEM_SERVICE, false);
 			if (mPackageManager == null) {
@@ -229,7 +242,7 @@ public final class ServiceManager {
 			try {
 				serviceInfo = mPackageManager.resolveService(service);
 			} catch (RemoteException e) {
-				// Ignore exception
+				return null;
 			}
 			if (serviceInfo == null) {
 				return null;
@@ -306,7 +319,7 @@ public final class ServiceManager {
 			try {
 				serviceInfo = mPackageManager.resolveService(service);
 			} catch (RemoteException e) {
-				// Ignore exception
+				return false;
 			}
 			if (serviceInfo == null) {
 				return false;
@@ -359,7 +372,10 @@ public final class ServiceManager {
 				Log.d(LOG_TAG, "Unbound from service " + serviceRecord.serviceName + " in process " + processRecord.processName);
 				
 				if (serviceRecord.getNumServiceConnections() == 0) {
-					sServiceManager.stopService(service);
+					try {
+						sServiceManager.stopService(service);
+					} catch (RemoteException e) {
+					}
 				}
 			}
 		}
@@ -496,12 +512,12 @@ public final class ServiceManager {
 		}
 	}
 	
-	public static synchronized IServiceManager getIServiceManager() {
+	public static synchronized IServiceManager getServiceManager() {
         if (sServiceManager != null) {
             return sServiceManager;
         }
 
-        sServiceManager = IServiceManager.Stub.asInterface(sMessenger);
+        sServiceManager = IServiceManager.Stub.asInterface(sServiceManagerStub);
         return sServiceManager;
     }
 	

@@ -16,45 +16,54 @@
 
 package mindroid.util.concurrent;
 
-public class SettableFuture {
+public class SettableFuture implements Future {
 	private Object mObject = null;
 	private boolean mIsDone = false;
+	private boolean mIsCancelled = false;
 	
 	public SettableFuture() {
+	}
+	
+	public synchronized boolean cancel() {
+		if (!mIsDone && !mIsCancelled) {
+			mIsCancelled = true;
+			notify();
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public synchronized boolean isCancelled() {
+		return mIsCancelled;
 	}
 	
 	public synchronized boolean isDone() {
 		return mIsDone;
 	}
 	
-	public synchronized Object get() {
+	public synchronized Object get() throws CancellationException, ExecutionException, InterruptedException {
 		while (!isDone()) {
+			if (isCancelled()) {
+				throw new CancellationException("Binder transaction error");
+			}
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				throw new CancellationException("Binder transaction aborted");
+				throw e;
 			}
 		}
 		return mObject;
 	}
 	
-	public synchronized Object get(long timeout) {
-		long startTime = System.currentTimeMillis();
-		long endTime = startTime;
-		while (!isDone() && (endTime - startTime < timeout)) {
-			try {
-				wait(timeout - (endTime - startTime));
-			} catch (InterruptedException e) {
-				throw new CancellationException("Binder transaction aborted");
-			}
-			endTime = System.currentTimeMillis();
+	public synchronized boolean set(Object object) {
+		if (!mIsCancelled) {
+			mObject = object;
+			mIsDone = true;
+			notify();
+			return true;
+		} else {
+			return false;
 		}
-		return mObject;
-	}
-	
-	public synchronized void set(Object object) {
-		mObject = object;
-		mIsDone = true;
-		notify();
 	}
 }
