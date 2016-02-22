@@ -44,7 +44,7 @@ public class PackageManager {
 	/**
 	 * Return a List of all packages that are installed on the device.
 	 * 
-	 * @param flags Additional option flags. Use any combination of {@link #GET_SERVICES},
+	 * @param flags Additional option flags. Use any combination of {@link #GET_SERVICES}
 	 * 
 	 * @return A List of PackageInfo objects, one for each package that is installed on the device.
 	 * In the unlikely case of there being no installed packages, an empty list is returned.
