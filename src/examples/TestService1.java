@@ -23,23 +23,23 @@ public class TestService1 extends Service {
 			public void onServiceDisconnected(ComponentName name) {
 				Log.i(LOG_TAG, "onServiceDisconnected");
 			}
-			
+
 		};
 		bindService(intent, conn, 0);
 		startService(intent);
-		
+
 		mHandler.postDelayed(new Runnable() {
 			public void run() {
 				stopService(intent);
 			}
 		}, 8000);
-		
+
 		mHandler.postDelayed(new Runnable() {
 			public void run() {
 				unbindService(conn);
 			}
 		}, 4000);
-		
+
 		mHandler.postDelayed(new Runnable() {
 			public void run() {
 				Log.i(LOG_TAG, "Test");

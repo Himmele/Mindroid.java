@@ -12,23 +12,23 @@ public class TestService2 extends Service {
 	public void onCreate() {
 		Log.i(LOG_TAG, "onCreate");
 	}
-	
+
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.i(LOG_TAG, "onStartCommand: " + startId);
-        return 0;
-    }
-	
+		return 0;
+	}
+
 	public IBinder onBind(Intent intent) {
 		Binder binder = new Binder();
 		Log.i(LOG_TAG, "onBind: " + binder);
 		return binder;
 	}
-	
+
 	public boolean onUnbind(Intent intent) {
 		Log.i(LOG_TAG, "onUnbind");
 		return true;
 	}
-	
+
 	public void onDestroy() {
 		Log.i(LOG_TAG, "onDestroy");
 	}

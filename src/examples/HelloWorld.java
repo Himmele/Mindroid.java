@@ -11,7 +11,7 @@ public class HelloWorld extends Service {
 	private static final String LOG_TAG = "HelloWorld";
 	private static final int SAY_HELLO = 0;
 	private static final int SAY_WORLD = 1;
-	
+
 	private final Handler mHelloHandler = new Handler() {
 		public void handleMessage(Message message) {
 			switch (message.what) {
@@ -22,7 +22,7 @@ public class HelloWorld extends Service {
 			}
 		}
 	};
-	
+
 	private final Handler mWorldHandler = new Handler() {
 		public void handleMessage(Message message) {
 			switch (message.what) {
@@ -38,7 +38,7 @@ public class HelloWorld extends Service {
 	public void onCreate() {
 		mHelloHandler.obtainMessage(SAY_HELLO).sendToTarget();
 	}
-	
+
 	public void onDestroy() {
 		mHelloHandler.removeMessages(SAY_HELLO);
 		mWorldHandler.removeMessages(SAY_WORLD);

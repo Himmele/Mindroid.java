@@ -20,14 +20,14 @@ import mindroid.util.Log;
 
 public class Main {
 	private static final String LOG_TAG = "Mindroid";
-	
+
 	/**
-	 * e.g. Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
-	 * e.g. Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
+	 * Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
+	 * Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
 	 */
 	public static void main(String[] args) {
 		Looper.prepare();
-		
+
 		String rootDir = ".";
 		if (args.length > 0) {
 			if (args[0].startsWith("rootDir=")) {
@@ -35,7 +35,7 @@ public class Main {
 			}
 		}
 		Environment.setRootDirectory(rootDir);
-		
+
 		ServiceManager serviceManager = new ServiceManager();
 		serviceManager.start();
 
@@ -50,10 +50,10 @@ public class Main {
 		} catch (Exception e) {
 			throw new RuntimeException("System failure");
 		}
-		
+
 		Looper.loop();
 	}
-	
+
 	public static void startSystemServices() throws InterruptedException, RemoteException {
 		IServiceManager serviceManager = ServiceManager.getServiceManager();
 
@@ -63,28 +63,26 @@ public class Main {
 				.setComponent(Consts.LOGGER_SERVICE)
 				.putExtra("name", Context.LOGGER_SERVICE)
 				.putExtra("process", "main")
-				.putStringArrayListExtra("logBuffers", logBuffers)
-				.putExtra("timestamps", false)
-				.putExtra("priority", Log.INFO));
+				.putStringArrayListExtra("logBuffers", logBuffers).putExtra("timestamps", false).putExtra("priority", Log.INFO));
 
 		serviceManager.startSystemService(new Intent()
 				.setComponent(Consts.PACKAGE_MANAGER)
 				.putExtra("name", Context.PACKAGE_MANAGER)
 				.putExtra("process", "main"));
-		
+
 		ServiceManager.waitForSystemService(Context.PACKAGE_MANAGER);
 	}
-	
+
 	private static void startServices() throws InterruptedException, RemoteException {
 		final IPackageManager packageManager = IPackageManager.Stub.asInterface(ServiceManager.getSystemService(Context.PACKAGE_MANAGER));
-		
+
 		PackageManagerListener packageManagerListener = new PackageManagerListener() {
 			public void onBootCompleted() {
 				Log.i(LOG_TAG, "Boot completed");
-				
+
 				try {
 					IServiceManager serviceManager = ServiceManager.getServiceManager();
-					
+
 					List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
 					if (packages != null) {
 						for (Iterator itr = packages.iterator(); itr.hasNext();) {
@@ -107,14 +105,14 @@ public class Main {
 				}
 			}
 		};
-		
+
 		packageManager.addListener(packageManagerListener.asInterface());
 	}
-	
+
 	public static void shutdownServices() throws RemoteException, InterruptedException {
 		IServiceManager serviceManager = ServiceManager.getServiceManager();
 		IPackageManager packageManager = IPackageManager.Stub.asInterface(ServiceManager.getSystemService(Context.PACKAGE_MANAGER));
-		
+
 		try {
 			List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
 			if (packages != null) {
@@ -137,16 +135,14 @@ public class Main {
 			// Ignore exception.
 		}
 	}
-	
+
 	public static void shutdownSystemServices() throws RemoteException, InterruptedException {
 		IServiceManager serviceManager = ServiceManager.getServiceManager();
 
-		serviceManager.stopSystemService(new Intent()
-				.setComponent(Consts.PACKAGE_MANAGER));
+		serviceManager.stopSystemService(new Intent().setComponent(Consts.PACKAGE_MANAGER));
 		ServiceManager.waitForSystemServiceShutdown(Context.PACKAGE_MANAGER);
-		
-		serviceManager.stopSystemService(new Intent()
-			.setComponent(Consts.LOGGER_SERVICE));
+
+		serviceManager.stopSystemService(new Intent().setComponent(Consts.LOGGER_SERVICE));
 		ServiceManager.waitForSystemServiceShutdown(Context.LOGGER_SERVICE);
 	}
 }
