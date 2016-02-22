@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2016 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package mindroid.content.pm;
+package mindroid.os;
 
-import mindroid.os.Bundle;
-import mindroid.os.IInterface;
-import mindroid.os.IBinder;
-import mindroid.os.Binder;
-import mindroid.os.RemoteException;
-
-public interface IPackageManagerListener extends IInterface {
-	public static abstract class Stub extends Binder implements IPackageManagerListener {
-		private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageManagerListener";
+public interface IRemoteCallback extends IInterface {
+	public static abstract class Stub extends Binder implements IRemoteCallback {
+		private static final java.lang.String DESCRIPTOR = "mindroid.os.IRemoteCallback";
 
 		public Stub() {
 			this.attachInterface(this, DESCRIPTOR);
 		}
 
-		public static mindroid.content.pm.IPackageManagerListener asInterface(IBinder binder) {
+		public static IRemoteCallback asInterface(IBinder binder) {
 			if (binder == null) {
 				return null;
 			}
-			return new IPackageManagerListener.Stub.SmartProxy(binder);
+			return new IRemoteCallback.Stub.SmartProxy(binder);
 		}
 
 		public IBinder asBinder() {
@@ -43,8 +37,8 @@ public interface IPackageManagerListener extends IInterface {
 
 		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
 			switch (what) {
-			case MSG_NOTIFY_BOOT_COMPLETED: {
-				onBootCompleted();
+			case MSG_SEND_RESULT: {
+				sendResult(data);
 				return null;
 			}
 			default:
@@ -52,7 +46,7 @@ public interface IPackageManagerListener extends IInterface {
 			}
 		}
 
-		private static class Proxy implements IPackageManagerListener {
+		private static class Proxy implements IRemoteCallback {
 			private final IBinder mRemote;
 
 			Proxy(IBinder remote) {
@@ -77,20 +71,20 @@ public interface IPackageManagerListener extends IInterface {
 				return mRemote.hashCode();
 			}
 
-			public void onBootCompleted() throws RemoteException {
-				mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
+			public void sendResult(Bundle data) throws RemoteException {
+				mRemote.transact(MSG_SEND_RESULT, data, FLAG_ONEWAY);
 			}
 		}
 
-		private static class SmartProxy implements IPackageManagerListener {
+		private static class SmartProxy implements IRemoteCallback {
 			private final IBinder mRemote;
-			private final IPackageManagerListener mStub;
-			private final IPackageManagerListener mProxy;
+			private final IRemoteCallback mStub;
+			private final IRemoteCallback mProxy;
 
 			SmartProxy(IBinder remote) {
 				mRemote = remote;
-				mStub = (mindroid.content.pm.IPackageManagerListener) remote.queryLocalInterface(DESCRIPTOR);
-				mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(remote);
+				mStub = (IRemoteCallback) remote.queryLocalInterface(DESCRIPTOR);
+				mProxy = new IRemoteCallback.Stub.Proxy(remote);
 			}
 
 			public IBinder asBinder() {
@@ -111,17 +105,17 @@ public interface IPackageManagerListener extends IInterface {
 				return mRemote.hashCode();
 			}
 
-			public void onBootCompleted() throws RemoteException {
+			public void sendResult(Bundle data) throws RemoteException {
 				if (mRemote.runsOnSameThread()) {
-					mStub.onBootCompleted();
+					mStub.sendResult(data);
 				} else {
-					mProxy.onBootCompleted();
+					mProxy.sendResult(data);
 				}
 			}
 		}
 
-		static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
+		static final int MSG_SEND_RESULT = 1;
 	}
 
-	public void onBootCompleted() throws RemoteException;
+	public void sendResult(Bundle data) throws RemoteException;
 }

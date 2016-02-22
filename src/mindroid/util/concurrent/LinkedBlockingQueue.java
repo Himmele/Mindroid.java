@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
 
 public class LinkedBlockingQueue {
 	private Node mHeadNode;
-	
+
 	public LinkedBlockingQueue() {
 		mHeadNode = null;
 	}
-	
+
 	public synchronized boolean put(Object item) {
 		Node node = new Node(item);
 		Node curNode = mHeadNode;
@@ -42,7 +42,7 @@ public class LinkedBlockingQueue {
 		}
 		return true;
 	}
-	
+
 	public synchronized Object take() throws InterruptedException {
 		while (true) {
 			Node node = getNextNode();
@@ -53,19 +53,19 @@ public class LinkedBlockingQueue {
 			}
 		}
 	}
-	
+
 	public synchronized boolean remove(Object item) {
 		boolean foundItem = false;
 		Node curNode = mHeadNode;
-		// remove all matching nodes at the front of the queue.
+		// Remove all matching nodes at the front of the queue.
 		while (curNode != null && curNode.item == item) {
 			foundItem = true;
 			Node nextNode = curNode.nextNode;
 			mHeadNode = nextNode;
 			curNode = nextNode;
 		}
-	
-		// remove all matching nodes after the front of the queue.
+
+		// Remove all matching nodes after the front of the queue.
 		while (curNode != null) {
 			Node nextNode = curNode.nextNode;
 			if (nextNode != null) {
@@ -80,14 +80,16 @@ public class LinkedBlockingQueue {
 		}
 		return foundItem;
 	}
-	
+
 	class Node {
 		Object item;
 		Node nextNode;
-	
-		Node(Object t) { item = t; }
+
+		Node(Object t) {
+			item = t;
+		}
 	};
-	
+
 	Node getNextNode() {
 		Node node = mHeadNode;
 		if (node != null) {

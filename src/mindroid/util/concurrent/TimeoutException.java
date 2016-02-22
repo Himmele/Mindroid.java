@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2006 The Android Open Source Project
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2016 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +14,17 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
 
 /**
- * Base class for Binder interfaces. When defining a new interface, you must derive it from
- * IInterface.
+ * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved
+ * because the task timed out.
  */
-public interface IInterface {
-	/**
-	 * Retrieve the Binder object associated with this interface. You must use this instead of a
-	 * plain cast, so that proxy objects can return the correct result.
-	 */
-	public IBinder asBinder();
-}
+public class TimeoutException extends Exception {
+	public TimeoutException() {
+	}
+
+	public TimeoutException(String name) {
+		super(name);
+	}
+};

@@ -21,8 +21,6 @@ import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -51,47 +49,65 @@ public class PackageManagerService extends Service {
 	private static final String APPLICATION_TAG = "application";
 	private static final String USES_LIBRARY_TAG = "uses-library";
 	private static final String SERVICE_TAG = "service";
-	private static final int MSG_PUBLISH_SERVICES = 1;
+	private static final int MSG_ADD_PACKAGE = 1;
 	private static final int MSG_BOOT_COMPLETED = 2;
 	private static final String UTF_8 = "UTF-8";
-	private final File mAppDir = Environment.getAppsDirectory();
 	private Thread mThread = null;
-	private HashMap mServices = new HashMap();
+	private HashMap mPackages = new HashMap();
+	private HashMap mComponents = new HashMap();
 	private List mListeners = new ArrayList();
-	private PackageHandler mHandler;
 	private boolean mBootCompleted = false;
 
 	public void onCreate() {
 		ServiceManager.addService(Context.PACKAGE_MANAGER, mBinder);
-		
-		mHandler = new PackageHandler();
 	}
-	
+
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		if (mThread == null) {
 			mThread = new Thread(mScanner, LOG_TAG);
 			mThread.start();
 		}
-        return 0;
-    }
-	
+		return 0;
+	}
+
 	public void onDestroy() {
 		ServiceManager.removeService(Context.PACKAGE_MANAGER);
 	}
-	
+
 	public IBinder onBind(Intent intent) {
 		return mBinder;
 	}
-	
+
 	private final IPackageManager.Stub mBinder = new IPackageManager.Stub() {
-		public ServiceInfo resolveService(Intent service) {
-			return (ServiceInfo) mServices.get(service.getComponent());
+		public List getInstalledPackages(int flags) throws RemoteException {
+			if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
+				ArrayList packages = new ArrayList();
+				Iterator itr = mPackages.entrySet().iterator();
+				while (itr.hasNext()) {
+					Map.Entry entry = (Map.Entry) itr.next();
+					PackageInfo p = (PackageInfo) entry.getValue();
+					packages.add(p);
+				}
+				return packages.isEmpty() ? null : packages;
+			} else {
+				return null;
+			}
 		}
-		
+
+		public ResolveInfo resolveService(Intent intent, int flags) {
+			ResolveInfo resolveInfo = null;
+			ComponentInfo componentInfo = (ComponentInfo) mComponents.get(intent.getComponent());
+			if (componentInfo != null && componentInfo instanceof ServiceInfo) {
+				resolveInfo = new ResolveInfo();
+				resolveInfo.serviceInfo = (ServiceInfo) componentInfo;
+			}
+			return resolveInfo;
+		}
+
 		public void addListener(IPackageManagerListener listener) {
 			if (!mListeners.contains(listener)) {
 				mListeners.add(listener);
-				
+
 				if (mBootCompleted) {
 					try {
 						listener.onBootCompleted();
@@ -103,42 +119,20 @@ public class PackageManagerService extends Service {
 		}
 
 		public void removeListener(IPackageManagerListener listener) {
-			int i;
-			for (i = 0; i < mListeners.size(); i++) {
-				if (((IPackageManagerListener) mListeners.get(i)).asBinder() == listener.asBinder()) {
-					break;
-				}
-			}
-			if (i < mListeners.size()) {
-				mListeners.remove(i);
-			}
-		}
-
-		public ComponentName[] getAutostartServices() {
-			List components = new ArrayList();
-			Iterator itr = mServices.entrySet().iterator();
-		    while (itr.hasNext()) {
-		        Map.Entry service = (Map.Entry) itr.next();
-		        ServiceInfo serviceInfo = (ServiceInfo) service.getValue();
-		        if (serviceInfo.enabled && serviceInfo.autostart) {
-		        	components.add(service.getKey());
-		        }
-		    }
-		    return (ComponentName[]) components.toArray(new ComponentName[components.size()]);
+			mListeners.remove(listener);
 		}
 	};
-	
-	class PackageHandler extends Handler {
+
+	Handler mHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
-			case MSG_PUBLISH_SERVICES:
-				List services = (List) msg.obj;
-				for (int i = 0; i < services.size(); i++) {
-					ServiceInfo si = (ServiceInfo) services.get(i);
-					String serviceName = si.serviceName;
-					String packageName = serviceName.substring(0, serviceName.lastIndexOf("."));
-					String className = serviceName.substring(serviceName.lastIndexOf(".") + 1);
-					mServices.put(new ComponentName(packageName, className), si);
+			case MSG_ADD_PACKAGE:
+				PackageInfo packageInfo = (PackageInfo) msg.obj;
+				mPackages.put(packageInfo.packageName, packageInfo);
+
+				for (int i = 0; i < packageInfo.services.length; i++) {
+					ServiceInfo si = (ServiceInfo) packageInfo.services[i];
+					mComponents.put(new ComponentName(si.packageName, si.name), si);
 				}
 				break;
 			case MSG_BOOT_COMPLETED:
@@ -148,55 +142,41 @@ public class PackageManagerService extends Service {
 				super.handleMessage(msg);
 			}
 		}
-	}
-	
+	};
+
 	void bootCompleted() {
 		Message msg = mHandler.obtainMessage(MSG_BOOT_COMPLETED);
 		msg.sendToTarget();
 	}
-	
+
 	private void onBootCompleted() {
 		mBootCompleted = true;
-		
-		ArrayList deadListeners = null;
+
 		for (Iterator itr = mListeners.iterator(); itr.hasNext();) {
 			IPackageManagerListener listener = (IPackageManagerListener) itr.next();
 			try {
 				listener.onBootCompleted();
 			} catch (RemoteException e) {
-				if (deadListeners == null) {
-					deadListeners = new ArrayList();
-				}
-				deadListeners.add(listener);
-			}
-		}
-		
-		if (deadListeners != null) {
-			for (Iterator itr = deadListeners.iterator(); itr.hasNext();) {
-				try {
-					mBinder.removeListener((IPackageManagerListener) itr.next());
-				} catch (RemoteException e) {
-					// Ignore exception
-				}
+				itr.remove();
 			}
 		}
 	}
-	
+
 	private Runnable mScanner = new Runnable() {
 		public void run() {
-			File[] apps = mAppDir.listFiles(new FilenameFilter() {
-			    public boolean accept(File dir, String name) {
-			        return name.toLowerCase().endsWith(".jar");
-			    }
+			File[] apps = Environment.getAppsDirectory().listFiles(new FilenameFilter() {
+				public boolean accept(File dir, String name) {
+					return name.toLowerCase().endsWith(".jar");
+				}
 			});
-			
+
 			if (apps != null) {
 				for (int i = 0; i < apps.length; i++) {
 					ZipInputStream inputStream = null;
 					try {
 						inputStream = new ZipInputStream(new FileInputStream(apps[i]));
 						ZipEntry entry = inputStream.getNextEntry();
-	
+
 						while (entry != null) {
 							String fileName = entry.getName();
 							if (fileName.equals("MindroidManifest.xml")) {
@@ -208,99 +188,100 @@ public class PackageManagerService extends Service {
 								entry = inputStream.getNextEntry();
 							}
 						}
-	
-					} catch (IOException ex) {
-						Log.e(LOG_TAG, "Cannot read manifest file in jar");
+					} catch (XmlPullParserException e) {
+						Log.e(LOG_TAG, "Cannot read manifest file in " + apps[i].getPath(), e);
+					} catch (IOException e) {
+						Log.e(LOG_TAG, "Cannot read manifest file in " + apps[i].getPath(), e);
 					} finally {
 						if (inputStream != null) {
 							try {
 								inputStream.close();
-							} catch(IOException e) {
+							} catch (IOException e) {
 							}
 						}
 					}
 				}
 			}
-			
+
 			bootCompleted();
 			mThread = null;
 		}
 	};
-	
-	public void parseManifest(InputStream input, ApplicationInfo ai) {
-		try {
-			KXmlParser parser;
-			parser = new KXmlParser();
-			parser.setInput((InputStream) input, UTF_8);
-			parser.setFeature(KXmlParser.FEATURE_PROCESS_NAMESPACES, true);
-			parser.require(XmlPullParser.START_DOCUMENT, null, null);
-			parser.nextTag();
-			parser.require(XmlPullParser.START_TAG, null, MANIFEST_TAG);
-			
-			String packageName = null;
-			for (int i = 0; i < parser.getAttributeCount(); i++) {
-				String attributeName = parser.getAttributeName(i);
-				String attributeValue = parser.getAttributeValue(i);
-				if (attributeName.equals("package")) {
-					packageName = attributeValue;
+
+	public void parseManifest(InputStream input, ApplicationInfo ai) throws XmlPullParserException, IOException {
+		KXmlParser parser;
+		parser = new KXmlParser();
+		parser.setInput((InputStream) input, UTF_8);
+		parser.setFeature(KXmlParser.FEATURE_PROCESS_NAMESPACES, true);
+		parser.require(XmlPullParser.START_DOCUMENT, null, null);
+		parser.nextTag();
+		parser.require(XmlPullParser.START_TAG, null, MANIFEST_TAG);
+
+		String packageName = null;
+		for (int i = 0; i < parser.getAttributeCount(); i++) {
+			String attributeName = parser.getAttributeName(i);
+			String attributeValue = parser.getAttributeValue(i);
+			if (attributeName.equals("package")) {
+				packageName = attributeValue;
+			}
+		}
+		if (packageName == null || packageName.length() == 0) {
+			throw new XmlPullParserException("Manifest is missing a package name");
+		}
+		ai.packageName = packageName;
+
+		List services = null;
+		boolean applicationTagDone = false;
+		for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+			if (parser.getName().equals(APPLICATION_TAG)) {
+				if (applicationTagDone) {
+					throw new XmlPullParserException("Only one application is allowed per manifest");
 				}
+				services = parseApplication(parser, ai);
+				applicationTagDone = true;
+			} else {
+				String tag = parser.getName();
+				parser.skipSubTree();
+				parser.require(XmlPullParser.END_TAG, null, tag);
 			}
-			if (packageName == null) {
-				throw new XmlPullParserException("Manifest is missing a package name");
-			}
-			ai.packageName = packageName;
-			
-			List services = null;
-			boolean applicationTagDone = false;
-			for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-				if (parser.getName().equals(APPLICATION_TAG)) {
-					if (applicationTagDone) {
-						throw new XmlPullParserException("Only one application is allowed per manifest");
-					}
-					services = parseApplication(parser, ai);
-					applicationTagDone = true;
-				} else {
-					String tag = parser.getName();
-					parser.skipSubTree();
-					parser.require(XmlPullParser.END_TAG, null, tag);
-				}
-			}
-			
-			parser.require(XmlPullParser.END_TAG, null, MANIFEST_TAG);
-			parser.next();
-			parser.require(XmlPullParser.END_DOCUMENT, null, null);
-			
-			if (services != null) {
-				mHandler.obtainMessage(MSG_PUBLISH_SERVICES, services).sendToTarget();
-			}
-		} catch (Exception e) {
-			Log.e(LOG_TAG, "XML parsing error", e);
+		}
+
+		parser.require(XmlPullParser.END_TAG, null, MANIFEST_TAG);
+		parser.next();
+		parser.require(XmlPullParser.END_DOCUMENT, null, null);
+
+		if (services != null && !services.isEmpty()) {
+			PackageInfo packageInfo = new PackageInfo();
+			packageInfo.packageName = packageName;
+			packageInfo.applicationInfo = ai;
+			packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
+			mHandler.obtainMessage(MSG_ADD_PACKAGE, packageInfo).sendToTarget();
 		}
 	}
-	
+
 	List parseApplication(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
 		parser.require(XmlPullParser.START_TAG, null, APPLICATION_TAG);
-		
-		String appProcessName = ai.packageName;
-		boolean appEnabled = true;
+
+		String processName = ai.packageName;
+		boolean enabled = true;
 		for (int i = 0; i < parser.getAttributeCount(); i++) {
 			String attributeName = parser.getAttributeName(i);
 			String attributeValue = parser.getAttributeValue(i);
 			if (attributeName.equals("process")) {
-				appProcessName = attributeValue;
+				processName = attributeValue;
 			} else if (attributeName.equals("enabled")) {
 				if (attributeValue.equals("true")) {
-					appEnabled = true;
+					enabled = true;
 				} else if (attributeValue.equals("false")) {
-					appEnabled = false;
+					enabled = false;
 				} else {
 					throw new XmlPullParserException("Unknwon value for application attribute 'enabled'");
 				}
 			}
 		}
-		ai.processName = appProcessName;
-		ai.enabled = appEnabled;
-		
+		ai.processName = processName;
+		ai.enabled = enabled;
+
 		List libraries = new ArrayList();
 		List services = new ArrayList();
 		for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
@@ -312,7 +293,11 @@ public class PackageManagerService extends Service {
 			} else if (parser.getName().equals(SERVICE_TAG)) {
 				ServiceInfo si = parseService(parser, ai);
 				if (si != null) {
-					services.add(si);
+					if (si.name != null && si.name.length() > 0) {
+						services.add(si);
+					} else {
+						Log.w(LOG_TAG, "Invalid name for component " + si.name);
+					}
 				}
 			} else {
 				String tag = parser.getName();
@@ -320,85 +305,71 @@ public class PackageManagerService extends Service {
 				parser.require(XmlPullParser.END_TAG, null, tag);
 			}
 		}
-		
-		parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);
-		
-		URL[] urls = new URL[libraries.size() + 1];
-		if (libraries.size() > 0) {
+
+		if (!libraries.isEmpty()) {
 			ai.libraries = (String[]) libraries.toArray(new String[libraries.size()]);
-			for (int i = 0; i < ai.libraries.length; i++) {
-				urls[i] = new File(ai.libraries[i]).toURI().toURL();
-			}
 		}
 
-		for (Iterator itr = services.iterator(); itr.hasNext();) {
-			ServiceInfo serviceInfo = (ServiceInfo) itr.next();
-
-			urls[urls.length - 1] = new File(ai.fileName).toURI().toURL();
-			boolean classNotFound = false;
-			URLClassLoader classLoader = new URLClassLoader(urls, getClass().getClassLoader());
-			try {
-				Class clazz = Class.forName(serviceInfo.serviceName, false, classLoader);
-			} catch (Exception e) {
-				Log.e(LOG_TAG, "Cannot find service " + serviceInfo.serviceName + " in file " + ai.fileName, e);
-				classNotFound = true;
-			} catch (LinkageError e) {
-				Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
-				classNotFound = true;
-			}
-			if (classNotFound) {
-				itr.remove();
-			}
-		}
+		parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);
 
 		return services;
 	}
-	
+
 	String parseLibrary(KXmlParser parser) throws IOException, XmlPullParserException {
 		parser.require(XmlPullParser.START_TAG, null, USES_LIBRARY_TAG);
 
-		String libraryName = null;
+		String name = null;
 		for (int i = 0; i < parser.getAttributeCount(); i++) {
 			String attributeName = parser.getAttributeName(i);
 			String attributeValue = parser.getAttributeValue(i);
 			if (attributeName.equals("name")) {
-				libraryName = attributeValue + ".jar";
+				name = attributeValue + ".jar";
 			}
 		}
-		
+
 		for (int eventType = parser.nextTag(); !parser.getName().equals(USES_LIBRARY_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			String tag = parser.getName();
 			parser.skipSubTree();
 			parser.require(XmlPullParser.END_TAG, null, tag);
 		}
-		
+
 		parser.require(XmlPullParser.END_TAG, null, USES_LIBRARY_TAG);
-		
-		if (libraryName != null) {
-			return new File(Environment.getAppsDirectory() + File.separator + libraryName).getAbsolutePath();
+
+		if (name != null) {
+			return new File(Environment.getAppsDirectory() + File.separator + name).getAbsolutePath();
 		} else {
 			return null;
 		}
 	}
-	
+
 	ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
 		parser.require(XmlPullParser.START_TAG, null, SERVICE_TAG);
-		
+
 		String processName = ai.processName;
-		String serviceName = null;
+		String name = null;
 		boolean enabled = true;
 		boolean autostart = false;
 		for (int i = 0; i < parser.getAttributeCount(); i++) {
 			String attributeName = parser.getAttributeName(i);
 			String attributeValue = parser.getAttributeValue(i);
-			
+
 			if (attributeName.equals("name")) {
-				serviceName = attributeValue;
-				if (serviceName.startsWith(".")) {
-					serviceName = ai.packageName + serviceName; 
+				name = attributeValue;
+				if (name.startsWith(".")) {
+					try {
+						name = name.substring(1);
+					} catch (IndexOutOfBoundsException e) {
+						name = null;
+					}
 				} else {
-					if (!serviceName.startsWith(ai.packageName)) {
-						throw new XmlPullParserException("Invalid serviceName " + serviceName);
+					if (name.startsWith(ai.packageName)) {
+						try {
+							name = name.substring(ai.packageName.length() + 1);
+						} catch (IndexOutOfBoundsException e) {
+							name = null;
+						}
+					} else {
+						throw new XmlPullParserException("Invalid name " + name);
 					}
 				}
 			} else if (attributeName.equals("process")) {
@@ -422,23 +393,26 @@ public class PackageManagerService extends Service {
 			}
 		}
 
-		if (serviceName == null) {
-			throw new XmlPullParserException("Undefined serviceName");
+		if (name == null || name.length() == 0) {
+			throw new XmlPullParserException("Invalid name");
 		}
 
 		ServiceInfo si = new ServiceInfo();
+		si.name = name;
+		si.packageName = ai.packageName;
 		si.applicationInfo = ai;
 		si.processName = processName;
-		si.serviceName = serviceName;
 		si.enabled = enabled;
-		si.autostart = autostart;
+		if (autostart) {
+			si.flags |= ServiceInfo.FLAG_AUTO_START;
+		}
 
 		for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
 			String tag = parser.getName();
 			parser.skipSubTree();
 			parser.require(XmlPullParser.END_TAG, null, tag);
 		}
-		
+
 		parser.require(XmlPullParser.END_TAG, null, SERVICE_TAG);
 		return si;
 	}

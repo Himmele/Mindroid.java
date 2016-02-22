@@ -18,20 +18,32 @@
 package mindroid.content.pm;
 
 /**
- * Information you can retrieve about a particular application
- * service. This corresponds to information collected from the
- * MindroidManifest.xml's &lt;service&gt; tags.
+ * Information you can retrieve about a particular application service. This corresponds to
+ * information collected from the MindroidManifest.xml's &lt;service&gt; tags.
  */
 public class ServiceInfo extends ComponentInfo {
-	
-	public String serviceName;
-	
-	public boolean autostart;
-	
-	/** @hide */
-	public boolean systemService;
+
+	/**
+	 * Bit in {@link #flags}: If set, the service will automatically be started by the system after
+	 * boot completed.
+	 */
+	public static final int FLAG_AUTO_START = 0x0001;
+
+	/**
+	 * Bit in {@link #flags}: If set, the service is marked as system service.
+	 */
+	public static final int FLAG_SYSTEM_SERVICE = 0x40000000;
+
+	/**
+	 * Options that have been set in the service declaration in the manifest. These include:
+	 * {@link #FLAG_AUTO_START}.
+	 */
+	public int flags = 0;
 
 	public ServiceInfo() {
-		systemService = false;
-    }
+	}
+
+	public boolean hasFlag(int flag) {
+		return (flags & flag) == flag;
+	}
 }

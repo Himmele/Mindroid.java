@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
 
 public class ThreadPoolExecutor extends Executor {
 	private final int THREAD_POOL_SIZE;
 	private WorkerThread[] mWorkerThreads;
 	private LinkedBlockingQueue mQueue;
-	
+
 	public ThreadPoolExecutor(int threadPoolSize) {
 		THREAD_POOL_SIZE = threadPoolSize;
 		mWorkerThreads = new WorkerThread[THREAD_POOL_SIZE];
 		mQueue = new LinkedBlockingQueue();
 		start();
 	}
-	
+
 	protected void finalize() {
 		shutdown();
 	}
-	
+
 	public void start() {
 		for (int i = 0; i < THREAD_POOL_SIZE; i++) {
 			mWorkerThreads[i] = new WorkerThread("ThreadPoolExecutor[Worker " + i + "]");
@@ -40,7 +40,7 @@ public class ThreadPoolExecutor extends Executor {
 			mWorkerThreads[i].start();
 		}
 	}
-	
+
 	public void shutdown() {
 		for (int i = 0; i < THREAD_POOL_SIZE; i++) {
 			mWorkerThreads[i].interrupt();
@@ -53,31 +53,31 @@ public class ThreadPoolExecutor extends Executor {
 			}
 		}
 	}
-	
+
 	public void execute(Runnable runnable) {
 		mQueue.put(runnable);
 	}
-	
+
 	public boolean cancel(Runnable runnable) {
 		mQueue.remove(runnable);
 		return true;
 	}
-	
+
 	class AtomicBoolean {
 		private boolean mValue;
-		
+
 		public AtomicBoolean(boolean value) {
 			mValue = value;
 		}
-		
+
 		public synchronized boolean get() {
 			return mValue;
 		}
-		
+
 		public synchronized void set(boolean newValue) {
 			mValue = newValue;
 		}
-		
+
 		public synchronized boolean compareAndSet(boolean expectedValue, boolean updateValue) {
 			if (mValue == expectedValue) {
 				mValue = updateValue;
@@ -85,14 +85,14 @@ public class ThreadPoolExecutor extends Executor {
 			}
 			return false;
 		}
-		
+
 		public synchronized boolean getAndSet(boolean newValue) {
 			boolean value = mValue;
 			mValue = newValue;
 			return value;
 		}
 	}
-	
+
 	class WorkerThread extends Thread {
 		private LinkedBlockingQueue mQueue;
 		private AtomicBoolean mIsInterrupted;
@@ -101,13 +101,13 @@ public class ThreadPoolExecutor extends Executor {
 			super(name);
 			mIsInterrupted = new AtomicBoolean(false);
 		}
-		
+
 		public void interrupt() {
 			if (mIsInterrupted.compareAndSet(false, true)) {
 				super.interrupt();
 			}
 		}
-		
+
 		public void run() {
 			while (!mIsInterrupted.get()) {
 				Runnable runnable;

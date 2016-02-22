@@ -18,20 +18,20 @@ package mindroid.content.pm;
 
 public abstract class PackageManagerListener {
 	public abstract void onBootCompleted();
-	
+
 	private final PackageManagerListenerWrapper mWrapper;
-	
+
 	public PackageManagerListener() {
 		mWrapper = new PackageManagerListenerWrapper();
 	}
-	
+
 	private class PackageManagerListenerWrapper extends IPackageManagerListener.Stub {
 		public void onBootCompleted() {
 			PackageManagerListener.this.onBootCompleted();
 		}
 	}
-	
-	public IPackageManagerListener asBinder() {
+
+	public IPackageManagerListener asInterface() {
 		return mWrapper;
 	}
 }

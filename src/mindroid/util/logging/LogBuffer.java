@@ -34,7 +34,7 @@ public class LogBuffer {
 	private GregorianCalendar mCalendar = new GregorianCalendar();
 	private boolean mQuit = false;
 
-	public class LogMessage {
+	public class LogRecord {
 		private int mLogId;
 		private long mTimestamp;
 		private int mThreadId;
@@ -42,7 +42,7 @@ public class LogBuffer {
 		private String mTag;
 		private String mMessage;
 
-		public LogMessage(final int logId, final long timestamp, final int threadId, final int priority, final String tag, final String message) {
+		public LogRecord(final int logId, final long timestamp, final int threadId, final int priority, final String tag, final String message) {
 			mLogId = logId;
 			mTimestamp = timestamp;
 			mThreadId = threadId;
@@ -162,9 +162,9 @@ public class LogBuffer {
 		return true;
 	}
 
-	public LogMessage take(final int minPriority) throws InterruptedException {
+	public LogRecord take(final int minPriority) throws InterruptedException {
 		while (true) {
-			byte[] logMessage;
+			byte[] record;
 			synchronized (this) {
 				while (isEmpty()) {
 					wait();
@@ -174,40 +174,40 @@ public class LogBuffer {
 					}
 				}
 				int size = intFromByteArray(read(4));
-				logMessage = read(size);
+				record = read(size);
 			}
-			long timestamp = longFromByteArray(logMessage);
-			int threadId = intFromByteArray(logMessage, TIMESTAMP_SIZE);
-			int priority = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE);
-			int tagSize = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
-			String tag = new String(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
-			int messageSize = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
-			String message = new String(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
+			long timestamp = longFromByteArray(record);
+			int threadId = intFromByteArray(record, TIMESTAMP_SIZE);
+			int priority = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE);
+			int tagSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
+			String tag = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
+			int messageSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
+			String message = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
 			if (priority >= minPriority) {
-				return new LogMessage(ID, timestamp, threadId, priority, tag, message);
+				return new LogRecord(ID, timestamp, threadId, priority, tag, message);
 			}
 		}
 	}
 
-	public LogMessage poll(final int minPriority) {
+	public LogRecord poll(final int minPriority) {
 		while (true) {
-			byte[] logMessage;
+			byte[] record;
 			synchronized (this) {
 				while (isEmpty()) {
 					return null;
 				}
 				int size = intFromByteArray(read(4));
-				logMessage = read(size);
+				record = read(size);
 			}
-			long timestamp = longFromByteArray(logMessage);
-			int threadId = intFromByteArray(logMessage, TIMESTAMP_SIZE);
-			int priority = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE);
-			int tagSize = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
-			String tag = new String(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
-			int messageSize = intFromByteArray(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
-			String message = new String(logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
+			long timestamp = longFromByteArray(record);
+			int threadId = intFromByteArray(record, TIMESTAMP_SIZE);
+			int priority = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE);
+			int tagSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
+			String tag = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
+			int messageSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
+			String message = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
 			if (priority >= minPriority) {
-				return new LogMessage(ID, timestamp, threadId, priority, tag, message);
+				return new LogRecord(ID, timestamp, threadId, priority, tag, message);
 			}
 		}
 	}
@@ -318,12 +318,13 @@ public class LogBuffer {
 	}
 
 	private static long longFromByteArray(final byte[] src) {
-		return ((long) src[0]) << 56 | ((long) (src[1] & 0xFF)) << 48 | ((long) (src[2] & 0xFF)) << 40 | ((long) (src[3] & 0xFF)) << 32 |
-				((long) (src[4] & 0xFF)) << 24 | ((long) (src[5] & 0xFF)) << 16 | ((long) (src[6] & 0xFF)) << 8 | ((long) (src[7] & 0xFF));
+		return ((long) src[0]) << 56 | ((long) (src[1] & 0xFF)) << 48 | ((long) (src[2] & 0xFF)) << 40 | ((long) (src[3] & 0xFF)) << 32
+				| ((long) (src[4] & 0xFF)) << 24 | ((long) (src[5] & 0xFF)) << 16 | ((long) (src[6] & 0xFF)) << 8 | ((long) (src[7] & 0xFF));
 	}
 
 	private static long longFromByteArray(final byte[] src, final int srcPos) {
-		return ((long) src[srcPos + 0]) << 56 | ((long) (src[srcPos + 1] & 0xFF)) << 48 | ((long) (src[srcPos + 2] & 0xFF)) << 40 | ((long) (src[srcPos + 3] & 0xFF)) << 32 |
-				((long) (src[srcPos + 4] & 0xFF)) << 24 | ((long) (src[srcPos + 5] & 0xFF)) << 16 | ((long) (src[srcPos + 6] & 0xFF)) << 8 | ((long) (src[srcPos + 7] & 0xFF));
+		return ((long) src[srcPos + 0]) << 56 | ((long) (src[srcPos + 1] & 0xFF)) << 48 | ((long) (src[srcPos + 2] & 0xFF)) << 40
+				| ((long) (src[srcPos + 3] & 0xFF)) << 32 | ((long) (src[srcPos + 4] & 0xFF)) << 24 | ((long) (src[srcPos + 5] & 0xFF)) << 16
+				| ((long) (src[srcPos + 6] & 0xFF)) << 8 | ((long) (src[srcPos + 7] & 0xFF));
 	}
 }

@@ -177,9 +177,7 @@
 		</proguard>
 
 		<delete dir="${out.target.dir}/tmp"/>
-	</target>
-
-	<target name="install-apps" depends="apps">
+		
 		<copy file="${out.target.dir}/Examples.jar" tofile="${app.target.dir}/Examples.jar" failonerror="false" />
 	</target>
 	
@@ -222,11 +220,18 @@
 					<include name="mindroid/content/Intent.java"/>
 					<include name="mindroid/content/ServiceConnection.java"/>
 					<include name="mindroid/content/SharedPreferences.java"/>
+					<include name="mindroid/content/pm/ApplicationInfo.java"/>
+					<include name="mindroid/content/pm/ComponentInfo.java"/>
+					<include name="mindroid/content/pm/PackageInfo.java"/>
+					<include name="mindroid/content/pm/PackageManager.java"/>
+					<include name="mindroid/content/pm/PackageListener.java"/>
+					<include name="mindroid/content/pm/ResolveInfo.java"/>
+					<include name="mindroid/content/pm/ServiceInfo.java"/>
+					<include name="mindroid/lang/Runtime.java"/>
 					<include name="mindroid/os/AsyncTask.java"/>
 					<include name="mindroid/os/Binder.java"/>
 					<include name="mindroid/os/Bundle.java"/>
 					<include name="mindroid/os/Environment.java"/>
-					<include name="mindroid/os/Executor.java"/>
 					<include name="mindroid/os/Handler.java"/>
 					<include name="mindroid/os/HandlerThread.java"/>
 					<include name="mindroid/os/IBinder.java"/>
@@ -235,15 +240,13 @@
 					<include name="mindroid/os/Message.java"/>
 					<include name="mindroid/os/MessageQueue.java"/>
 					<include name="mindroid/os/RemoteException.java"/>
-					<include name="mindroid/os/Runtime.java"/>
-					<include name="mindroid/os/SerialExecutor.java"/>
 					<include name="mindroid/os/SystemClock.java"/>
-					<include name="mindroid/os/ThreadPoolExecutor.java"/>
 					<include name="mindroid/util/Base64.java"/>
 					<include name="mindroid/util/Log.java"/>
 					<include name="mindroid/util/Pair.java"/>
-					<include name="mindroid/util/concurrent/CancellationException.java"/>
-					<include name="mindroid/util/concurrent/SettableFuture.java"/>
+					<include name="mindroid/util/concurrent/Executor.java"/>
+					<include name="mindroid/util/concurrent/SerialExecutor.java"/>
+					<include name="mindroid/util/concurrent/ThreadPoolExecutor.java"/>
 				</fileset>
 			</sourcefiles>
 		</javadoc>

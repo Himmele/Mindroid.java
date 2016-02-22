@@ -21,85 +21,94 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import mindroid.content.pm.PackageManager;
 import mindroid.os.IBinder;
 import mindroid.os.Looper;
 
 /**
- * Proxying implementation of Context that simply delegates all of its calls to
- * another Context.  Can be subclassed to modify behavior without changing
- * the original Context.
+ * Proxying implementation of Context that simply delegates all of its calls to another Context. Can
+ * be subclassed to modify behavior without changing the original Context.
  */
 public class ContextWrapper extends Context {
-    Context mBaseContext;
+	Context mBaseContext;
 
-    public ContextWrapper(Context baseContext) {
-        mBaseContext = baseContext;
-    }
-    
-    /**
-     * Set the base context for this ContextWrapper.  All calls will then be
-     * delegated to the base context.  Throws
-     * IllegalStateException if a base context has already been set.
-     * 
-     * @param baseContext The new base context for this wrapper.
-     */
-    protected void attachBaseContext(Context baseContext) {
-        if (mBaseContext != null) {
-            throw new IllegalStateException("Base context already set");
-        }
-        mBaseContext = baseContext;
-    }
+	public ContextWrapper(Context baseContext) {
+		mBaseContext = baseContext;
+	}
 
-    /**
-     * @return the base context as set by the constructor or setBaseContext
-     */
-    public Context getBaseContext() {
-        return mBaseContext;
-    }
+	/**
+	 * Set the base context for this ContextWrapper. All calls will then be delegated to the base
+	 * context. Throws IllegalStateException if a base context has already been set.
+	 * 
+	 * @param baseContext The new base context for this wrapper.
+	 */
+	protected void attachBaseContext(Context baseContext) {
+		if (mBaseContext != null) {
+			throw new IllegalStateException("Base context already set");
+		}
+		mBaseContext = baseContext;
+	}
 
-    public Looper getMainLooper() {
-        return mBaseContext.getMainLooper();
-    }
-    
-    public String getPackageName() {
-        return mBaseContext.getPackageName();
-    }
-    
-    public File getSharedPrefsFile(String name) {
-    	return mBaseContext.getSharedPrefsFile(name);
-    }
+	/**
+	 * @return the base context as set by the constructor or setBaseContext
+	 */
+	public Context getBaseContext() {
+		return mBaseContext;
+	}
 
-    public SharedPreferences getSharedPreferences(String name, int mode) {
-        return mBaseContext.getSharedPreferences(name, mode);
-    }
-    
-    public FileInputStream openFileInput(String name)
-            throws FileNotFoundException {
-    	return mBaseContext.openFileInput(name);
-    }
-    
-    public FileOutputStream openFileOutput(String name, int mode)
-            throws FileNotFoundException {
-    	return mBaseContext.openFileOutput(name, mode);
-    }
-    
-    public IBinder getSystemService(String name) {
+	public PackageManager getPackageManager() {
+		return mBaseContext.getPackageManager();
+	}
+
+	public Looper getMainLooper() {
+		return mBaseContext.getMainLooper();
+	}
+
+	public String getPackageName() {
+		return mBaseContext.getPackageName();
+	}
+
+	public File getSharedPrefsFile(String name) {
+		return mBaseContext.getSharedPrefsFile(name);
+	}
+
+	public SharedPreferences getSharedPreferences(String name, int mode) {
+		return mBaseContext.getSharedPreferences(name, mode);
+	}
+
+	public FileInputStream openFileInput(String name) throws FileNotFoundException {
+		return mBaseContext.openFileInput(name);
+	}
+
+	public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
+		return mBaseContext.openFileOutput(name, mode);
+	}
+
+	public boolean deleteFile(String name) {
+		return mBaseContext.deleteFile(name);
+	}
+
+	public File getFilesDir() {
+		return mBaseContext.getFilesDir();
+	}
+
+	public IBinder getSystemService(String name) {
 		return mBaseContext.getSystemService(name);
 	}
 
-    public ComponentName startService(Intent service) {
-    	return mBaseContext.startService(service);
-    }
-    
-    public boolean stopService(Intent service) {
-    	return mBaseContext.stopService(service);
-    }
-    
-    public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-    	return mBaseContext.bindService(service, conn, flags);
-    }
-    
-    public void unbindService(ServiceConnection conn) {
-    	mBaseContext.unbindService(conn);
-    }
+	public ComponentName startService(Intent service) {
+		return mBaseContext.startService(service);
+	}
+
+	public boolean stopService(Intent service) {
+		return mBaseContext.stopService(service);
+	}
+
+	public boolean bindService(Intent service, ServiceConnection conn, int flags) {
+		return mBaseContext.bindService(service, conn, flags);
+	}
+
+	public void unbindService(ServiceConnection conn) {
+		mBaseContext.unbindService(conn);
+	}
 }

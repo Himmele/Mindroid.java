@@ -23,64 +23,64 @@ import java.io.File;
  * Provides access to environment variables.
  */
 public class Environment {
-    private static File ROOT_DIRECTORY = new File(".");
-    private static File APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
-    private static File DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
-    private static File PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
-    private static File LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
-    
-    /**
-     * Sets the Mindroid root directory.
-     * 
-     * @hide
-     */
-    public static void setRootDirectory(String rootDirectory) {
-        ROOT_DIRECTORY = new File(rootDirectory);
-        APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
-        DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
-        PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
-        LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
-    }
+	private static File ROOT_DIRECTORY = new File(".");
+	private static File APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
+	private static File DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
+	private static File PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+	private static File LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
 
-    /**
-     * Gets the Mindroid root directory.
-     */
-    public static File getRootDirectory() {
-        return ROOT_DIRECTORY;
-    }
+	/**
+	 * Sets the Mindroid root directory.
+	 * 
+	 * @hide
+	 */
+	public static void setRootDirectory(String rootDirectory) {
+		ROOT_DIRECTORY = new File(rootDirectory);
+		APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
+		DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
+		PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+		LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
+	}
 
-    /**
-     * Gets the Mindroid apps directory.
-     */
-    public static File getAppsDirectory() {
-        return APPS_DIRECTORY;
-    }
-    
-    /**
-     * Gets the Mindroid data directory.
-     */
-    public static File getDataDirectory() {
-        return DATA_DIRECTORY;
-    }
-    
-    /**
-     * Gets the Mindroid preferences directory.
-     */
-    public static File getPreferencesDirectory() {
-        return PREFERENCES_DIRECTORY;
-    }
-    
-    /**
-     * Gets the Mindroid log directory.
-     */
-    public static File getLogDirectory() {
-        return LOG_DIRECTORY;
-    }
-    
-    /**
-     * Sets the Mindroid log directory.
-     */
-    public static void setLogDirectory(String directory) {
-        LOG_DIRECTORY = new File(directory);
-    }
+	/**
+	 * Gets the Mindroid root directory.
+	 */
+	public static File getRootDirectory() {
+		return ROOT_DIRECTORY;
+	}
+
+	/**
+	 * Gets the Mindroid apps directory.
+	 */
+	public static File getAppsDirectory() {
+		return APPS_DIRECTORY;
+	}
+
+	/**
+	 * Gets the Mindroid data directory.
+	 */
+	public static File getDataDirectory() {
+		return DATA_DIRECTORY;
+	}
+
+	/**
+	 * Gets the Mindroid preferences directory.
+	 */
+	public static File getPreferencesDirectory() {
+		return PREFERENCES_DIRECTORY;
+	}
+
+	/**
+	 * Gets the Mindroid log directory.
+	 */
+	public static File getLogDirectory() {
+		return LOG_DIRECTORY;
+	}
+
+	/**
+	 * Sets the Mindroid log directory.
+	 */
+	public static void setLogDirectory(String directory) {
+		LOG_DIRECTORY = new File(directory);
+	}
 }

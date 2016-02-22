@@ -17,13 +17,14 @@
 package mindroid.util.concurrent;
 
 /**
- * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved because the task was stopped.
+ * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved
+ * because the task was stopped.
  */
-public class ExecutionException extends IllegalStateException {
-    public ExecutionException() {
-    }
+public class ExecutionException extends Exception {
+	public ExecutionException() {
+	}
 
-    public ExecutionException(String name) {
-        super(name);
-    }
+	public ExecutionException(String name) {
+		super(name);
+	}
 };

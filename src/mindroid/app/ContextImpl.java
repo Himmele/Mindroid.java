@@ -29,11 +29,15 @@ import mindroid.content.Context;
 import mindroid.content.Intent;
 import mindroid.content.ServiceConnection;
 import mindroid.content.SharedPreferences;
+import mindroid.content.pm.PackageManager;
+import mindroid.os.Bundle;
 import mindroid.os.Environment;
+import mindroid.os.Handler;
 import mindroid.os.HandlerThread;
 import mindroid.os.IBinder;
 import mindroid.os.IServiceManager;
 import mindroid.os.Looper;
+import mindroid.os.RemoteCallback;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
@@ -42,155 +46,188 @@ import mindroid.util.Log;
  * Common implementation of Context API, which provides the base
  * context object for Activity and other application components.
  */
-class ContextImpl extends Context {
+public class ContextImpl extends Context {
 	private final static String LOG_TAG = "ContextImpl";
 	private static final HashMap sSharedPrefs = new HashMap();
-    private final IServiceManager mServiceManager;
-    private final HandlerThread mMainThread;
-    private ComponentName mComponent;
-    private HashMap mServiceConnections = new HashMap();
+	private final IServiceManager mServiceManager;
+	private final HandlerThread mMainThread;
+	private final Handler mHandler;
+	private ComponentName mComponent;
+	private HashMap mServiceConnections = new HashMap();
+	private PackageManager mPackageManager;
 
-    ContextImpl(HandlerThread mainThread, ComponentName component) {
-    	mServiceManager = ServiceManager.getServiceManager();
-    	mMainThread = mainThread;
-    	mComponent = component;
-    }
-    
-    public Looper getMainLooper() {
-        return mMainThread.getLooper();
-    }
+	public ContextImpl(HandlerThread mainThread, ComponentName component) {
+		mServiceManager = ServiceManager.getServiceManager();
+		mMainThread = mainThread;
+		mHandler = new Handler(mainThread.getLooper());
+		mComponent = component;
+	}
 
-    public String getPackageName() {
-        if (mComponent != null) {
-            return mComponent.getPackageName();
-        }
-        throw new RuntimeException("Not supported in system context");
-    }
-    
-    public File getSharedPrefsFile(String name) {
-        return makeFilename(getPreferencesDir(), name + ".xml");
-    }
-    
-    public SharedPreferences getSharedPreferences(String name, int mode) {
-    	SharedPreferencesImpl sp;
-        synchronized (sSharedPrefs) {
-            sp = (SharedPreferencesImpl) sSharedPrefs.get(name);
-            if (sp == null) {
-                File sharedPrefsFile = getSharedPrefsFile(name);
-                sp = new SharedPreferencesImpl(sharedPrefsFile, mode);
-                sSharedPrefs.put(name, sp);
-                return sp;
-            }
-        }
-        return sp;
-    }
-    
-    public FileInputStream openFileInput(String name)
-            throws FileNotFoundException {
-    	File file = makeFilename(Environment.getDataDirectory(), name);
-        return new FileInputStream(file);
-    }
-    
-    public FileOutputStream openFileOutput(String name, int mode)
-            throws FileNotFoundException {
-    	final boolean append = (mode & MODE_APPEND) != 0;
-        File file = makeFilename(Environment.getDataDirectory(), name);
-        try {
-            FileOutputStream fos = new FileOutputStream(file, append);
-            return fos;
-        } catch (FileNotFoundException e) {
-        }
-        
-        return null;
-    }
+	public PackageManager getPackageManager() {
+		if (mPackageManager != null) {
+			return mPackageManager;
+		}
 
-    public IBinder getSystemService(String name) {
+		return (mPackageManager = new PackageManager(this));
+	}
+
+	public Looper getMainLooper() {
+		return mMainThread.getLooper();
+	}
+
+	public String getPackageName() {
+		if (mComponent != null) {
+			return mComponent.getPackageName();
+		}
+		return "mindroid";
+	}
+
+	public File getSharedPrefsFile(String name) {
+		return makeFilename(getPreferencesDir(), name + ".xml");
+	}
+
+	public SharedPreferences getSharedPreferences(String name, int mode) {
+		SharedPreferencesImpl sp;
+		synchronized (sSharedPrefs) {
+			sp = (SharedPreferencesImpl) sSharedPrefs.get(name);
+			if (sp == null) {
+				File sharedPrefsFile = getSharedPrefsFile(name);
+				sp = new SharedPreferencesImpl(sharedPrefsFile, mode);
+				sSharedPrefs.put(name, sp);
+				return sp;
+			}
+		}
+		return sp;
+	}
+
+	public FileInputStream openFileInput(String name) throws FileNotFoundException {
+		File file = makeFilename(Environment.getDataDirectory(), name);
+		return new FileInputStream(file);
+	}
+
+	public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
+		final boolean append = (mode & MODE_APPEND) != 0;
+		File file = makeFilename(Environment.getDataDirectory(), name);
+		try {
+			FileOutputStream fos = new FileOutputStream(file, append);
+			return fos;
+		} catch (FileNotFoundException e) {
+		}
+
+		return null;
+	}
+
+	public boolean deleteFile(String name) {
+		File file = makeFilename(getFilesDir(), name);
+		return file.delete();
+	}
+
+	public File getFilesDir() {
+		return Environment.getDataDirectory();
+	}
+
+	public IBinder getSystemService(String name) {
 		if (name != null) {
 			return ServiceManager.getSystemService(name);
 		} else {
 			return null;
 		}
 	}
-    
-    public ComponentName startService(Intent service) {
-    	if (service != null) {
-    		try {
-				return mServiceManager.startService(mComponent, service);
+
+	public ComponentName startService(Intent service) {
+		if (service != null) {
+			try {
+				return mServiceManager.startService(service);
 			} catch (RemoteException e) {
 				throw new RuntimeException("System failure");
 			}
-    	} else {
-    		return null;
-    	}
-    }
-    
-    public boolean stopService(Intent service) {
-    	if (service != null) {
-    		try {
-				return mServiceManager.stopService(mComponent, service);
+		} else {
+			return null;
+		}
+	}
+
+	public boolean stopService(Intent service) {
+		if (service != null) {
+			try {
+				return mServiceManager.stopService(service);
 			} catch (RemoteException e) {
 				throw new RuntimeException("System failure");
 			}
-    	} else {
-    		return false;
-    	}
-    }
-    
-    public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-    	if (service != null && conn != null) {
+		} else {
+			return false;
+		}
+	}
+
+	public boolean bindService(final Intent service, final ServiceConnection conn, int flags) {
+		if (service != null && conn != null) {
 			if (mServiceConnections.containsKey(conn)) {
 				return true;
 			}
-    		mServiceConnections.put(conn, service);
-    		try {
-				return mServiceManager.bindService(mComponent, service, conn, flags);
+			mServiceConnections.put(conn, service);
+			RemoteCallback callback = new RemoteCallback(mHandler) {
+				protected void onResult(Bundle data) {
+					boolean result = data.getBoolean("result");
+					if (result) {
+						IBinder binder = data.getBinder("binder");
+						conn.onServiceConnected(service.getComponent(), binder);
+					} else {
+						Log.e(LOG_TAG, "Cannot bind to service " + service.getComponent().getPackageName() + "." + service.getComponent().getClassName());
+					}
+				}
+			};
+			try {
+				return mServiceManager.bindService(service, conn, flags, callback.asInterface());
 			} catch (RemoteException e) {
 				throw new RuntimeException("System failure");
 			}
-    	} else {
-    		return false;
-    	}
-    }
-    
-    public void unbindService(ServiceConnection conn) {
-    	if (conn != null) {
-    		if (mServiceConnections.containsKey(conn)) {
-    			Intent service = (Intent) mServiceConnections.get(conn);
-    			mServiceConnections.remove(conn);
-    			try {
-					mServiceManager.unbindService(mComponent, service, conn);
+		} else {
+			return false;
+		}
+	}
+
+	public void unbindService(ServiceConnection conn) {
+		if (conn != null) {
+			if (mServiceConnections.containsKey(conn)) {
+				Intent service = (Intent) mServiceConnections.get(conn);
+				mServiceConnections.remove(conn);
+				RemoteCallback callback = new RemoteCallback(mHandler) {
+					protected void onResult(Bundle data) {
+					}
+				};
+				try {
+					mServiceManager.unbindService(service, conn, callback.asInterface());
 				} catch (RemoteException e) {
 				}
-    		}
-    	}
-    }
-    
-    private File getPreferencesDir() {
-    	if (!Environment.getPreferencesDirectory().exists()) {
-    		Environment.getPreferencesDirectory().mkdir();
-    	}
-    	return Environment.getPreferencesDirectory();
-    }
-    
-    private File makeFilename(File baseDir, String name) {
-        if (name.indexOf(File.separatorChar) < 0) {
-            return new File(baseDir, name);
-        }
-        throw new IllegalArgumentException("File " + name + " contains a path separator");
-    }
-    
-    void cleanup() {
-    	Iterator itr = mServiceConnections.entrySet().iterator();
-        while (itr.hasNext()) {
-            Map.Entry pair = (Map.Entry) itr.next();
-            ServiceConnection conn = (ServiceConnection) pair.getKey();
-            Intent service = (Intent) pair.getValue();
-            itr.remove();
-            try {
-				mServiceManager.unbindService(mComponent, service, conn);
+			}
+		}
+	}
+
+	private File getPreferencesDir() {
+		if (!Environment.getPreferencesDirectory().exists()) {
+			Environment.getPreferencesDirectory().mkdir();
+		}
+		return Environment.getPreferencesDirectory();
+	}
+
+	private File makeFilename(File baseDir, String name) {
+		if (name.indexOf(File.separatorChar) < 0) {
+			return new File(baseDir, name);
+		}
+		throw new IllegalArgumentException("File " + name + " contains a path separator");
+	}
+
+	public void cleanup() {
+		Iterator itr = mServiceConnections.entrySet().iterator();
+		while (itr.hasNext()) {
+			Map.Entry pair = (Map.Entry) itr.next();
+			ServiceConnection conn = (ServiceConnection) pair.getKey();
+			Intent service = (Intent) pair.getValue();
+			itr.remove();
+			try {
+				mServiceManager.unbindService(service, conn);
 			} catch (RemoteException e) {
 			}
-            Log.w(LOG_TAG, "Service " + mComponent + " is leaking a ServiceConnection to " + service.getComponent());
-        }
-    }
+			Log.w(LOG_TAG, "Service " + mComponent + " is leaking a ServiceConnection to " + service.getComponent());
+		}
+	}
 }

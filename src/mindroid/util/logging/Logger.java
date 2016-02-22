@@ -24,13 +24,12 @@ import mindroid.content.Intent;
 import mindroid.os.Environment;
 import mindroid.os.IBinder;
 import mindroid.util.Log;
-import mindroid.util.logging.LogBuffer.LogMessage;
+import mindroid.util.logging.LogBuffer.LogRecord;
 
 public class Logger extends Service {
 	private static final String LOG_TAG = "Logger";
-	private LoggerThread mMainLogThread = null;
-	private LoggerThread mEventLogThread = null;
-	private LoggerThread mPerformanceMonitoringLogThread = null;
+	private LoggerThread mMainLoggerThread = null;
+	private LoggerThread mPerformanceMonitoringLoggerThread = null;
 
 	class LoggerThread extends Thread {
 		private LogBuffer mLogBuffer;
@@ -44,9 +43,9 @@ public class Logger extends Service {
 		private int mLogFileCount;
 		private ConsoleHandler mConsoleHander;
 		private FileHandler mFileHander;
-		
-		public LoggerThread(String name, int logBufferId, boolean consoleLogging, boolean fileLogging,
-				boolean timestamps, int priority, String logDirectory, String logFileName, int logFileSizeLimit, int logFileCount) {
+
+		public LoggerThread(String name, int logBufferId, boolean consoleLogging, boolean fileLogging, boolean timestamps, int priority, String logDirectory,
+				String logFileName, int logFileSizeLimit, int logFileCount) {
 			super(name);
 			mLogBuffer = Log.getLogBuffer(logBufferId);
 			mConsoleLogging = consoleLogging;
@@ -58,12 +57,12 @@ public class Logger extends Service {
 			mLogFileSizeLimit = logFileSizeLimit;
 			mLogFileCount = logFileCount;
 		}
-		
+
 		public void run() {
 			open();
-			
+
 			while (!isInterrupted()) {
-				LogMessage logMessage;
+				LogRecord logMessage;
 				try {
 					logMessage = mLogBuffer.take(mPriority);
 				} catch (InterruptedException e) {
@@ -78,15 +77,18 @@ public class Logger extends Service {
 					}
 				}
 			}
-			
+
 			close();
 		}
-		
+
 		private void open() {
 			if (mConsoleLogging) {
-				mConsoleHander = new ConsoleHandler(!mTimestamps);
+				mConsoleHander = new ConsoleHandler();
+				if (mTimestamps) {
+					mConsoleHander.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
+				}
 			}
-			
+
 			if (mFileLogging) {
 				try {
 					File logDirectory = new File(mLogDirectory).getAbsoluteFile();
@@ -99,12 +101,12 @@ public class Logger extends Service {
 				}
 			}
 		}
-		
+
 		private void close() {
 			if (mConsoleHander != null) {
 				mConsoleHander.close();
 			}
-			
+
 			if (mFileHander != null) {
 				mFileHander.close();
 			}
@@ -113,11 +115,11 @@ public class Logger extends Service {
 
 	public void onCreate() {
 	}
-	
+
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		int threadPriority = intent.getIntExtra("threadPriority", Thread.MIN_PRIORITY);
 		ArrayList logBuffers = intent.getStringArrayListExtra("logBuffers");
-		if (logBuffers != null)  {
+		if (logBuffers != null) {
 			if (logBuffers.contains("main")) {
 				boolean timestamps = intent.getBooleanExtra("timestamps", false);
 				int priority = intent.getIntExtra("priority", Log.ERROR);
@@ -126,57 +128,39 @@ public class Logger extends Service {
 				int logFileSizeLimit = intent.getIntExtra("logFileSizeLimit", 0);
 				int logFileCount = intent.getIntExtra("logFileCount", 1);
 				boolean fileLogging = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
-				
-				mMainLogThread = new LoggerThread(LOG_TAG + " {main}", Log.LOG_ID_MAIN, true, fileLogging, timestamps, priority, logDirectory, logFileName, logFileSizeLimit, logFileCount);
-				mMainLogThread.setPriority(threadPriority);
-				mMainLogThread.start();
+
+				mMainLoggerThread = new LoggerThread(LOG_TAG + " {main}", Log.LOG_ID_MAIN, true, fileLogging, timestamps, priority, logDirectory, logFileName,
+						logFileSizeLimit, logFileCount);
+				mMainLoggerThread.setPriority(threadPriority);
+				mMainLoggerThread.start();
 			}
-			
-			if (logBuffers.contains("events")) {
-				String logDirectory = Environment.getLogDirectory().getAbsolutePath();
-				String logFileName = intent.getStringExtra("eventLogFileName");
-				int logFileSizeLimit = intent.getIntExtra("eventLogFileSizeLimit", 262144);
-				int logFileCount = intent.getIntExtra("eventLogFileCount", 4);
-				boolean fileLogging = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
-				
-				mEventLogThread = new LoggerThread(LOG_TAG + " {events}", Log.LOG_ID_EVENTS, false, fileLogging, true, Log.DEBUG, logDirectory, logFileName, logFileSizeLimit, logFileCount);
-				mEventLogThread.setPriority(threadPriority);
-				mEventLogThread.start();
-			}
-			
+
 			if (logBuffers.contains("perfmon")) {
-				if (mPerformanceMonitoringLogThread == null) {
-					mPerformanceMonitoringLogThread = new LoggerThread(LOG_TAG + " {perfmon}", Log.LOG_ID_PERFORMANCE_MONITORING, true, false, true, Log.DEBUG, null, null, 0, 0);
-					mPerformanceMonitoringLogThread.setPriority(threadPriority);
-					mPerformanceMonitoringLogThread.start();
+				if (mPerformanceMonitoringLoggerThread == null) {
+					mPerformanceMonitoringLoggerThread = new LoggerThread(LOG_TAG + " {perfmon}", Log.LOG_ID_PERFORMANCE_MONITORING, true, false, true,
+							Log.DEBUG, null, null, 0, 0);
+					mPerformanceMonitoringLoggerThread.setPriority(threadPriority);
+					mPerformanceMonitoringLoggerThread.start();
 				}
 			}
 		}
-		
-        return 0;
-    }
+
+		return 0;
+	}
 
 	public void onDestroy() {
-		if (mMainLogThread != null) {
-			mMainLogThread.interrupt();
+		if (mMainLoggerThread != null) {
+			mMainLoggerThread.interrupt();
 			try {
-				mMainLogThread.join();
+				mMainLoggerThread.join();
 			} catch (InterruptedException e) {
 			}
 		}
-		
-		if (mEventLogThread != null) {
-			mEventLogThread.interrupt();
+
+		if (mPerformanceMonitoringLoggerThread != null) {
+			mPerformanceMonitoringLoggerThread.interrupt();
 			try {
-				mEventLogThread.join();
-			} catch (InterruptedException e) {
-			}
-		}
-		
-		if (mPerformanceMonitoringLogThread != null) {
-			mPerformanceMonitoringLogThread.interrupt();
-			try {
-				mPerformanceMonitoringLogThread.join();
+				mPerformanceMonitoringLoggerThread.join();
 			} catch (InterruptedException e) {
 			}
 		}

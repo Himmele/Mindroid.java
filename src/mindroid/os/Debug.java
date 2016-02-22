@@ -16,17 +16,15 @@
 
 package mindroid.os;
 
-import mindroid.app.Process;
-
 public class Debug {
 	private static Class sDebugCreator = Debug.class;
-	
+
 	public static void setDebugCreator(Class debugCreator) {
 		if (debugCreator != null) {
 			sDebugCreator = debugCreator;
 		}
 	}
-	
+
 	public static class Creator {
 		public static Debug createInstance() {
 			if (sDebugCreator != null) {
@@ -39,10 +37,10 @@ public class Debug {
 			return new Debug();
 		}
 	}
-	
+
 	public void start(Process process) {
 	}
-	
+
 	public void stop() {
 	}
 }

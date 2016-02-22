@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.util.concurrent;
+
+import mindroid.os.Handler;
+import mindroid.os.HandlerThread;
 
 public class SerialExecutor extends Executor {
 	private HandlerThread mHandlerThread;
 	private Handler mHandler;
-	
+
 	public SerialExecutor() {
 		mHandlerThread = new HandlerThread("SerialExecutor");
 		mHandlerThread.setPriority(Thread.MIN_PRIORITY);
 		mHandlerThread.start();
 		mHandler = new Handler(mHandlerThread.getLooper());
 	}
-	
+
 	protected void finalize() {
 		mHandlerThread.getLooper().quit();
 		try {

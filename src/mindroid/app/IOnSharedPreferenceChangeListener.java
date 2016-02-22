@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2016 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package mindroid.content.pm;
+package mindroid.app;
 
+import mindroid.content.SharedPreferences;
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
 import mindroid.os.IBinder;
 import mindroid.os.Binder;
 import mindroid.os.RemoteException;
 
-public interface IPackageManagerListener extends IInterface {
-	public static abstract class Stub extends Binder implements IPackageManagerListener {
-		private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageManagerListener";
+public interface IOnSharedPreferenceChangeListener extends IInterface {
+	public static abstract class Stub extends Binder implements IOnSharedPreferenceChangeListener {
+		private static final java.lang.String DESCRIPTOR = "mindroid.app.IOnSharedPreferenceChangeListener";
 
 		public Stub() {
 			this.attachInterface(this, DESCRIPTOR);
 		}
 
-		public static mindroid.content.pm.IPackageManagerListener asInterface(IBinder binder) {
+		public static mindroid.app.IOnSharedPreferenceChangeListener asInterface(IBinder binder) {
 			if (binder == null) {
 				return null;
 			}
-			return new IPackageManagerListener.Stub.SmartProxy(binder);
+			return new IOnSharedPreferenceChangeListener.Stub.SmartProxy(binder);
 		}
 
 		public IBinder asBinder() {
@@ -43,8 +44,10 @@ public interface IPackageManagerListener extends IInterface {
 
 		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
 			switch (what) {
-			case MSG_NOTIFY_BOOT_COMPLETED: {
-				onBootCompleted();
+			case MSG_ON_SHARED_PREFERENCE_CHANGED: {
+				SharedPreferences sharedPreferences = (SharedPreferences) data.getObject("sharedPreferences");
+				String key = data.getString("key");
+				onSharedPreferenceChanged(sharedPreferences, key);
 				return null;
 			}
 			default:
@@ -52,7 +55,7 @@ public interface IPackageManagerListener extends IInterface {
 			}
 		}
 
-		private static class Proxy implements IPackageManagerListener {
+		private static class Proxy implements IOnSharedPreferenceChangeListener {
 			private final IBinder mRemote;
 
 			Proxy(IBinder remote) {
@@ -77,20 +80,23 @@ public interface IPackageManagerListener extends IInterface {
 				return mRemote.hashCode();
 			}
 
-			public void onBootCompleted() throws RemoteException {
-				mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
+			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException {
+				Bundle data = new Bundle();
+				data.putObject("sharedPreferences", sharedPreferences);
+				data.putString("key", key);
+				mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED, data, FLAG_ONEWAY);
 			}
 		}
 
-		private static class SmartProxy implements IPackageManagerListener {
+		private static class SmartProxy implements IOnSharedPreferenceChangeListener {
 			private final IBinder mRemote;
-			private final IPackageManagerListener mStub;
-			private final IPackageManagerListener mProxy;
+			private final IOnSharedPreferenceChangeListener mStub;
+			private final IOnSharedPreferenceChangeListener mProxy;
 
 			SmartProxy(IBinder remote) {
 				mRemote = remote;
-				mStub = (mindroid.content.pm.IPackageManagerListener) remote.queryLocalInterface(DESCRIPTOR);
-				mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(remote);
+				mStub = (mindroid.app.IOnSharedPreferenceChangeListener) remote.queryLocalInterface(DESCRIPTOR);
+				mProxy = new mindroid.app.IOnSharedPreferenceChangeListener.Stub.Proxy(remote);
 			}
 
 			public IBinder asBinder() {
@@ -111,17 +117,17 @@ public interface IPackageManagerListener extends IInterface {
 				return mRemote.hashCode();
 			}
 
-			public void onBootCompleted() throws RemoteException {
+			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException {
 				if (mRemote.runsOnSameThread()) {
-					mStub.onBootCompleted();
+					mStub.onSharedPreferenceChanged(sharedPreferences, key);
 				} else {
-					mProxy.onBootCompleted();
+					mProxy.onSharedPreferenceChanged(sharedPreferences, key);
 				}
 			}
 		}
 
-		static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
+		static final int MSG_ON_SHARED_PREFERENCE_CHANGED = 1;
 	}
 
-	public void onBootCompleted() throws RemoteException;
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException;
 }

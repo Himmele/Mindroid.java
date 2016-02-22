@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2006 The Android Open Source Project
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2007 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +14,19 @@
  * limitations under the License.
  */
 
-package mindroid.os;
+package mindroid.content.pm;
 
 /**
- * Base class for Binder interfaces. When defining a new interface, you must derive it from
- * IInterface.
+ * Information that is returned from resolving an intent. This partially corresponds to information
+ * collected from the MindroidManifest.xml.
  */
-public interface IInterface {
+public class ResolveInfo {
 	/**
-	 * Retrieve the Binder object associated with this interface. You must use this instead of a
-	 * plain cast, so that proxy objects can return the correct result.
+	 * The service that corresponds to this resolution match, if this resolution is for a service.
+	 * {@link #serviceInfo} will be non-null.
 	 */
-	public IBinder asBinder();
+	public ServiceInfo serviceInfo;
+
+	public ResolveInfo() {
+	}
 }

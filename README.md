@@ -11,8 +11,7 @@ The application framework is mainly intended for machine-to-machine (M2M) commun
 
 ### Build ###
 * ant sdk (Compile the Mindroid.jar SDK)
-* ant apps (Compile the example application)
-* ant install-apps (Build and install apps to the apps directory)
+* ant apps (Compile the example application and install into the apps directory)
 * ant docs (Build the SDK docs)
 
 ### Run ###

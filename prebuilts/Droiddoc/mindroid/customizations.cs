@@ -146,7 +146,7 @@ def:custom_left_nav() ?><?cs
 
 <?cs 
 def:custom_copyright() ?>
-  Copyright (C) 2013 <a
+  Copyright (C) 2016 <a
   href="http://esrlabs.com">E.S.R.Labs</a>.<?cs 
 /def ?>
 

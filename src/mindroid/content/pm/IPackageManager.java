@@ -16,7 +16,7 @@
 
 package mindroid.content.pm;
 
-import mindroid.content.ComponentName;
+import java.util.List;
 import mindroid.content.Intent;
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
@@ -27,28 +27,28 @@ import mindroid.os.RemoteException;
 public interface IPackageManager extends IInterface {
 	public static abstract class Stub extends Binder implements IPackageManager {
 		private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageManager";
-		
+
 		public Stub() {
 			this.attachInterface(this, DESCRIPTOR);
 		}
-		
+
 		public static IPackageManager asInterface(IBinder binder) {
-			if(binder == null) {
+			if (binder == null) {
 				return null;
 			}
 			return new IPackageManager.Stub.SmartProxy(binder);
 		}
-		
+
 		public IBinder asBinder() {
 			return this;
 		}
-		
+
 		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
 			switch (what) {
 			case MSG_RESOLVE_SERVICE: {
-				Intent service = (Intent) obj;
-				ServiceInfo serviceInfo = resolveService(service);
-				return serviceInfo;
+				Intent intent = (Intent) obj;
+				ResolveInfo resolveInfo = resolveService(intent, arg1);
+				return resolveInfo;
 			}
 			case MSG_ADD_LISTENER: {
 				addListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
@@ -58,70 +58,106 @@ public interface IPackageManager extends IInterface {
 				removeListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
 				return null;
 			}
-			case MSG_GET_AUTOSTART_SERVICES: {
-				ComponentName[] components = getAutostartServices();
-				return components;
+			case MSG_GET_INSTALLED_PACKAGES: {
+				List packages = getInstalledPackages(arg1);
+				return packages;
 			}
 			default:
-			    return super.onTransact(what, arg1, arg2, obj, data);
+				return super.onTransact(what, arg1, arg2, obj, data);
 			}
 		}
-		
+
 		private static class Proxy implements IPackageManager {
-			private final IBinder mBinder;
-			
-			Proxy(IBinder binder) {
-				mBinder = binder;
+			private final IBinder mRemote;
+
+			Proxy(IBinder remote) {
+				mRemote = remote;
 			}
-			
+
 			public IBinder asBinder() {
-				return mBinder;
+				return mRemote;
 			}
-			
-			public ServiceInfo resolveService(Intent service) throws RemoteException {
-				ServiceInfo serviceInfo = (ServiceInfo) mBinder.transact(MSG_RESOLVE_SERVICE, service, 0);
-				return serviceInfo;
+
+			public boolean equals(final Object obj) {
+				if (obj == null) return false;
+				if (obj == this) return true;
+				if (obj instanceof Proxy) {
+					final Proxy that = (Proxy) obj;
+					return this.mRemote.equals(that.mRemote);
+				}
+				return false;
+			}
+
+			public int hashCode() {
+				return mRemote.hashCode();
+			}
+
+			public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
+				ResolveInfo resolveInfo = (ResolveInfo) mRemote.transact(MSG_RESOLVE_SERVICE, flags, 0, intent, 0);
+				return resolveInfo;
 			}
 
 			public void addListener(IPackageManagerListener listener) throws RemoteException {
-				mBinder.transact(MSG_ADD_LISTENER, listener.asBinder(), FLAG_ONEWAY);
+				mRemote.transact(MSG_ADD_LISTENER, listener.asBinder(), FLAG_ONEWAY);
 			}
 
 			public void removeListener(IPackageManagerListener listener) throws RemoteException {
-				mBinder.transact(MSG_REMOVE_LISTENER, listener.asBinder(), FLAG_ONEWAY);
+				mRemote.transact(MSG_REMOVE_LISTENER, listener.asBinder(), FLAG_ONEWAY);
 			}
 
-			public ComponentName[] getAutostartServices() throws RemoteException {
-				ComponentName[] components = (ComponentName[]) mBinder.transact(MSG_GET_AUTOSTART_SERVICES, 0);
-				return components;
+			public List getInstalledPackages(int flags) throws RemoteException {
+				List packages = (List) mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, 0);
+				return packages;
 			}
 		}
-		
+
 		private static class SmartProxy implements IPackageManager {
-			private final IBinder mBinder;
+			private final IBinder mRemote;
 			private final IPackageManager mStub;
 			private final IPackageManager mProxy;
-			
-			SmartProxy(IBinder binder) {
-				mBinder = binder;
-				mStub = (IPackageManager) binder.queryLocalInterface(DESCRIPTOR);
-				mProxy = new IPackageManager.Stub.Proxy(binder);
+
+			SmartProxy(IBinder remote) {
+				mRemote = remote;
+				mStub = (IPackageManager) remote.queryLocalInterface(DESCRIPTOR);
+				mProxy = new IPackageManager.Stub.Proxy(remote);
 			}
-			
+
 			public IBinder asBinder() {
-				return mBinder;
+				return mRemote;
 			}
-			
-			public ServiceInfo resolveService(Intent service) throws RemoteException {
-				if (mBinder.runsOnSameThread()) {
-					return mStub.resolveService(service);
+
+			public boolean equals(final Object obj) {
+				if (obj == null) return false;
+				if (obj == this) return true;
+				if (obj instanceof SmartProxy) {
+					final SmartProxy that = (SmartProxy) obj;
+					return this.mRemote.equals(that.mRemote);
+				}
+				return false;
+			}
+
+			public int hashCode() {
+				return mRemote.hashCode();
+			}
+
+			public List getInstalledPackages(int flags) throws RemoteException {
+				if (mRemote.runsOnSameThread()) {
+					return mStub.getInstalledPackages(flags);
 				} else {
-					return mProxy.resolveService(service);
+					return mProxy.getInstalledPackages(flags);
+				}
+			}
+
+			public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
+				if (mRemote.runsOnSameThread()) {
+					return mStub.resolveService(intent, flags);
+				} else {
+					return mProxy.resolveService(intent, flags);
 				}
 			}
 
 			public void addListener(IPackageManagerListener listener) throws RemoteException {
-				if (mBinder.runsOnSameThread()) {
+				if (mRemote.runsOnSameThread()) {
 					mStub.addListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
 				} else {
 					mProxy.addListener(listener);
@@ -129,30 +165,25 @@ public interface IPackageManager extends IInterface {
 			}
 
 			public void removeListener(IPackageManagerListener listener) throws RemoteException {
-				if (mBinder.runsOnSameThread()) {
+				if (mRemote.runsOnSameThread()) {
 					mStub.removeListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
 				} else {
 					mProxy.removeListener(listener);
 				}
 			}
-
-			public ComponentName[] getAutostartServices() throws RemoteException {
-				if (mBinder.runsOnSameThread()) {
-					return mStub.getAutostartServices();
-				} else {
-					return mProxy.getAutostartServices();
-				}
-			}
 		}
-		
-		static final int MSG_RESOLVE_SERVICE = 1;
-		static final int MSG_ADD_LISTENER = 2;
-		static final int MSG_REMOVE_LISTENER = 3;
-		static final int MSG_GET_AUTOSTART_SERVICES = 4;
+
+		static final int MSG_GET_INSTALLED_PACKAGES = 1;
+		static final int MSG_RESOLVE_SERVICE = 2;
+		static final int MSG_ADD_LISTENER = 3;
+		static final int MSG_REMOVE_LISTENER = 4;
 	}
-	
-	public ServiceInfo resolveService(Intent service) throws RemoteException;
+
+	public List getInstalledPackages(int flags) throws RemoteException;
+
+	public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException;
+
 	public void addListener(IPackageManagerListener listener) throws RemoteException;
+
 	public void removeListener(IPackageManagerListener listener) throws RemoteException;
-	public ComponentName[] getAutostartServices() throws RemoteException;
 }
