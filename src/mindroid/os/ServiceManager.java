@@ -437,7 +437,7 @@ public final class ServiceManager {
 			serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
 		} else {
 			boolean systemService = service.getBooleanExtra(SYSTEM_SERVICE, false);
-			serviceRecord = new ServiceRecord(serviceInfo.name, processRecord, systemService);
+			serviceRecord = new ServiceRecord(serviceInfo.packageName + "." + serviceInfo.name, processRecord, systemService);
 			mServices.put(service.getComponent(), serviceRecord);
 		}
 		if (!processRecord.containsService(service.getComponent())) {
