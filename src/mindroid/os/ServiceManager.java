@@ -400,9 +400,10 @@ public final class ServiceManager {
 			ApplicationInfo ai = new ApplicationInfo();
 			ai.processName = service.getStringExtra("process");
 			ServiceInfo si = new ServiceInfo();
-			si.processName = ai.processName;
-			si.name = service.getStringExtra("name");
+			si.name = service.getComponent().getClassName();
+			si.packageName = service.getComponent().getPackageName();
 			si.applicationInfo = ai;
+			si.processName = ai.processName;
 			si.flags |= ServiceInfo.FLAG_SYSTEM_SERVICE;
 
 			serviceInfo = si;
@@ -437,7 +438,13 @@ public final class ServiceManager {
 			serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
 		} else {
 			boolean systemService = service.getBooleanExtra(SYSTEM_SERVICE, false);
-			serviceRecord = new ServiceRecord(serviceInfo.packageName + "." + serviceInfo.name, processRecord, systemService);
+			String name;
+			if (systemService) {
+				name = service.getStringExtra("name");
+			} else {
+				name = serviceInfo.packageName + "." + serviceInfo.name;
+			}
+			serviceRecord = new ServiceRecord(name, processRecord, systemService);
 			mServices.put(service.getComponent(), serviceRecord);
 		}
 		if (!processRecord.containsService(service.getComponent())) {
