@@ -33,7 +33,7 @@ import mindroid.util.Pair;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Future;
-import mindroid.util.concurrent.SettableFuture;
+import mindroid.util.concurrent.Promise;
 
 public final class ServiceManager {
 	private static final String LOG_TAG = "ServiceManager";
@@ -100,20 +100,20 @@ public final class ServiceManager {
 		}
 
 		public synchronized Future stopProcess(String name, final long timeout) {
-			final SettableFuture future = new SettableFuture();
+			final Promise promise = new Promise();
 			Pair pair = (Pair) mProcesses.remove(name);
 			if (pair != null) {
 				final Process process = (Process) pair.first;
 				mHandler.post(new Runnable() {
 					public void run() {
 						process.stop(timeout);
-						future.set(new Boolean(true));
+						promise.set(new Boolean(true));
 					}
 				});
-				return future;
+				return promise;
 			} else {
-				future.set(new Boolean(false));
-				return future;
+				promise.set(new Boolean(false));
+				return promise;
 			}
 		}
 	}
@@ -192,14 +192,14 @@ public final class ServiceManager {
 
 		mMainThread.start();
 		mMainHandler = new Handler(mMainThread.getLooper());
-		final SettableFuture future = new SettableFuture();
+		final Promise promise = new Promise();
 		mMainHandler.post(new Runnable() {
 			public void run() {
-				future.set(new ServiceManagerImpl());
+				promise.set(new ServiceManagerImpl());
 			}
 		});
 		try {
-			sStub = (IServiceManager.Stub) future.get();
+			sStub = (IServiceManager.Stub) promise.get();
 		} catch (CancellationException e) {
 			throw new RuntimeException("System failure");
 		} catch (ExecutionException e) {

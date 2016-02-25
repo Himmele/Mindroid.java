@@ -36,7 +36,7 @@ import mindroid.app.Service;
 import mindroid.util.Log;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
-import mindroid.util.concurrent.SettableFuture;
+import mindroid.util.concurrent.Promise;
 
 public class Process {
 	private static final String LOG_TAG = "Process";
@@ -75,16 +75,16 @@ public class Process {
 		Log.d(LOG_TAG, "Starting process " + mName);
 		mMainThread.start();
 		mMainHandler = new Handler(mMainThread.getLooper());
-		final SettableFuture future = new SettableFuture();
+		final Promise promise = new Promise();
 		mMainHandler.post(new Runnable() {
 			public void run() {
-				future.set(new ProcessImpl());
+				promise.set(new ProcessImpl());
 			}
 		});
 		mDebug.start(this);
 
 		try {
-			mStub = (IProcess.Stub) future.get();
+			mStub = (IProcess.Stub) promise.get();
 		} catch (CancellationException e) {
 			throw new RuntimeException("System failure");
 		} catch (ExecutionException e) {

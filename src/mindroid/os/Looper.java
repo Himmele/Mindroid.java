@@ -111,8 +111,8 @@ public class Looper {
 		return myLooper().mMessageQueue;
 	}
 
-	private Looper(boolean allowQuiting) {
-		mMessageQueue = new MessageQueue(allowQuiting);
+	private Looper(boolean quitAllowed) {
+		mMessageQueue = new MessageQueue(quitAllowed);
 		mThread = Thread.currentThread();
 	}
 

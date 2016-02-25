@@ -18,12 +18,12 @@ package mindroid.util.concurrent;
 
 import mindroid.os.SystemClock;
 
-public class SettableFuture implements Future {
+public class Promise implements Future {
 	private Object mObject = null;
 	private boolean mIsDone = false;
 	private boolean mIsCancelled = false;
 
-	public SettableFuture() {
+	public Promise() {
 	}
 
 	public synchronized boolean cancel() {

@@ -17,8 +17,7 @@
 package mindroid.util.concurrent;
 
 /**
- * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved
- * because the task timed out.
+ * Exception indicating that the result of a future cannot be retrieved because the task timed out.
  */
 public class TimeoutException extends Exception {
 	public TimeoutException() {

@@ -17,8 +17,8 @@
 package mindroid.util.concurrent;
 
 /**
- * Exception indicating that the result of a future, such as a SettableFuture, cannot be retrieved
- * because the task was cancelled.
+ * Exception indicating that the result of a future cannot be retrieved because the task was
+ * cancelled.
  */
 public class CancellationException extends IllegalStateException {
 	public CancellationException() {

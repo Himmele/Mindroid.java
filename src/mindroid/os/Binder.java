@@ -19,7 +19,7 @@ package mindroid.os;
 
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
-import mindroid.util.concurrent.SettableFuture;
+import mindroid.util.concurrent.Promise;
 
 /**
  * Base class for a remotable object, the core part of a lightweight remote procedure call mechanism
@@ -81,11 +81,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -102,11 +102,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -123,11 +123,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -144,11 +144,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -166,11 +166,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -188,11 +188,11 @@ public class Binder implements IBinder {
 			message.sendToTarget();
 			return null;
 		} else {
-			SettableFuture future = new SettableFuture();
-			message.result = future;
+			Promise promise = new Promise();
+			message.result = promise;
 			message.sendToTarget();
 			try {
-				return future.get();
+				return promise.get();
 			} catch (CancellationException e) {
 				throw new RemoteException(EXCEPTION_MESSAGE);
 			} catch (ExecutionException e) {
@@ -223,7 +223,7 @@ public class Binder implements IBinder {
 			try {
 				Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
 				if (message.result != null) {
-					((SettableFuture) message.result).set(o);
+					((Promise) message.result).set(o);
 				}
 			} catch (RemoteException e) {
 			}
