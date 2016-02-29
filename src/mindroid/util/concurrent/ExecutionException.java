@@ -24,7 +24,7 @@ public class ExecutionException extends Exception {
 	public ExecutionException() {
 	}
 
-	public ExecutionException(String name) {
-		super(name);
+	public ExecutionException(String message) {
+		super(message);
 	}
 };

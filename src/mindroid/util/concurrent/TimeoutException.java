@@ -23,7 +23,7 @@ public class TimeoutException extends Exception {
 	public TimeoutException() {
 	}
 
-	public TimeoutException(String name) {
-		super(name);
+	public TimeoutException(String message) {
+		super(message);
 	}
 };
