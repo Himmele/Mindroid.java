@@ -343,7 +343,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 			synchronized (mLock) {
 				if (!mListeners.containsKey(listener)) {
 					OnSharedPreferenceChangeListenerWrapper wrapper = new OnSharedPreferenceChangeListenerWrapper(listener);
-					mListeners.put(listener, wrapper);
+					mListeners.put(listener, IOnSharedPreferenceChangeListener.Stub.asInterface(wrapper.asBinder()));
 				}
 			}
 		}
