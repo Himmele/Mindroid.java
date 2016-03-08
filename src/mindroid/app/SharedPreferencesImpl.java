@@ -343,7 +343,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 			synchronized (mLock) {
 				if (!mListeners.containsKey(listener)) {
 					OnSharedPreferenceChangeListenerWrapper wrapper = new OnSharedPreferenceChangeListenerWrapper(listener);
-					mListeners.put(listener, wrapper);
+					mListeners.put(listener, IOnSharedPreferenceChangeListener.Stub.asInterface(wrapper.asBinder()));
 				}
 			}
 		}
@@ -364,6 +364,8 @@ final class SharedPreferencesImpl implements SharedPreferences {
 	private void notifySharedPreferenceChangeListeners(final List keys) {
 		for (int i = 0; i < keys.size(); i++) {
 			String key = (String) keys.get(i);
+
+			List deadListeners = null;
 			Iterator itr = mListeners.entrySet().iterator();
 			while (itr.hasNext()) {
 				Map.Entry entry = (Map.Entry) itr.next();
@@ -371,7 +373,16 @@ final class SharedPreferencesImpl implements SharedPreferences {
 				try {
 					listener.onSharedPreferenceChanged(this, key);
 				} catch (RemoteException e) {
-					itr.remove();
+					if (deadListeners == null) {
+						deadListeners = new ArrayList();
+					}
+					deadListeners.add(entry.getKey());
+				}
+			}
+
+			if (deadListeners != null) {
+				for (Iterator iterator = deadListeners.iterator(); iterator.hasNext();) {
+					mListeners.remove(iterator.next());
 				}
 			}
 		}

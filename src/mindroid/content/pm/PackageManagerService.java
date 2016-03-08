@@ -152,12 +152,22 @@ public class PackageManagerService extends Service {
 	private void onBootCompleted() {
 		mBootCompleted = true;
 
+		List deadListeners = null;
 		for (Iterator itr = mListeners.iterator(); itr.hasNext();) {
 			IPackageManagerListener listener = (IPackageManagerListener) itr.next();
 			try {
 				listener.onBootCompleted();
 			} catch (RemoteException e) {
-				itr.remove();
+				if (deadListeners == null) {
+					deadListeners = new ArrayList();
+				}
+				deadListeners.add(listener);
+			}
+		}
+
+		if (deadListeners != null) {
+			for (Iterator iterator = deadListeners.iterator(); iterator.hasNext();) {
+				mListeners.remove(iterator.next());
 			}
 		}
 	}
