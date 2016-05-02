@@ -55,6 +55,10 @@ public final class Message {
 	 */
 	public Object obj;
 
+	/*package*/ static final int FLAG_IN_USE = 1 << 0;
+
+	/*package*/ int flags;
+
 	/* package */long when;
 
 	/* package */Bundle data;
@@ -81,6 +85,7 @@ public final class Message {
 				Message message = sMessagePool;
 				sMessagePool = message.nextMessage;
 				message.nextMessage = null;
+				message.flags = 0;
 				sMessagePoolSize--;
 				return message;
 			}
@@ -225,6 +230,7 @@ public final class Message {
 			result.cancel();
 		}
 
+		flags = FLAG_IN_USE;
 		what = 0;
 		arg1 = 0;
 		arg2 = 0;
@@ -245,10 +251,11 @@ public final class Message {
 	}
 
 	/**
-	 * Make this message like o. Performs a shallow copy of the data field. Does not copy the linked
+	 * Make this message like otherMessage. Performs a shallow copy of the data field. Does not copy the linked
 	 * list fields, nor the timestamp or target/callback of the original message.
 	 */
 	public void copyFrom(Message otherMessage) {
+		this.flags = 0;
 		this.what = otherMessage.what;
 		this.arg1 = otherMessage.arg1;
 		this.arg2 = otherMessage.arg2;
@@ -335,6 +342,14 @@ public final class Message {
 	 */
 	public void sendToTarget() {
 		target.sendMessage(this);
+	}
+
+	/*package*/ boolean isInUse() {
+		return ((flags & FLAG_IN_USE) == FLAG_IN_USE);
+	}
+
+	/*package*/ void markInUse() {
+		flags |= FLAG_IN_USE;
 	}
 
 	/**

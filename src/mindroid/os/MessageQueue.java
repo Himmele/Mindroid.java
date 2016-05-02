@@ -68,7 +68,7 @@ public class MessageQueue {
 		if (message.target == null) {
 			throw new IllegalArgumentException("Message must have a target");
 		}
-		if (message.when != 0) {
+		if (message.isInUse()) {
 			throw new IllegalStateException(message + ": This message is already in use");
 		}
 
@@ -80,6 +80,7 @@ public class MessageQueue {
 				return false;
 			}
 
+			message.markInUse();
 			message.when = when;
 			Message curMessage = mMessages;
 			if (curMessage == null || when == 0 || when < curMessage.when) {
