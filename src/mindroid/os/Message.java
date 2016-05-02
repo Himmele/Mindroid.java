@@ -59,13 +59,13 @@ public final class Message {
 
 	/*package*/ int flags;
 
-	/* package */long when;
+	/*package*/ long when;
 
-	/* package */Bundle data;
+	/*package*/ Bundle data;
 
-	/* package */Handler target;
+	/*package*/ Handler target;
 
-	/* package */Runnable callback;
+	/*package*/ Runnable callback;
 
 	Message nextMessage;
 
