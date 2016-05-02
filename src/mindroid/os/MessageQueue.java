@@ -68,11 +68,12 @@ public class MessageQueue {
 		if (message.target == null) {
 			throw new IllegalArgumentException("Message must have a target");
 		}
-		if (message.isInUse()) {
-			throw new IllegalStateException(message + ": This message is already in use");
-		}
 
 		synchronized (this) {
+			if (message.isInUse()) {
+				throw new IllegalStateException(message + ": This message is already in use");
+			}
+
 			if (mQuitting) {
 				IllegalStateException e = new IllegalStateException(message.target + " is sending a message to a Handler on a dead thread");
 				Log.w(LOG_TAG, e.getMessage(), e);

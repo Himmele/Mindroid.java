@@ -255,7 +255,6 @@ public final class Message {
 	 * list fields, nor the timestamp or target/callback of the original message.
 	 */
 	public void copyFrom(Message otherMessage) {
-		this.flags = 0;
 		this.what = otherMessage.what;
 		this.arg1 = otherMessage.arg1;
 		this.arg2 = otherMessage.arg2;
