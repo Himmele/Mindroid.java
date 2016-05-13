@@ -36,11 +36,13 @@ public abstract class Context {
 	public static final String SERVICE_MANAGER = "serviceManager";
 	public static final String PACKAGE_MANAGER = "packageManager";
 	public static final String CLOCK_SERVICE = "clockService";
+	public static final String ALARM_MANAGER = "alarmManager";
 	public static final String POWER_MANAGER = "powerManager";
-	public static final String LOGGER_SERVICE = "logger";
-	public static final String EVENT_LOGGER_SERVICE = "eventLogger";
 	public static final String LOCATION_SERVICE = "locationService";
 	public static final String TELEPHONY_SERVICE = "telephonyService";
+	public static final String MEDIA_PLAYER_SERVICE = "mediaPlayerService";
+	public static final String LOGGER_SERVICE = "logger";
+	public static final String EVENT_LOGGER_SERVICE = "eventLogger";
 
 	/**
 	 * File creation mode: the default mode.
