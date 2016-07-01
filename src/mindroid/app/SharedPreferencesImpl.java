@@ -89,7 +89,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 	public Set getStringSet(String key, Set defValues) {
 		synchronized (mLock) {
 			Set v = (Set) mMap.get(key);
-			return v != null ? v : defValues;
+			return v != null ? new HashSet(v) : defValues;
 		}
 	}
 

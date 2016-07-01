@@ -29,7 +29,7 @@ import mindroid.util.logging.LogBuffer.LogRecord;
 public class Logger extends Service {
 	private static final String LOG_TAG = "Logger";
 	private LoggerThread mMainLoggerThread = null;
-	private LoggerThread mPerformanceMonitoringLoggerThread = null;
+	private LoggerThread mDebugLoggerThread = null;
 
 	class LoggerThread extends Thread {
 		private LogBuffer mLogBuffer;
@@ -135,12 +135,12 @@ public class Logger extends Service {
 				mMainLoggerThread.start();
 			}
 
-			if (logBuffers.contains("perfmon")) {
-				if (mPerformanceMonitoringLoggerThread == null) {
-					mPerformanceMonitoringLoggerThread = new LoggerThread(LOG_TAG + " {perfmon}", Log.LOG_ID_PERFORMANCE_MONITORING, true, false, true,
+			if (logBuffers.contains("debug")) {
+				if (mDebugLoggerThread == null) {
+					mDebugLoggerThread = new LoggerThread(LOG_TAG + " {debug}", Log.LOG_ID_DEBUG, true, false, true,
 							Log.DEBUG, null, null, 0, 0);
-					mPerformanceMonitoringLoggerThread.setPriority(threadPriority);
-					mPerformanceMonitoringLoggerThread.start();
+					mDebugLoggerThread.setPriority(threadPriority);
+					mDebugLoggerThread.start();
 				}
 			}
 		}
@@ -157,10 +157,10 @@ public class Logger extends Service {
 			}
 		}
 
-		if (mPerformanceMonitoringLoggerThread != null) {
-			mPerformanceMonitoringLoggerThread.interrupt();
+		if (mDebugLoggerThread != null) {
+			mDebugLoggerThread.interrupt();
 			try {
-				mPerformanceMonitoringLoggerThread.join();
+				mDebugLoggerThread.join();
 			} catch (InterruptedException e) {
 			}
 		}
