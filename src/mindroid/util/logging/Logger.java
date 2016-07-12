@@ -91,10 +91,6 @@ public class Logger extends Service {
 
 			if (mFileLogging) {
 				try {
-					File logDirectory = new File(mLogDirectory).getAbsoluteFile();
-					if (!logDirectory.exists()) {
-						logDirectory.mkdir();
-					}
 					mFileHander = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -105,10 +101,21 @@ public class Logger extends Service {
 		private void close() {
 			if (mConsoleHander != null) {
 				mConsoleHander.close();
+				mConsoleHander = null;
 			}
 
 			if (mFileHander != null) {
 				mFileHander.close();
+				mFileHander = null;
+			}
+		}
+		
+		void quit() {
+			interrupt();
+			mLogBuffer.quit();
+			try {
+				join();
+			} catch (InterruptedException e) {
 			}
 		}
 	}
@@ -126,19 +133,19 @@ public class Logger extends Service {
 				String logDirectory = Environment.getLogDirectory().getAbsolutePath();
 				String logFileName = intent.getStringExtra("logFileName");
 				int logFileSizeLimit = intent.getIntExtra("logFileSizeLimit", 0);
-				int logFileCount = intent.getIntExtra("logFileCount", 1);
+				int logFileCount = intent.getIntExtra("logFileCount", 2);
 				boolean fileLogging = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
 
-				mMainLoggerThread = new LoggerThread(LOG_TAG + " {main}", Log.LOG_ID_MAIN, true, fileLogging, timestamps, priority, logDirectory, logFileName,
-						logFileSizeLimit, logFileCount);
+				mMainLoggerThread = new LoggerThread(LOG_TAG + " {main}", Log.LOG_ID_MAIN, true, fileLogging, timestamps, priority,
+						logDirectory, logFileName, logFileSizeLimit, logFileCount);
 				mMainLoggerThread.setPriority(threadPriority);
 				mMainLoggerThread.start();
 			}
 
 			if (logBuffers.contains("debug")) {
 				if (mDebugLoggerThread == null) {
-					mDebugLoggerThread = new LoggerThread(LOG_TAG + " {debug}", Log.LOG_ID_DEBUG, true, false, true,
-							Log.DEBUG, null, null, 0, 0);
+					mDebugLoggerThread = new LoggerThread(LOG_TAG + " {debug}", Log.LOG_ID_DEBUG, true, false, true, Log.DEBUG,
+							null, null, 0, 0);
 					mDebugLoggerThread.setPriority(threadPriority);
 					mDebugLoggerThread.start();
 				}
@@ -150,19 +157,11 @@ public class Logger extends Service {
 
 	public void onDestroy() {
 		if (mMainLoggerThread != null) {
-			mMainLoggerThread.interrupt();
-			try {
-				mMainLoggerThread.join();
-			} catch (InterruptedException e) {
-			}
+			mMainLoggerThread.quit();
 		}
 
 		if (mDebugLoggerThread != null) {
-			mDebugLoggerThread.interrupt();
-			try {
-				mDebugLoggerThread.join();
-			} catch (InterruptedException e) {
-			}
+			mDebugLoggerThread.quit();
 		}
 	}
 

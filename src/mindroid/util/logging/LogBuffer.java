@@ -32,7 +32,7 @@ public class LogBuffer {
 	private int mWriteIndex;
 	private byte[] mData;
 	private GregorianCalendar mCalendar = new GregorianCalendar();
-	private boolean mQuit = false;
+	private boolean mQuitting = false;
 
 	public class LogRecord {
 		private int mLogId;
@@ -168,8 +168,8 @@ public class LogBuffer {
 			synchronized (this) {
 				while (isEmpty()) {
 					wait();
-					if (mQuit) {
-						mQuit = false;
+					if (mQuitting) {
+						mQuitting = false;
 						return null;
 					}
 				}
@@ -212,8 +212,8 @@ public class LogBuffer {
 		}
 	}
 
-	public synchronized void resume() {
-		mQuit = true;
+	public synchronized void quit() {
+		mQuitting = true;
 		notify();
 	}
 

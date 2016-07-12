@@ -71,10 +71,6 @@ public class EventLogger extends Service {
 
 		private void open() {
 			try {
-				File logDirectory = new File(mLogDirectory).getAbsoluteFile();
-				if (!logDirectory.exists()) {
-					logDirectory.mkdir();
-				}
 				mFileHander = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -84,6 +80,16 @@ public class EventLogger extends Service {
 		private void close() {
 			if (mFileHander != null) {
 				mFileHander.close();
+				mFileHander = null;
+			}
+		}
+		
+		void quit() {
+			interrupt();
+			mLogBuffer.quit();
+			try {
+				join();
+			} catch (InterruptedException e) {
 			}
 		}
 	}
@@ -117,11 +123,7 @@ public class EventLogger extends Service {
 
 	public void onDestroy() {
 		if (mEventLoggerThread != null) {
-			mEventLoggerThread.interrupt();
-			try {
-				mEventLoggerThread.join();
-			} catch (InterruptedException e) {
-			}
+			mEventLoggerThread.quit();
 		}
 	}
 

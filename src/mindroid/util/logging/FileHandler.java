@@ -57,7 +57,7 @@ public class FileHandler {
 	private static final int DEFAULT_COUNT = 1;
 	private static final int DEFAULT_LIMIT = 0;
 	private static final boolean DEFAULT_APPEND = false;
-	private static final String DEFAULT_PATTERN = "%h/mindroid%g.log";
+	private static final String DEFAULT_PATTERN = "%h/Mindroid-%g.log";
 
 	private String mPattern;
 	private boolean mAppend;
@@ -155,11 +155,21 @@ public class FileHandler {
 					if (!tempPathHasSeparatorEnd) {
 						sb.append(File.separator);
 					}
+					if (nextChar + 1 < mPattern.length()) {
+						if (value[nextChar + 1] == File.separatorChar) {
+							++nextChar;
+						}
+					}
 					break;
 				case 'h':
 					sb.append(value, curChar, nextChar - curChar - 1).append(homePath);
 					if (!homePathHasSeparatorEnd) {
 						sb.append(File.separator);
+					}
+					if (nextChar + 1 < mPattern.length()) {
+						if (value[nextChar + 1] == File.separatorChar) {
+							++nextChar;
+						}
 					}
 					break;
 				case '%':
@@ -192,8 +202,8 @@ public class FileHandler {
 	 * @throws NullPointerException if the pattern is {@code null}.
 	 */
 	public FileHandler(String pattern) throws IOException {
-		if (pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be empty");
+		if (pattern == null || pattern.length() == 0) {
+			throw new IllegalArgumentException("Pattern cannot be null or empty");
 		}
 		init(pattern, null, new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
 	}
@@ -211,8 +221,8 @@ public class FileHandler {
 	 * @throws NullPointerException if {@code pattern} is {@code null}.
 	 */
 	public FileHandler(String pattern, boolean append) throws IOException {
-		if (pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be empty");
+		if (pattern == null || pattern.length() == 0) {
+			throw new IllegalArgumentException("Pattern cannot be null or empty");
 		}
 		init(pattern, Boolean.valueOf(append), new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
 	}
@@ -232,8 +242,8 @@ public class FileHandler {
 	 * @throws NullPointerException if {@code pattern} is {@code null}.
 	 */
 	public FileHandler(String pattern, int limit, int count) throws IOException {
-		if (pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be empty");
+		if (pattern == null || pattern.length() == 0) {
+			throw new IllegalArgumentException("Pattern cannot be null or empty");
 		}
 		if (limit < 0 || count < 1) {
 			throw new IllegalArgumentException("limit < 0 || count < 1");
@@ -258,8 +268,8 @@ public class FileHandler {
 	 * @throws NullPointerException if {@code pattern} is {@code null}.
 	 */
 	public FileHandler(String pattern, int limit, int count, boolean append) throws IOException {
-		if (pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be empty");
+		if (pattern == null || pattern.length() == 0) {
+			throw new IllegalArgumentException("Pattern cannot be null or empty");
 		}
 		if (limit < 0 || count < 1) {
 			throw new IllegalArgumentException("limit < 0 || count < 1");
@@ -274,6 +284,7 @@ public class FileHandler {
 		try {
 			if (mWriter != null) {
 				mWriter.close();
+				mWriter = null;
 			}
 		} catch (IOException e) {
 		}
@@ -303,11 +314,14 @@ public class FileHandler {
 
 		public Writer(File file, boolean append) throws IOException {
 			if (!file.exists()) {
+				if (file.getParentFile() != null && !file.getParentFile().exists()) {
+					file.getParentFile().mkdir();
+				}
 				file.createNewFile();
 			}
 
 			mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append)));
-			this.mSize = file.length();
+			mSize = file.length();
 
 			if (append && file.length() > 0) {
 				newLine();

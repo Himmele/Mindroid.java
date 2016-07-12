@@ -52,12 +52,19 @@ public class Pair {
 	}
 
 	/**
-	 * Compute a hash code using the hash codes of the underlying objects
+	 * Compute a hash code using the hash codes of the underlying objects.
 	 * 
 	 * @return a hashcode of the Pair
 	 */
 	public int hashCode() {
 		return (first == null ? 0 : first.hashCode()) ^ (second == null ? 0 : second.hashCode());
+	}
+
+	/**
+	 * Returns a String representation of this pair using the format (first,second).
+	 */
+	public String toString() {
+		return "(" + first + "," + second + ")";
 	}
 
 	/**
