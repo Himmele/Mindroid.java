@@ -261,8 +261,12 @@ final class SharedPreferencesImpl implements SharedPreferences {
 			return;
 		}
 		if (mBackupFile.exists()) {
-			mFile.delete();
-			mBackupFile.renameTo(mFile);
+			if (!mFile.delete()) {
+				Log.e(LOG_TAG, "Cannot delete file " + mFile + " to restore backup file " + mBackupFile);
+			}
+			if (!mBackupFile.renameTo(mFile)) {
+				Log.e(LOG_TAG, "Cannot restore backup file " + mBackupFile + " to " + mFile);
+			}
 		}
 
 		Map map = null;
@@ -302,13 +306,19 @@ final class SharedPreferencesImpl implements SharedPreferences {
 					return false;
 				}
 			} else {
-				mFile.delete();
+				if (!mFile.delete()) {
+					Log.e(LOG_TAG, "Cannot clean up file: " + mFile);
+				}
 			}
 		}
 
 		try {
 			writeMap(mFile, mMap);
-			mBackupFile.delete();
+			if (mBackupFile.exists()) {
+				if (!mBackupFile.delete()) {
+					Log.e(LOG_TAG, "Cannot clean up backup file " + mBackupFile);
+				}
+			}
 			return true;
 		} catch (XmlPullParserException e) {
 			Log.w(LOG_TAG, "Cannot write file: " + mFile.getName(), e);
