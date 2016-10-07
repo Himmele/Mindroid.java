@@ -544,8 +544,8 @@ final class SharedPreferencesImpl implements SharedPreferences {
 
 		parser.require(XmlPullParser.END_TAG, null, STRING_TAG);
 
-		if ((name != null) && (value != null)) {
-			map.put(name, value);
+		if (name != null) {
+			map.put(name, (value != null) ? value : "");
 		}
 	}
 
@@ -577,7 +577,7 @@ final class SharedPreferencesImpl implements SharedPreferences {
 
 		parser.require(XmlPullParser.END_TAG, null, STRING_SET_TAG);
 
-		if ((name != null) && (value != null)) {
+		if (name != null) {
 			map.put(name, value);
 		}
 	}
