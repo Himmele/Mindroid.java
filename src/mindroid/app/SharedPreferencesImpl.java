@@ -67,8 +67,8 @@ final class SharedPreferencesImpl implements SharedPreferences {
 		mFile = file;
 		mMode = mode;
 		mBackupFile = makeBackupFile(file);
-		mMap = null;
 		synchronized (mLock) {
+			mMap = null;
 			loadSharedPrefs();
 		}
 	}
