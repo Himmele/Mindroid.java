@@ -66,9 +66,9 @@ public class Process {
 				super.uncaughtException(thread, e);
 			}
 		};
+		mServices = new HashMap();
 		mMainThread = new HandlerThread(mThreadGroup, "Process {" + name + "}");
 		mDebug = Debug.Creator.createInstance();
-		mServices = new HashMap();
 	}
 
 	public IProcess start() {
