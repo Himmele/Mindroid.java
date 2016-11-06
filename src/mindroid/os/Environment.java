@@ -123,9 +123,9 @@ public class Environment {
      * the preference values.
      */
     public static SharedPreferences getSharedPreferences(File sharedPrefsFile, int mode) {
-        SharedPreferencesImpl sp;
+        SharedPreferences sp;
         synchronized (sSharedPrefs) {
-            sp = (SharedPreferencesImpl) sSharedPrefs.get(sharedPrefsFile.getAbsolutePath());
+            sp = (SharedPreferences) sSharedPrefs.get(sharedPrefsFile.getAbsolutePath());
             if (sp == null) {
                 sp = new SharedPreferencesImpl(sharedPrefsFile, mode);
                 sSharedPrefs.put(sharedPrefsFile.getAbsolutePath(), sp);
