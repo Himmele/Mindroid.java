@@ -48,7 +48,6 @@ import mindroid.util.Log;
  */
 public class ContextImpl extends Context {
 	private final static String LOG_TAG = "ContextImpl";
-	private static final HashMap sSharedPrefs = new HashMap();
 	private final IServiceManager mServiceManager;
 	private final HandlerThread mMainThread;
 	private final Handler mHandler;
@@ -87,17 +86,7 @@ public class ContextImpl extends Context {
 	}
 
 	public SharedPreferences getSharedPreferences(String name, int mode) {
-		SharedPreferencesImpl sp;
-		synchronized (sSharedPrefs) {
-			sp = (SharedPreferencesImpl) sSharedPrefs.get(name);
-			if (sp == null) {
-				File sharedPrefsFile = getSharedPrefsFile(name);
-				sp = new SharedPreferencesImpl(sharedPrefsFile, mode);
-				sSharedPrefs.put(name, sp);
-				return sp;
-			}
-		}
-		return sp;
+	    return Environment.getSharedPreferences(getSharedPrefsFile(name), mode);
 	}
 
 	public FileInputStream openFileInput(String name) throws FileNotFoundException {
