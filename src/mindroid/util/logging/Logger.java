@@ -41,8 +41,8 @@ public class Logger extends Service {
 		private String mLogFileName;
 		private int mLogFileSizeLimit;
 		private int mLogFileCount;
-		private ConsoleHandler mConsoleHander;
-		private FileHandler mFileHander;
+		private ConsoleHandler mConsoleHandler;
+		private FileHandler mFileHandler;
 
 		public LoggerThread(String name, int logBufferId, boolean consoleLogging, boolean fileLogging, boolean timestamps, int priority, String logDirectory,
 				String logFileName, int logFileSizeLimit, int logFileCount) {
@@ -69,11 +69,11 @@ public class Logger extends Service {
 					break;
 				}
 				if (logMessage != null) {
-					if (mConsoleHander != null) {
-						mConsoleHander.publish(logMessage);
+					if (mConsoleHandler != null) {
+						mConsoleHandler.publish(logMessage);
 					}
-					if (mFileHander != null) {
-						mFileHander.publish(logMessage);
+					if (mFileHandler != null) {
+						mFileHandler.publish(logMessage);
 					}
 				}
 			}
@@ -83,15 +83,15 @@ public class Logger extends Service {
 
 		private void open() {
 			if (mConsoleLogging) {
-				mConsoleHander = new ConsoleHandler();
+				mConsoleHandler = new ConsoleHandler();
 				if (mTimestamps) {
-					mConsoleHander.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
+					mConsoleHandler.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
 				}
 			}
 
 			if (mFileLogging) {
 				try {
-					mFileHander = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
+					mFileHandler = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -99,14 +99,14 @@ public class Logger extends Service {
 		}
 
 		private void close() {
-			if (mConsoleHander != null) {
-				mConsoleHander.close();
-				mConsoleHander = null;
+			if (mConsoleHandler != null) {
+				mConsoleHandler.close();
+				mConsoleHandler = null;
 			}
 
-			if (mFileHander != null) {
-				mFileHander.close();
-				mFileHander = null;
+			if (mFileHandler != null) {
+				mFileHandler.close();
+				mFileHandler = null;
 			}
 		}
 		
