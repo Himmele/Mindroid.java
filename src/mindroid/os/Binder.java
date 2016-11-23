@@ -19,6 +19,7 @@ package mindroid.os;
 
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
+import mindroid.util.concurrent.Executor;
 import mindroid.util.concurrent.Promise;
 
 /**
@@ -33,15 +34,18 @@ import mindroid.util.concurrent.Promise;
  */
 public class Binder implements IBinder {
 	private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
+	private final IMessenger mTarget;
 	private IInterface mOwner;
 	private String mDescriptor;
-	private Messenger mMessenger;
-	private Thread mThread;
 
-	public Binder() {
-		mMessenger = new Messenger();
-	}
+    public Binder() {
+        mTarget = new Messenger();
+    }
 
+    public Binder(final Executor executor) {
+        mTarget = new ThreadPoolMessenger(executor);
+    }
+	
 	/**
 	 * Convenience method for associating a specific interface with the Binder. After calling,
 	 * queryInterface() will be implemented for you to return the given owner IInterface when the
@@ -50,7 +54,6 @@ public class Binder implements IBinder {
 	public void attachInterface(IInterface owner, String descriptor) {
 		mOwner = owner;
 		mDescriptor = descriptor;
-		mThread = Thread.currentThread();
 	}
 
 	/**
@@ -76,14 +79,15 @@ public class Binder implements IBinder {
 	 * transact calls into the binder to do the IPC.
 	 */
 	public Object transact(int what, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what);
+	    Message message = Message.obtain();
+        message.what = what;
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -97,14 +101,16 @@ public class Binder implements IBinder {
 	}
 
 	public Object transact(int what, Object obj, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what, obj);
+		Message message = Message.obtain();
+        message.what = what;
+        message.obj = obj;
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -118,14 +124,17 @@ public class Binder implements IBinder {
 	}
 
 	public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what, arg1, arg2);
+		Message message = Message.obtain();
+		message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -139,14 +148,18 @@ public class Binder implements IBinder {
 	}
 
 	public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what, arg1, arg2, obj);
+		Message message = Message.obtain();
+		message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
+        message.obj = obj;
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -160,15 +173,16 @@ public class Binder implements IBinder {
 	}
 
 	public Object transact(int what, Bundle data, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what);
+		Message message = Message.obtain();
+		message.what = what;
 		message.setData(data);
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -182,15 +196,18 @@ public class Binder implements IBinder {
 	}
 
 	public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException {
-		Message message = mMessenger.obtainMessage(what, arg1, arg2);
+		Message message = Message.obtain();
+		message.what = what;
+		message.arg1 = arg1;
+		message.arg2 = arg2;
 		message.setData(data);
 		if (flags == FLAG_ONEWAY) {
-			message.sendToTarget();
+		    mTarget.send(message);
 			return null;
 		} else {
 			Promise promise = new Promise();
 			message.result = promise;
-			message.sendToTarget();
+			mTarget.send(message);
 			try {
 				return promise.get();
 			} catch (CancellationException e) {
@@ -204,7 +221,7 @@ public class Binder implements IBinder {
 	}
 
 	public boolean runsOnSameThread() {
-		return (mThread == Thread.currentThread());
+	    return mTarget.runsOnSameThread();
 	}
 
 	/**
@@ -218,15 +235,57 @@ public class Binder implements IBinder {
 		return null;
 	}
 
-	private class Messenger extends Handler {
-		public void handleMessage(Message message) {
-			try {
-				Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
-				if (message.result != null) {
-					((Promise) message.result).set(o);
-				}
-			} catch (RemoteException e) {
-			}
-		}
-	}
+    private interface IMessenger {
+        public boolean runsOnSameThread();
+        public void send(final Message message);
+    }
+
+    private class Messenger implements IMessenger {
+        private final Handler mHandler = new Handler() {
+            public void handleMessage(Message message) {
+                try {
+                    Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
+                    if (message.result != null) {
+                        ((Promise) message.result).set(o);
+                    }
+                } catch (RemoteException e) {
+                }
+            }
+        };
+
+        public boolean runsOnSameThread() {
+            return mHandler.getLooper().isCurrentThread();
+        }
+
+        public void send(final Message message) {
+            message.setTarget(mHandler);
+            message.sendToTarget();
+        }
+    }
+
+    private class ThreadPoolMessenger implements IMessenger {
+        private final Executor mExecutor;
+
+        public ThreadPoolMessenger(final Executor executor) {
+            mExecutor = executor;
+        }
+
+        public void send(final Message message) {
+            mExecutor.execute(new Runnable() {
+                public void run() {
+                    try {
+                        Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
+                        if (message.result != null) {
+                            ((Promise) message.result).set(o);
+                        }
+                    } catch (RemoteException e) {
+                    }
+                }
+            });
+        }
+
+        public boolean runsOnSameThread() {
+            return false;
+        }
+    }
 }

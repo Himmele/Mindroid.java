@@ -982,4 +982,42 @@ public final class Bundle {
 			return null;
 		}
 	}
+
+    /** @hide */
+    public static boolean isBasicType(Object value) {
+        return (value instanceof Boolean) || (value instanceof Byte)
+                || (value instanceof Character) || (value instanceof Short)
+                || (value instanceof Integer) || (value instanceof Long)
+                || (value instanceof Float) || (value instanceof Double)
+                || (value instanceof String) || (value instanceof boolean[])
+                || (value instanceof byte[]) || (value instanceof char[])
+                || (value instanceof short[]) || (value instanceof int[])
+                || (value instanceof long[]) || (value instanceof float[])
+                || (value instanceof double[]) || (value instanceof String[])
+                || (value == null);
+    }
+
+    /**
+     * Retain only basic types within the Bundle.
+     * 
+     * @hide
+     */
+    public void retainBasicTypes() {
+        if (mMap != null) {
+            Iterator itr = mMap.entrySet().iterator();
+            while (itr.hasNext()) {
+                Map.Entry entry = (Map.Entry) itr.next();
+                Object value = entry.getValue();
+
+                if (isBasicType(value)) {
+                    continue;
+                }
+                if (value instanceof Bundle) {
+                    ((Bundle) value).retainBasicTypes();
+                    continue;
+                }
+                itr.remove();
+            }
+        }
+    }
 }
