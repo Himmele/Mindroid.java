@@ -263,19 +263,19 @@ public final class ServiceManager {
 					return false;
 				}
 
-				RemoteCallback callback = new RemoteCallback(mMainHandler) {
-					protected void onResult(Bundle data) {
-						boolean result = data.getBoolean("result");
-						if (result) {
-							Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been stopped");
-						} else {
-							Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be stopped");
-						}
-					}
-				};
+				RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+                    public void onResult(Bundle data) {
+                        boolean result = data.getBoolean("result");
+                        if (result) {
+                            Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been stopped");
+                        } else {
+                            Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be stopped");
+                        }
+                    }
+                }, mMainHandler);
 
 				try {
-					process.stopService(service, callback.mCallback);
+					process.stopService(service, callback.asInterface());
 				} catch (RemoteException e) {
 					throw new RuntimeException("System failure");
 				}
@@ -453,25 +453,25 @@ public final class ServiceManager {
 
 		if (!serviceRecord.alive) {
 			serviceRecord.alive = true;
-			RemoteCallback callback = new RemoteCallback(mMainHandler) {
-				protected void onResult(Bundle data) {
-					boolean result = data.getBoolean("result");
-					ComponentName component = service.getComponent();
-					if (mServices.containsKey(component)) {
-						ServiceRecord serviceRecord = (ServiceRecord) mServices.get(component);
-						if (result) {
-							Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been created in process " + serviceRecord.processRecord.name);
-						} else {
-							Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be created in process " + serviceRecord.processRecord.name
-									+ ". Cleaning up");
-							cleanupService(service);
-						}
-					}
-				}
-			};
+			RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+                public void onResult(Bundle data) {
+                    boolean result = data.getBoolean("result");
+                    ComponentName component = service.getComponent();
+                    if (mServices.containsKey(component)) {
+                        ServiceRecord serviceRecord = (ServiceRecord) mServices.get(component);
+                        if (result) {
+                            Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been created in process " + serviceRecord.processRecord.name);
+                        } else {
+                            Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be created in process " + serviceRecord.processRecord.name
+                                    + ". Cleaning up");
+                            cleanupService(service);
+                        }
+                    }
+                }
+            }, mMainHandler);
 
 			try {
-				process.createService(service, callback.mCallback);
+				process.createService(service, callback.asInterface());
 			} catch (RemoteException e) {
 				throw new RuntimeException("System failure");
 			}
@@ -488,19 +488,19 @@ public final class ServiceManager {
 		final ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
 		serviceRecord.running = true;
 
-		RemoteCallback callback = new RemoteCallback(mMainHandler) {
-			protected void onResult(Bundle data) {
-				boolean result = data.getBoolean("result");
-				if (result) {
-					Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been started in process " + serviceRecord.processRecord.name);
-				} else {
-					Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be started in process " + serviceRecord.processRecord.name);
-				}
-			}
-		};
+		RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+            public void onResult(Bundle data) {
+                boolean result = data.getBoolean("result");
+                if (result) {
+                    Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been started in process " + serviceRecord.processRecord.name);
+                } else {
+                    Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be started in process " + serviceRecord.processRecord.name);
+                }
+            }
+        }, mMainHandler);
 
 		try {
-			serviceRecord.processRecord.process.startService(service, 0, mStartId++, callback.mCallback);
+			serviceRecord.processRecord.process.startService(service, 0, mStartId++, callback.asInterface());
 		} catch (RemoteException e) {
 			throw new RuntimeException("System failure");
 		}

@@ -20,41 +20,61 @@ package mindroid.os;
 /**
  * @hide
  */
-public abstract class RemoteCallback {
-	final Handler mHandler;
-	final IRemoteCallback mCallback;
+public final class RemoteCallback {
 
-	public RemoteCallback(Handler handler) {
-		mHandler = handler;
-		mCallback = new IRemoteCallback.Stub() {
-			public void sendResult(final Bundle data) {
-				mHandler.post(new Runnable() {
-					public void run() {
-						onResult(data);
-					}
-				});
-			};
-		};
-	}
+    public interface OnResultListener {
+        public void onResult(Bundle result);
+    }
 
-	protected abstract void onResult(Bundle data);
+    private final OnResultListener mListener;
+    private final Handler mHandler;
+    private final IRemoteCallback mCallback;
 
-	public boolean equals(Object other) {
-		if (other == null) {
-			return false;
-		}
-		try {
-			return mCallback.asBinder().equals(((RemoteCallback) other).mCallback.asBinder());
-		} catch (ClassCastException e) {
-		}
-		return false;
-	}
+    public RemoteCallback(OnResultListener listener) {
+        this(listener, null);
+    }
 
-	public int hashCode() {
-		return mCallback.asBinder().hashCode();
-	}
+    public RemoteCallback(OnResultListener listener, Handler handler) {
+        if (listener == null) {
+            throw new NullPointerException("Listener cannot be null");
+        }
+        mListener = listener;
+        mHandler = handler;
+        mCallback = new IRemoteCallback.Stub() {
+            public void sendResult(Bundle data) {
+                RemoteCallback.this.sendResult(data);
+            }
+        };
+    }
 
-	public IRemoteCallback asInterface() {
-		return mCallback;
-	}
+    private void sendResult(final Bundle result) {
+        if (mHandler != null) {
+            mHandler.post(new Runnable() {
+                public void run() {
+                    mListener.onResult(result);
+                }
+            });
+        } else {
+            mListener.onResult(result);
+        }
+    }
+
+    public boolean equals(Object other) {
+        if (other == null) {
+            return false;
+        }
+        try {
+            return mCallback.asBinder().equals(((RemoteCallback) other).mCallback.asBinder());
+        } catch (ClassCastException e) {
+        }
+        return false;
+    }
+
+    public int hashCode() {
+        return mCallback.asBinder().hashCode();
+    }
+
+    public IRemoteCallback asInterface() {
+        return mCallback;
+    }
 }

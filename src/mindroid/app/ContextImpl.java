@@ -153,17 +153,17 @@ public class ContextImpl extends Context {
 				return true;
 			}
 			mServiceConnections.put(conn, service);
-			RemoteCallback callback = new RemoteCallback(mHandler) {
-				protected void onResult(Bundle data) {
-					boolean result = data.getBoolean("result");
-					if (result) {
-						IBinder binder = data.getBinder("binder");
-						conn.onServiceConnected(service.getComponent(), binder);
-					} else {
-						Log.e(LOG_TAG, "Cannot bind to service " + service.getComponent().getPackageName() + "." + service.getComponent().getClassName());
-					}
-				}
-			};
+			RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+                public void onResult(Bundle data) {
+                    boolean result = data.getBoolean("result");
+                    if (result) {
+                        IBinder binder = data.getBinder("binder");
+                        conn.onServiceConnected(service.getComponent(), binder);
+                    } else {
+                        Log.e(LOG_TAG, "Cannot bind to service " + service.getComponent().getPackageName() + "." + service.getComponent().getClassName());
+                    }
+                }
+            }, mHandler);
 			try {
 				return mServiceManager.bindService(service, conn, flags, callback.asInterface());
 			} catch (RemoteException e) {
@@ -179,10 +179,10 @@ public class ContextImpl extends Context {
 			if (mServiceConnections.containsKey(conn)) {
 				Intent service = (Intent) mServiceConnections.get(conn);
 				mServiceConnections.remove(conn);
-				RemoteCallback callback = new RemoteCallback(mHandler) {
-					protected void onResult(Bundle data) {
-					}
-				};
+				RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+                    public void onResult(Bundle data) {
+                    }
+                }, mHandler);
 				try {
 					mServiceManager.unbindService(service, conn, callback.asInterface());
 				} catch (RemoteException e) {
