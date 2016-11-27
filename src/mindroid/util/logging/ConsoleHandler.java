@@ -23,48 +23,48 @@ import mindroid.util.logging.LogBuffer.LogRecord;
  * A handler that writes log messages to the standard output stream {@code System.out}.
  */
 public class ConsoleHandler {
-	public static final int FLAG_TIMESTAMP = 1;
-	private static final int MAX_SYSOUT_LINE_LENGTH = 255;
-	private int mFlags = 0;
+    public static final int FLAG_TIMESTAMP = 1;
+    private static final int MAX_SYSOUT_LINE_LENGTH = 255;
+    private int mFlags = 0;
 
-	/**
-	 * Constructs a {@code ConsoleHandler} object.
-	 */
-	public ConsoleHandler() {
-	}
+    /**
+     * Constructs a {@code ConsoleHandler} object.
+     */
+    public ConsoleHandler() {
+    }
 
-	/**
-	 * Flushes and closes all opened files.
-	 */
-	public void close() {
-	}
+    /**
+     * Flushes and closes all opened files.
+     */
+    public void close() {
+    }
 
-	/**
-	 * Publish a {@code LogRecord}.
-	 * 
-	 * @param record The log record.
-	 */
-	public void publish(LogRecord record) {
-		String output;
-		if ((mFlags & FLAG_TIMESTAMP) == FLAG_TIMESTAMP) {
-			output = record.toString();
-		} else {
-			output = record.toShortString();
-		}
+    /**
+     * Publish a {@code LogRecord}.
+     * 
+     * @param record The log record.
+     */
+    public void publish(LogRecord record) {
+        String output;
+        if ((mFlags & FLAG_TIMESTAMP) == FLAG_TIMESTAMP) {
+            output = record.toString();
+        } else {
+            output = record.toShortString();
+        }
 
-		for (int i = 0; i < output.length(); i += MAX_SYSOUT_LINE_LENGTH) {
-			String o = output.substring(i, Math.min(output.length(), i + MAX_SYSOUT_LINE_LENGTH));
-			System.out.print(o);
-			System.out.flush();
-		}
-		System.out.println();
-	}
+        for (int i = 0; i < output.length(); i += MAX_SYSOUT_LINE_LENGTH) {
+            String o = output.substring(i, Math.min(output.length(), i + MAX_SYSOUT_LINE_LENGTH));
+            System.out.print(o);
+            System.out.flush();
+        }
+        System.out.println();
+    }
 
-	public void setFlag(int flag) {
-		mFlags |= flag;
-	}
+    public void setFlag(int flag) {
+        mFlags |= flag;
+    }
 
-	public void removeFlag(int flag) {
-		mFlags &= ~flag;
-	}
+    public void removeFlag(int flag) {
+        mFlags &= ~flag;
+    }
 }

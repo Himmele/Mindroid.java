@@ -17,13 +17,13 @@
 package mindroid.util.concurrent;
 
 public interface Future {
-	public boolean cancel();
+    public boolean cancel();
 
-	public boolean isCancelled();
+    public boolean isCancelled();
 
-	public boolean isDone();
+    public boolean isDone();
 
-	public Object get() throws CancellationException, ExecutionException, InterruptedException;
+    public Object get() throws CancellationException, ExecutionException, InterruptedException;
 
-	public Object get(long timeout) throws CancellationException, ExecutionException, TimeoutException, InterruptedException;
+    public Object get(long timeout) throws CancellationException, ExecutionException, TimeoutException, InterruptedException;
 }

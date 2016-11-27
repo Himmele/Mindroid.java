@@ -17,21 +17,21 @@
 package mindroid.content.pm;
 
 public abstract class PackageManagerListener {
-	public abstract void onBootCompleted();
+    public abstract void onBootCompleted();
 
-	private final PackageManagerListenerWrapper mWrapper;
+    private final PackageManagerListenerWrapper mWrapper;
 
-	public PackageManagerListener() {
-		mWrapper = new PackageManagerListenerWrapper();
-	}
+    public PackageManagerListener() {
+        mWrapper = new PackageManagerListenerWrapper();
+    }
 
-	private class PackageManagerListenerWrapper extends IPackageManagerListener.Stub {
-		public void onBootCompleted() {
-			PackageManagerListener.this.onBootCompleted();
-		}
-	}
+    private class PackageManagerListenerWrapper extends IPackageManagerListener.Stub {
+        public void onBootCompleted() {
+            PackageManagerListener.this.onBootCompleted();
+        }
+    }
 
-	public IPackageManagerListener asInterface() {
-		return mWrapper;
-	}
+    public IPackageManagerListener asInterface() {
+        return mWrapper;
+    }
 }

@@ -135,96 +135,96 @@ import mindroid.os.RemoteException;
  * service has been started or has clients bound to it.
  */
 public abstract class Service extends ContextWrapper {
-	public Service() {
-		super(null);
-	}
+    public Service() {
+        super(null);
+    }
 
-	/**
-	 * Called by the system when the service is first created. Do not call this method directly.
-	 */
-	public void onCreate() {
-	}
+    /**
+     * Called by the system when the service is first created. Do not call this method directly.
+     */
+    public void onCreate() {
+    }
 
-	/**
-	 * Called by the system every time a client explicitly starts the service by calling
-	 * {@link mindroid.content.Context#startService}, providing the arguments it supplied and a
-	 * unique integer token representing the start request. Do not call this method directly.
-	 * 
-	 * @param intent The Intent supplied to {@link mindroid.content.Context#startService}, as given.
-	 * @param flags Additional data about this start request. Currently this is always 0.
-	 * @param startId A unique integer representing this specific request to start.
-	 * 
-	 * @return The return value should always be 0.
-	 */
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		return 0;
-	}
+    /**
+     * Called by the system every time a client explicitly starts the service by calling
+     * {@link mindroid.content.Context#startService}, providing the arguments it supplied and a
+     * unique integer token representing the start request. Do not call this method directly.
+     * 
+     * @param intent The Intent supplied to {@link mindroid.content.Context#startService}, as given.
+     * @param flags Additional data about this start request. Currently this is always 0.
+     * @param startId A unique integer representing this specific request to start.
+     * 
+     * @return The return value should always be 0.
+     */
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return 0;
+    }
 
-	/**
-	 * Called by the system to notify a Service that it is no longer used and is being removed. The
-	 * service should clean up any resources it holds (threads, registered receivers, etc) at this
-	 * point. Upon return, there will be no more calls in to this Service object and it is
-	 * effectively dead. Do not call this method directly.
-	 */
-	public void onDestroy() {
-	}
+    /**
+     * Called by the system to notify a Service that it is no longer used and is being removed. The
+     * service should clean up any resources it holds (threads, registered receivers, etc) at this
+     * point. Upon return, there will be no more calls in to this Service object and it is
+     * effectively dead. Do not call this method directly.
+     */
+    public void onDestroy() {
+    }
 
-	/**
-	 * Return the communication channel to the service. May return null if clients can not bind to
-	 * the service. The returned {@link mindroid.os.IBinder} is usually for a complex interface.
-	 * 
-	 * @param intent The Intent that was used to bind to this service, as given to
-	 * {@link mindroid.content.Context#bindService Context.bindService}. Note that any extras that
-	 * were included with the Intent at that point will <em>not</em> be seen here.
-	 * 
-	 * @return Return an IBinder through which clients can call on to the service.
-	 */
-	public abstract IBinder onBind(Intent intent);
+    /**
+     * Return the communication channel to the service. May return null if clients can not bind to
+     * the service. The returned {@link mindroid.os.IBinder} is usually for a complex interface.
+     * 
+     * @param intent The Intent that was used to bind to this service, as given to
+     * {@link mindroid.content.Context#bindService Context.bindService}. Note that any extras that
+     * were included with the Intent at that point will <em>not</em> be seen here.
+     * 
+     * @return Return an IBinder through which clients can call on to the service.
+     */
+    public abstract IBinder onBind(Intent intent);
 
-	/**
-	 * Called when all clients have disconnected from a particular interface published by the
-	 * service. The default implementation does nothing and returns false.
-	 * 
-	 * @param intent The Intent that was used to bind to this service, as given to
-	 * {@link mindroid.content.Context#bindService Context.bindService}. Note that any extras that
-	 * were included with the Intent at that point will <em>not</em> be seen here.
-	 * 
-	 * @return Should always return true.
-	 */
-	public boolean onUnbind(Intent intent) {
-		return true;
-	}
+    /**
+     * Called when all clients have disconnected from a particular interface published by the
+     * service. The default implementation does nothing and returns false.
+     * 
+     * @param intent The Intent that was used to bind to this service, as given to
+     * {@link mindroid.content.Context#bindService Context.bindService}. Note that any extras that
+     * were included with the Intent at that point will <em>not</em> be seen here.
+     * 
+     * @return Should always return true.
+     */
+    public boolean onUnbind(Intent intent) {
+        return true;
+    }
 
-	/**
-	 * Stop the service, if it was previously started. This is the same as calling
-	 * {@link mindroid.content.Context#stopService} for this particular service.
-	 */
-	public final void stopSelf() {
-		stopSelf(-1);
-	}
+    /**
+     * Stop the service, if it was previously started. This is the same as calling
+     * {@link mindroid.content.Context#stopService} for this particular service.
+     */
+    public final void stopSelf() {
+        stopSelf(-1);
+    }
 
-	/**
-	 * Stop the service, if it was previously started.
-	 */
-	public final void stopSelf(int startId) {
-		Intent intent = new Intent();
-		intent.setComponent(new ComponentName(this, mClassName));
-		try {
-			mProcess.stopService(intent);
-		} catch (RemoteException e) {
-			throw new RuntimeException("System failure");
-		}
-	}
+    /**
+     * Stop the service, if it was previously started.
+     */
+    public final void stopSelf(int startId) {
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(this, mClassName));
+        try {
+            mProcess.stopService(intent);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
 
-	/**
-	 * @hide
-	 */
-	public final void attach(Context context, IProcess process, String className) {
-		mProcess = process;
-		mClassName = className;
-		attachBaseContext(context);
-	}
+    /**
+     * @hide
+     */
+    public final void attach(Context context, IProcess process, String className) {
+        mProcess = process;
+        mClassName = className;
+        attachBaseContext(context);
+    }
 
-	private IProcess mProcess = null;
-	private String mClassName = null;
+    private IProcess mProcess = null;
+    private String mClassName = null;
 }

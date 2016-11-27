@@ -63,25 +63,25 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * 
  * <pre class="prettyprint">
  * private class DownloadFilesTask extends AsyncTask&lt;URL, Integer, Long&gt; {
- * 	protected Long doInBackground(Object urls) {
- * 		int count = urls.length;
- * 		long totalSize = 0;
- * 		for (int i = 0; i &lt; count; i++) {
- * 			totalSize += Downloader.downloadFile(urls[i]);
- * 			publishProgress((int) ((i / (float) count) * 100));
- * 			// Escape early if cancel() is called
- * 			if (isCancelled()) break;
- * 		}
- * 		return totalSize;
- * 	}
+ *     protected Long doInBackground(Object urls) {
+ *         int count = urls.length;
+ *         long totalSize = 0;
+ *         for (int i = 0; i &lt; count; i++) {
+ *             totalSize += Downloader.downloadFile(urls[i]);
+ *             publishProgress((int) ((i / (float) count) * 100));
+ *             // Escape early if cancel() is called
+ *             if (isCancelled()) break;
+ *         }
+ *         return totalSize;
+ *     }
  * 
- * 	protected void onProgressUpdate(Integer... progress) {
- * 		setProgressPercent(progress[0]);
- * 	}
+ *     protected void onProgressUpdate(Integer... progress) {
+ *         setProgressPercent(progress[0]);
+ *     }
  * 
- * 	protected void onPostExecute(Long result) {
- * 		showDialog(&quot;Downloaded &quot; + result + &quot; bytes&quot;);
- * 	}
+ *     protected void onPostExecute(Long result) {
+ *         showDialog(&quot;Downloaded &quot; + result + &quot; bytes&quot;);
+ *     }
  * }
  * </pre>
  * 
@@ -171,282 +171,282 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * </ul>
  */
 public abstract class AsyncTask {
-	private static final String LOG_TAG = "AsyncTask";
-	private Executor mExecutor;
-	private InternalHandler mHandler;
-	private WorkerRunnable mWorkerRunnable;
-	private boolean mCancelled;
+    private static final String LOG_TAG = "AsyncTask";
+    private Executor mExecutor;
+    private InternalHandler mHandler;
+    private WorkerRunnable mWorkerRunnable;
+    private boolean mCancelled;
 
-	public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor();
-	public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor(4);
+    public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor();
+    public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor(4);
 
-	public AsyncTask() {
-		mExecutor = null;
-		mCancelled = false;
-		mHandler = new InternalHandler();
-		mWorkerRunnable = new WorkerRunnable(this);
-	}
+    public AsyncTask() {
+        mExecutor = null;
+        mCancelled = false;
+        mHandler = new InternalHandler();
+        mWorkerRunnable = new WorkerRunnable(this);
+    }
 
-	public AsyncTask execute(Object[] params) {
-		if (mExecutor == null) {
-			mExecutor = SERIAL_EXECUTOR;
-			onPreExecute();
-			mWorkerRunnable.mParams = params;
-			mExecutor.execute(mWorkerRunnable);
-			return this;
-		} else {
-			return null;
-		}
-	}
+    public AsyncTask execute(Object[] params) {
+        if (mExecutor == null) {
+            mExecutor = SERIAL_EXECUTOR;
+            onPreExecute();
+            mWorkerRunnable.mParams = params;
+            mExecutor.execute(mWorkerRunnable);
+            return this;
+        } else {
+            return null;
+        }
+    }
 
-	public AsyncTask executeOnExecutor(Executor executor, Object[] params) {
-		if (mExecutor == null) {
-			mExecutor = executor;
-			onPreExecute();
-			mWorkerRunnable.mParams = params;
-			mExecutor.execute(mWorkerRunnable);
-			return this;
-		} else {
-			return null;
-		}
-	}
+    public AsyncTask executeOnExecutor(Executor executor, Object[] params) {
+        if (mExecutor == null) {
+            mExecutor = executor;
+            onPreExecute();
+            mWorkerRunnable.mParams = params;
+            mExecutor.execute(mWorkerRunnable);
+            return this;
+        } else {
+            return null;
+        }
+    }
 
-	/**
-	 * Override this method to perform a computation on a background thread. The specified
-	 * parameters are the parameters passed to {@link #execute} by the caller of this task.
-	 * 
-	 * This method can call {@link #publishProgress} to publish updates on the UI thread.
-	 * 
-	 * @param params The parameters of the task.
-	 * 
-	 * @return A result, defined by the subclass of this task.
-	 * 
-	 * @see #onPreExecute()
-	 * @see #onPostExecute
-	 * @see #publishProgress
-	 */
-	protected abstract Object doInBackground(Object[] params);
+    /**
+     * Override this method to perform a computation on a background thread. The specified
+     * parameters are the parameters passed to {@link #execute} by the caller of this task.
+     * 
+     * This method can call {@link #publishProgress} to publish updates on the UI thread.
+     * 
+     * @param params The parameters of the task.
+     * 
+     * @return A result, defined by the subclass of this task.
+     * 
+     * @see #onPreExecute()
+     * @see #onPostExecute
+     * @see #publishProgress
+     */
+    protected abstract Object doInBackground(Object[] params);
 
-	/**
-	 * Runs on the UI thread before {@link #doInBackground}.
-	 * 
-	 * @see #onPostExecute
-	 * @see #doInBackground
-	 */
-	protected void onPreExecute() {
-	}
+    /**
+     * Runs on the UI thread before {@link #doInBackground}.
+     * 
+     * @see #onPostExecute
+     * @see #doInBackground
+     */
+    protected void onPreExecute() {
+    }
 
-	/**
-	 * <p>
-	 * Runs on the UI thread after {@link #doInBackground}. The specified result is the value
-	 * returned by {@link #doInBackground}.
-	 * </p>
-	 * 
-	 * <p>
-	 * This method won't be invoked if the task was cancelled.
-	 * </p>
-	 * 
-	 * @param result The result of the operation computed by {@link #doInBackground}.
-	 * 
-	 * @see #onPreExecute
-	 * @see #doInBackground
-	 * @see #onCancelled(Object)
-	 */
-	protected void onPostExecute(Object result) {
-	}
+    /**
+     * <p>
+     * Runs on the UI thread after {@link #doInBackground}. The specified result is the value
+     * returned by {@link #doInBackground}.
+     * </p>
+     * 
+     * <p>
+     * This method won't be invoked if the task was cancelled.
+     * </p>
+     * 
+     * @param result The result of the operation computed by {@link #doInBackground}.
+     * 
+     * @see #onPreExecute
+     * @see #doInBackground
+     * @see #onCancelled(Object)
+     */
+    protected void onPostExecute(Object result) {
+    }
 
-	/**
-	 * Runs on the UI thread after {@link #publishProgress} is invoked. The specified values are the
-	 * values passed to {@link #publishProgress}.
-	 * 
-	 * @param values The values indicating progress.
-	 * 
-	 * @see #publishProgress
-	 * @see #doInBackground
-	 */
-	protected void onProgressUpdate(Object[] values) {
-	}
+    /**
+     * Runs on the UI thread after {@link #publishProgress} is invoked. The specified values are the
+     * values passed to {@link #publishProgress}.
+     * 
+     * @param values The values indicating progress.
+     * 
+     * @see #publishProgress
+     * @see #doInBackground
+     */
+    protected void onProgressUpdate(Object[] values) {
+    }
 
-	/**
-	 * <p>
-	 * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
-	 * {@link #doInBackground(Object)} has finished.
-	 * </p>
-	 * 
-	 * <p>
-	 * The default implementation simply invokes {@link #onCancelled()} and ignores the result. If
-	 * you write your own implementation, do not call <code>super.onCancelled(result)</code>.
-	 * </p>
-	 * 
-	 * @param result The result, if any, computed in {@link #doInBackground(Object)}, can be null
-	 * 
-	 * @see #cancel(boolean)
-	 * @see #isCancelled()
-	 */
-	protected void onCancelled(Object result) {
-		onCancelled();
-	}
+    /**
+     * <p>
+     * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
+     * {@link #doInBackground(Object)} has finished.
+     * </p>
+     * 
+     * <p>
+     * The default implementation simply invokes {@link #onCancelled()} and ignores the result. If
+     * you write your own implementation, do not call <code>super.onCancelled(result)</code>.
+     * </p>
+     * 
+     * @param result The result, if any, computed in {@link #doInBackground(Object)}, can be null
+     * 
+     * @see #cancel(boolean)
+     * @see #isCancelled()
+     */
+    protected void onCancelled(Object result) {
+        onCancelled();
+    }
 
-	/**
-	 * <p>
-	 * Applications should preferably override {@link #onCancelled(Object)}. This method is invoked
-	 * by the default implementation of {@link #onCancelled(Object)}.
-	 * </p>
-	 * 
-	 * <p>
-	 * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
-	 * {@link #doInBackground(Object)} has finished.
-	 * </p>
-	 * 
-	 * @see #onCancelled(Object)
-	 * @see #cancel(boolean)
-	 * @see #isCancelled()
-	 */
-	protected void onCancelled() {
-	}
+    /**
+     * <p>
+     * Applications should preferably override {@link #onCancelled(Object)}. This method is invoked
+     * by the default implementation of {@link #onCancelled(Object)}.
+     * </p>
+     * 
+     * <p>
+     * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
+     * {@link #doInBackground(Object)} has finished.
+     * </p>
+     * 
+     * @see #onCancelled(Object)
+     * @see #cancel(boolean)
+     * @see #isCancelled()
+     */
+    protected void onCancelled() {
+    }
 
-	/**
-	 * Returns <tt>true</tt> if this task was cancelled before it completed normally. If you are
-	 * calling {@link #cancel(boolean)} on the task, the value returned by this method should be
-	 * checked periodically from {@link #doInBackground(Object)} to end the task as soon as
-	 * possible.
-	 * 
-	 * @return <tt>true</tt> if task was cancelled before it completed
-	 * 
-	 * @see #cancel(boolean)
-	 */
-	public final boolean isCancelled() {
-		synchronized (this) {
-			return mCancelled;
-		}
-	}
+    /**
+     * Returns <tt>true</tt> if this task was cancelled before it completed normally. If you are
+     * calling {@link #cancel(boolean)} on the task, the value returned by this method should be
+     * checked periodically from {@link #doInBackground(Object)} to end the task as soon as
+     * possible.
+     * 
+     * @return <tt>true</tt> if task was cancelled before it completed
+     * 
+     * @see #cancel(boolean)
+     */
+    public final boolean isCancelled() {
+        synchronized (this) {
+            return mCancelled;
+        }
+    }
 
-	/**
-	 * <p>
-	 * Attempts to cancel execution of this task. This attempt will fail if the task has already
-	 * completed, already been cancelled, or could not be cancelled for some other reason. If
-	 * successful, and this task has not started when <tt>cancel</tt> is called, this task should
-	 * never run. If the task has already started, then the <tt>mayInterruptIfRunning</tt> parameter
-	 * determines whether the thread executing this task should be interrupted in an attempt to stop
-	 * the task.
-	 * </p>
-	 * 
-	 * <p>
-	 * Calling this method will result in {@link #onCancelled(Object)} being invoked on the UI
-	 * thread after {@link #doInBackground(Object)} returns. Calling this method guarantees that
-	 * {@link #onPostExecute(Object)} is never invoked. After invoking this method, you should check
-	 * the value returned by {@link #isCancelled()} periodically from
-	 * {@link #doInBackground(Object)} to finish the task as early as possible.
-	 * </p>
-	 * 
-	 * @param mayInterruptIfRunning <tt>true</tt> if the thread executing this task should be
-	 * interrupted; otherwise, in-progress tasks are allowed to complete.
-	 * 
-	 * @return <tt>false</tt> if the task could not be cancelled, typically because it has already
-	 * completed normally; <tt>true</tt> otherwise
-	 * 
-	 * @see #isCancelled()
-	 * @see #onCancelled(Object)
-	 */
-	public final boolean cancel(boolean mayInterruptIfRunning) {
-		boolean isAlreadyCancelled = isCancelled();
-		synchronized (this) {
-			if (mExecutor != null && !isAlreadyCancelled) {
-				mExecutor.cancel(mWorkerRunnable);
-				mCancelled = true;
-				Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
-				message.obj = mWorkerRunnable;
-				message.sendToTarget();
-				return true;
-			} else {
-				return false;
-			}
-		}
-	}
+    /**
+     * <p>
+     * Attempts to cancel execution of this task. This attempt will fail if the task has already
+     * completed, already been cancelled, or could not be cancelled for some other reason. If
+     * successful, and this task has not started when <tt>cancel</tt> is called, this task should
+     * never run. If the task has already started, then the <tt>mayInterruptIfRunning</tt> parameter
+     * determines whether the thread executing this task should be interrupted in an attempt to stop
+     * the task.
+     * </p>
+     * 
+     * <p>
+     * Calling this method will result in {@link #onCancelled(Object)} being invoked on the UI
+     * thread after {@link #doInBackground(Object)} returns. Calling this method guarantees that
+     * {@link #onPostExecute(Object)} is never invoked. After invoking this method, you should check
+     * the value returned by {@link #isCancelled()} periodically from
+     * {@link #doInBackground(Object)} to finish the task as early as possible.
+     * </p>
+     * 
+     * @param mayInterruptIfRunning <tt>true</tt> if the thread executing this task should be
+     * interrupted; otherwise, in-progress tasks are allowed to complete.
+     * 
+     * @return <tt>false</tt> if the task could not be cancelled, typically because it has already
+     * completed normally; <tt>true</tt> otherwise
+     * 
+     * @see #isCancelled()
+     * @see #onCancelled(Object)
+     */
+    public final boolean cancel(boolean mayInterruptIfRunning) {
+        boolean isAlreadyCancelled = isCancelled();
+        synchronized (this) {
+            if (mExecutor != null && !isAlreadyCancelled) {
+                mExecutor.cancel(mWorkerRunnable);
+                mCancelled = true;
+                Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
+                message.obj = mWorkerRunnable;
+                message.sendToTarget();
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
 
-	/**
-	 * Convenience version of {@link #execute(Object)} for use with a simple Runnable object. See
-	 * {@link #execute(Object)} for more information on the order of execution.
-	 * 
-	 * @see #execute(Object)
-	 * @see #executeOnExecutor(mindroid.util.concurrent.Executor, Object)
-	 */
-	public static void execute(Runnable runnable) {
-		SERIAL_EXECUTOR.execute(runnable);
-	}
+    /**
+     * Convenience version of {@link #execute(Object)} for use with a simple Runnable object. See
+     * {@link #execute(Object)} for more information on the order of execution.
+     * 
+     * @see #execute(Object)
+     * @see #executeOnExecutor(mindroid.util.concurrent.Executor, Object)
+     */
+    public static void execute(Runnable runnable) {
+        SERIAL_EXECUTOR.execute(runnable);
+    }
 
-	/**
-	 * This method can be invoked from {@link #doInBackground} to publish updates on the UI thread
-	 * while the background computation is still running. Each call to this method will trigger the
-	 * execution of {@link #onProgressUpdate} on the UI thread.
-	 * 
-	 * {@link #onProgressUpdate} will note be called if the task has been canceled.
-	 * 
-	 * @param values The progress values to update the UI with.
-	 * 
-	 * @see #onProgressUpdate
-	 * @see #doInBackground
-	 */
-	protected final void publishProgress(Object[] values) {
-		if (!isCancelled()) {
-			Message message = mHandler.obtainMessage(ON_PROGRESS_UPDATE_MESSAGE);
-			message.obj = new AsyncTaskResult(this, values);
-			message.sendToTarget();
-		}
-	}
+    /**
+     * This method can be invoked from {@link #doInBackground} to publish updates on the UI thread
+     * while the background computation is still running. Each call to this method will trigger the
+     * execution of {@link #onProgressUpdate} on the UI thread.
+     * 
+     * {@link #onProgressUpdate} will note be called if the task has been canceled.
+     * 
+     * @param values The progress values to update the UI with.
+     * 
+     * @see #onProgressUpdate
+     * @see #doInBackground
+     */
+    protected final void publishProgress(Object[] values) {
+        if (!isCancelled()) {
+            Message message = mHandler.obtainMessage(ON_PROGRESS_UPDATE_MESSAGE);
+            message.obj = new AsyncTaskResult(this, values);
+            message.sendToTarget();
+        }
+    }
 
-	static final int ON_POST_EXECUTE_MESSAGE = 1;
-	static final int ON_PROGRESS_UPDATE_MESSAGE = 2;
-	static final int ON_TASK_CANCELLED_MESSAGE = 3;
+    static final int ON_POST_EXECUTE_MESSAGE = 1;
+    static final int ON_PROGRESS_UPDATE_MESSAGE = 2;
+    static final int ON_TASK_CANCELLED_MESSAGE = 3;
 
-	class InternalHandler extends Handler {
-		public void handleMessage(Message message) {
-			switch (message.what) {
-			case ON_POST_EXECUTE_MESSAGE: {
-				WorkerRunnable runnable = (WorkerRunnable) message.obj;
-				runnable.mTask.onPostExecute(runnable.mResult);
-				break;
-			}
-			case ON_PROGRESS_UPDATE_MESSAGE: {
-				AsyncTaskResult result = (AsyncTaskResult) message.obj;
-				result.mTask.onProgressUpdate(result.mValues);
-				break;
-			}
-			case ON_TASK_CANCELLED_MESSAGE: {
-				WorkerRunnable runnable = (WorkerRunnable) message.obj;
-				runnable.mTask.onCancelled();
-				break;
-			}
-			}
-		}
-	}
+    class InternalHandler extends Handler {
+        public void handleMessage(Message message) {
+            switch (message.what) {
+            case ON_POST_EXECUTE_MESSAGE: {
+                WorkerRunnable runnable = (WorkerRunnable) message.obj;
+                runnable.mTask.onPostExecute(runnable.mResult);
+                break;
+            }
+            case ON_PROGRESS_UPDATE_MESSAGE: {
+                AsyncTaskResult result = (AsyncTaskResult) message.obj;
+                result.mTask.onProgressUpdate(result.mValues);
+                break;
+            }
+            case ON_TASK_CANCELLED_MESSAGE: {
+                WorkerRunnable runnable = (WorkerRunnable) message.obj;
+                runnable.mTask.onCancelled();
+                break;
+            }
+            }
+        }
+    }
 
-	class WorkerRunnable implements Runnable {
-		private AsyncTask mTask;
-		private Object[] mParams;
-		private Object mResult;
+    class WorkerRunnable implements Runnable {
+        private AsyncTask mTask;
+        private Object[] mParams;
+        private Object mResult;
 
-		public WorkerRunnable(AsyncTask task) {
-			mTask = task;
-		}
+        public WorkerRunnable(AsyncTask task) {
+            mTask = task;
+        }
 
-		public void run() {
-			mResult = mTask.doInBackground(mParams);
-			if (!isCancelled()) {
-				Message message = mTask.mHandler.obtainMessage(ON_POST_EXECUTE_MESSAGE);
-				message.obj = this;
-				message.sendToTarget();
-			}
-		}
-	}
+        public void run() {
+            mResult = mTask.doInBackground(mParams);
+            if (!isCancelled()) {
+                Message message = mTask.mHandler.obtainMessage(ON_POST_EXECUTE_MESSAGE);
+                message.obj = this;
+                message.sendToTarget();
+            }
+        }
+    }
 
-	class AsyncTaskResult {
-		private AsyncTask mTask;
-		private Object[] mValues;
+    class AsyncTaskResult {
+        private AsyncTask mTask;
+        private Object[] mValues;
 
-		public AsyncTaskResult(AsyncTask task, Object[] values) {
-			mTask = task;
-			mValues = values;
-		}
-	}
+        public AsyncTaskResult(AsyncTask task, Object[] values) {
+            mTask = task;
+            mValues = values;
+        }
+    }
 }

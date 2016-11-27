@@ -28,120 +28,120 @@ import mindroid.os.Message;
  * invoking {@link #getRuntime()}.
  */
 public class Runtime {
-	/**
-	 * Holds the Singleton global instance of Runtime.
-	 */
-	private static final Runtime sRuntime = new Runtime();
+    /**
+     * Holds the Singleton global instance of Runtime.
+     */
+    private static final Runtime sRuntime = new Runtime();
 
-	/**
-	 * Holds the list of threads to run when the VM terminates
-	 */
-	private List mShutdownHooks = new ArrayList();
+    /**
+     * Holds the list of threads to run when the VM terminates
+     */
+    private List mShutdownHooks = new ArrayList();
 
-	/**
-	 * Reflects whether we are already shutting down the VM.
-	 */
-	private boolean mShuttingDown;
+    /**
+     * Reflects whether we are already shutting down the VM.
+     */
+    private boolean mShuttingDown;
 
-	/**
-	 * Prevent this class from being instantiated.
-	 */
-	private Runtime() {
-	}
+    /**
+     * Prevent this class from being instantiated.
+     */
+    private Runtime() {
+    }
 
-	/**
-	 * Returns the single {@code Runtime} instance.
-	 * 
-	 * @return the {@code Runtime} object for the current application.
-	 */
-	public static Runtime getRuntime() {
-		return sRuntime;
-	}
+    /**
+     * Returns the single {@code Runtime} instance.
+     * 
+     * @return the {@code Runtime} object for the current application.
+     */
+    public static Runtime getRuntime() {
+        return sRuntime;
+    }
 
-	public void addShutdownHook(Message hook) {
-		if (hook == null) {
-			throw new NullPointerException("hook == null");
-		}
+    public void addShutdownHook(Message hook) {
+        if (hook == null) {
+            throw new NullPointerException("hook == null");
+        }
 
-		if (mShuttingDown) {
-			throw new IllegalStateException("VM already shutting down");
-		}
+        if (mShuttingDown) {
+            throw new IllegalStateException("VM already shutting down");
+        }
 
-		synchronized (mShutdownHooks) {
-			if (mShutdownHooks.contains(hook)) {
-				throw new IllegalArgumentException("Hook already registered");
-			}
+        synchronized (mShutdownHooks) {
+            if (mShutdownHooks.contains(hook)) {
+                throw new IllegalArgumentException("Hook already registered");
+            }
 
-			mShutdownHooks.add(hook);
-		}
-	}
+            mShutdownHooks.add(hook);
+        }
+    }
 
-	public boolean removeShutdownHook(Message hook) {
-		if (hook == null) {
-			throw new NullPointerException("hook == null");
-		}
+    public boolean removeShutdownHook(Message hook) {
+        if (hook == null) {
+            throw new NullPointerException("hook == null");
+        }
 
-		if (mShuttingDown) {
-			throw new IllegalStateException("VM already shutting down");
-		}
+        if (mShuttingDown) {
+            throw new IllegalStateException("VM already shutting down");
+        }
 
-		synchronized (mShutdownHooks) {
-			return mShutdownHooks.remove(hook);
-		}
-	}
+        synchronized (mShutdownHooks) {
+            return mShutdownHooks.remove(hook);
+        }
+    }
 
-	/**
-	 * Causes the Mindroid application framework to stop running and the program to exit. The exit
-	 * code is set to the arg1 argument of the shutdown hook message. The exit reason is set to the
-	 * obj argument of the shutdown hook message.
-	 * 
-	 * @param code the return code. By convention, non-zero return codes indicate abnormal
-	 * terminations.
-	 * @param reason the return reason.
-	 */
-	public void exit(int code) {
-		exit(code, null);
-	}
+    /**
+     * Causes the Mindroid application framework to stop running and the program to exit. The exit
+     * code is set to the arg1 argument of the shutdown hook message. The exit reason is set to the
+     * obj argument of the shutdown hook message.
+     * 
+     * @param code the return code. By convention, non-zero return codes indicate abnormal
+     * terminations.
+     * @param reason the return reason.
+     */
+    public void exit(int code) {
+        exit(code, null);
+    }
 
-	public void exit(int code, String reason) {
-		exit(code, reason, 0);
-	}
+    public void exit(int code, String reason) {
+        exit(code, reason, 0);
+    }
 
-	public void exit(int code, String reason, int delay) {
-		synchronized (this) {
-			if (!mShuttingDown) {
-				mShuttingDown = true;
+    public void exit(int code, String reason, int delay) {
+        synchronized (this) {
+            if (!mShuttingDown) {
+                mShuttingDown = true;
 
-				Message[] hooks;
-				synchronized (mShutdownHooks) {
-					hooks = new Message[mShutdownHooks.size()];
-					mShutdownHooks.toArray(hooks);
-				}
+                Message[] hooks;
+                synchronized (mShutdownHooks) {
+                    hooks = new Message[mShutdownHooks.size()];
+                    mShutdownHooks.toArray(hooks);
+                }
 
-				for (int i = 0; i < hooks.length; i++) {
-					hooks[i].arg1 = code;
-					hooks[i].arg2 = delay;
-					hooks[i].obj = reason;
-					try {
-						hooks[i].sendToTarget();
-					} catch (Exception e) {
-						// Ignore exception.
-					}
-				}
-			}
-		}
-	}
+                for (int i = 0; i < hooks.length; i++) {
+                    hooks[i].arg1 = code;
+                    hooks[i].arg2 = delay;
+                    hooks[i].obj = reason;
+                    try {
+                        hooks[i].sendToTarget();
+                    } catch (Exception e) {
+                        // Ignore exception.
+                    }
+                }
+            }
+        }
+    }
 
-	/**
-	 * Causes the VM to stop running, and the program to exit. Neither shutdown hooks nor finalizers
-	 * are run before.
-	 * 
-	 * @param code the return code. By convention, non-zero return codes indicate abnormal
-	 * terminations.
-	 * @see #addShutdownHook(Message)
-	 * @see #removeShutdownHook(Message)
-	 */
-	public void halt(int code) {
-		System.exit(code);
-	}
+    /**
+     * Causes the VM to stop running, and the program to exit. Neither shutdown hooks nor finalizers
+     * are run before.
+     * 
+     * @param code the return code. By convention, non-zero return codes indicate abnormal
+     * terminations.
+     * @see #addShutdownHook(Message)
+     * @see #removeShutdownHook(Message)
+     */
+    public void halt(int code) {
+        System.exit(code);
+    }
 }

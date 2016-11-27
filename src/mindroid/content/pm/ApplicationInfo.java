@@ -23,42 +23,42 @@ package mindroid.content.pm;
  */
 public class ApplicationInfo {
 
-	/**
-	 * Public name of this item. From the "mindroid:name" attribute.
-	 */
-	public String name;
+    /**
+     * Public name of this item. From the "mindroid:name" attribute.
+     */
+    public String name;
 
-	/**
-	 * Name of the package that this item is in.
-	 */
-	public String packageName;
+    /**
+     * Name of the package that this item is in.
+     */
+    public String packageName;
 
-	/**
-	 * The name of the process this application should run in. From the "process" attribute or, if
-	 * not set, the same as <var>packageName</var>.
-	 */
-	public String processName;
+    /**
+     * The name of the process this application should run in. From the "process" attribute or, if
+     * not set, the same as <var>packageName</var>.
+     */
+    public String processName;
 
-	/**
-	 * The app's declared version code.
-	 * 
-	 * @hide
-	 */
-	public int versionCode;
+    /**
+     * The app's declared version code.
+     * 
+     * @hide
+     */
+    public int versionCode;
 
-	/**
-	 * When false, indicates that all components within this application are considered disabled,
-	 * regardless of their individually set enabled status.
-	 */
-	public boolean enabled = true;
+    /**
+     * When false, indicates that all components within this application are considered disabled,
+     * regardless of their individually set enabled status.
+     */
+    public boolean enabled = true;
 
-	/**
-	 * Paths to all shared libraries this application is linked against.
-	 */
-	public String[] libraries = null;
+    /**
+     * Paths to all shared libraries this application is linked against.
+     */
+    public String[] libraries = null;
 
-	public String fileName = null;
+    public String fileName = null;
 
-	public ApplicationInfo() {
-	}
+    public ApplicationInfo() {
+    }
 }

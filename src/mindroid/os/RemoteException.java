@@ -21,16 +21,16 @@ package mindroid.os;
  * Parent exception for all Binder remote-invocation errors
  */
 public class RemoteException extends Exception {
-	public RemoteException() {
-		super();
-	}
+    public RemoteException() {
+        super();
+    }
 
-	public RemoteException(String message) {
-		super(message);
-	}
+    public RemoteException(String message) {
+        super(message);
+    }
 
-	/** {@hide} */
-	public RuntimeException rethrowAsRuntimeException() {
-		throw new RuntimeException(this);
-	}
+    /** {@hide} */
+    public RuntimeException rethrowAsRuntimeException() {
+        throw new RuntimeException(this);
+    }
 }

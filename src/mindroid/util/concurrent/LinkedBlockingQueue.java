@@ -17,85 +17,85 @@
 package mindroid.util.concurrent;
 
 public class LinkedBlockingQueue {
-	private Node mHeadNode;
+    private Node mHeadNode;
 
-	public LinkedBlockingQueue() {
-		mHeadNode = null;
-	}
+    public LinkedBlockingQueue() {
+        mHeadNode = null;
+    }
 
-	public synchronized boolean put(Object item) {
-		Node node = new Node(item);
-		Node curNode = mHeadNode;
-		if (curNode == null) {
-			node.nextNode = curNode;
-			mHeadNode = node;
-			notify();
-		} else {
-			Node prevNode = null;
-			while (curNode != null) {
-				prevNode = curNode;
-				curNode = curNode.nextNode;
-			}
-			node.nextNode = prevNode.nextNode;
-			prevNode.nextNode = node;
-			notify();
-		}
-		return true;
-	}
+    public synchronized boolean put(Object item) {
+        Node node = new Node(item);
+        Node curNode = mHeadNode;
+        if (curNode == null) {
+            node.nextNode = curNode;
+            mHeadNode = node;
+            notify();
+        } else {
+            Node prevNode = null;
+            while (curNode != null) {
+                prevNode = curNode;
+                curNode = curNode.nextNode;
+            }
+            node.nextNode = prevNode.nextNode;
+            prevNode.nextNode = node;
+            notify();
+        }
+        return true;
+    }
 
-	public synchronized Object take() throws InterruptedException {
-		while (true) {
-			Node node = getNextNode();
-			if (node != null) {
-				return node.item;
-			} else {
-				wait();
-			}
-		}
-	}
+    public synchronized Object take() throws InterruptedException {
+        while (true) {
+            Node node = getNextNode();
+            if (node != null) {
+                return node.item;
+            } else {
+                wait();
+            }
+        }
+    }
 
-	public synchronized boolean remove(Object item) {
-		boolean foundItem = false;
-		Node curNode = mHeadNode;
-		// Remove all matching nodes at the front of the queue.
-		while (curNode != null && curNode.item == item) {
-			foundItem = true;
-			Node nextNode = curNode.nextNode;
-			mHeadNode = nextNode;
-			curNode = nextNode;
-		}
+    public synchronized boolean remove(Object item) {
+        boolean foundItem = false;
+        Node curNode = mHeadNode;
+        // Remove all matching nodes at the front of the queue.
+        while (curNode != null && curNode.item == item) {
+            foundItem = true;
+            Node nextNode = curNode.nextNode;
+            mHeadNode = nextNode;
+            curNode = nextNode;
+        }
 
-		// Remove all matching nodes after the front of the queue.
-		while (curNode != null) {
-			Node nextNode = curNode.nextNode;
-			if (nextNode != null) {
-				if (nextNode.item == item) {
-					foundItem = true;
-					Node nextButOneNode = nextNode.nextNode;
-					curNode.nextNode = nextButOneNode;
-					continue;
-				}
-			}
-			curNode = nextNode;
-		}
-		return foundItem;
-	}
+        // Remove all matching nodes after the front of the queue.
+        while (curNode != null) {
+            Node nextNode = curNode.nextNode;
+            if (nextNode != null) {
+                if (nextNode.item == item) {
+                    foundItem = true;
+                    Node nextButOneNode = nextNode.nextNode;
+                    curNode.nextNode = nextButOneNode;
+                    continue;
+                }
+            }
+            curNode = nextNode;
+        }
+        return foundItem;
+    }
 
-	class Node {
-		Object item;
-		Node nextNode;
+    class Node {
+        Object item;
+        Node nextNode;
 
-		Node(Object t) {
-			item = t;
-		}
-	};
+        Node(Object t) {
+            item = t;
+        }
+    };
 
-	Node getNextNode() {
-		Node node = mHeadNode;
-		if (node != null) {
-			mHeadNode = node.nextNode;
-			return node;
-		}
-		return null;
-	}
+    Node getNextNode() {
+        Node node = mHeadNode;
+        if (node != null) {
+            mHeadNode = node.nextNode;
+            return node;
+        }
+        return null;
+    }
 }

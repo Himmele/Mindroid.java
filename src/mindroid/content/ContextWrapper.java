@@ -30,85 +30,85 @@ import mindroid.os.Looper;
  * be subclassed to modify behavior without changing the original Context.
  */
 public class ContextWrapper extends Context {
-	Context mBaseContext;
+    Context mBaseContext;
 
-	public ContextWrapper(Context baseContext) {
-		mBaseContext = baseContext;
-	}
+    public ContextWrapper(Context baseContext) {
+        mBaseContext = baseContext;
+    }
 
-	/**
-	 * Set the base context for this ContextWrapper. All calls will then be delegated to the base
-	 * context. Throws IllegalStateException if a base context has already been set.
-	 * 
-	 * @param baseContext The new base context for this wrapper.
-	 */
-	protected void attachBaseContext(Context baseContext) {
-		if (mBaseContext != null) {
-			throw new IllegalStateException("Base context already set");
-		}
-		mBaseContext = baseContext;
-	}
+    /**
+     * Set the base context for this ContextWrapper. All calls will then be delegated to the base
+     * context. Throws IllegalStateException if a base context has already been set.
+     * 
+     * @param baseContext The new base context for this wrapper.
+     */
+    protected void attachBaseContext(Context baseContext) {
+        if (mBaseContext != null) {
+            throw new IllegalStateException("Base context already set");
+        }
+        mBaseContext = baseContext;
+    }
 
-	/**
-	 * @return the base context as set by the constructor or setBaseContext
-	 */
-	public Context getBaseContext() {
-		return mBaseContext;
-	}
+    /**
+     * @return the base context as set by the constructor or setBaseContext
+     */
+    public Context getBaseContext() {
+        return mBaseContext;
+    }
 
-	public PackageManager getPackageManager() {
-		return mBaseContext.getPackageManager();
-	}
+    public PackageManager getPackageManager() {
+        return mBaseContext.getPackageManager();
+    }
 
-	public Looper getMainLooper() {
-		return mBaseContext.getMainLooper();
-	}
+    public Looper getMainLooper() {
+        return mBaseContext.getMainLooper();
+    }
 
-	public String getPackageName() {
-		return mBaseContext.getPackageName();
-	}
+    public String getPackageName() {
+        return mBaseContext.getPackageName();
+    }
 
-	public File getSharedPrefsFile(String name) {
-		return mBaseContext.getSharedPrefsFile(name);
-	}
+    public File getSharedPrefsFile(String name) {
+        return mBaseContext.getSharedPrefsFile(name);
+    }
 
-	public SharedPreferences getSharedPreferences(String name, int mode) {
-		return mBaseContext.getSharedPreferences(name, mode);
-	}
+    public SharedPreferences getSharedPreferences(String name, int mode) {
+        return mBaseContext.getSharedPreferences(name, mode);
+    }
 
-	public FileInputStream openFileInput(String name) throws FileNotFoundException {
-		return mBaseContext.openFileInput(name);
-	}
+    public FileInputStream openFileInput(String name) throws FileNotFoundException {
+        return mBaseContext.openFileInput(name);
+    }
 
-	public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
-		return mBaseContext.openFileOutput(name, mode);
-	}
+    public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
+        return mBaseContext.openFileOutput(name, mode);
+    }
 
-	public boolean deleteFile(String name) {
-		return mBaseContext.deleteFile(name);
-	}
+    public boolean deleteFile(String name) {
+        return mBaseContext.deleteFile(name);
+    }
 
-	public File getFilesDir() {
-		return mBaseContext.getFilesDir();
-	}
+    public File getFilesDir() {
+        return mBaseContext.getFilesDir();
+    }
 
-	public IBinder getSystemService(String name) {
-		return mBaseContext.getSystemService(name);
-	}
+    public IBinder getSystemService(String name) {
+        return mBaseContext.getSystemService(name);
+    }
 
-	public ComponentName startService(Intent service) {
-		return mBaseContext.startService(service);
-	}
+    public ComponentName startService(Intent service) {
+        return mBaseContext.startService(service);
+    }
 
-	public boolean stopService(Intent service) {
-		return mBaseContext.stopService(service);
-	}
+    public boolean stopService(Intent service) {
+        return mBaseContext.stopService(service);
+    }
 
-	public boolean bindService(Intent service, ServiceConnection conn, int flags) {
-		return mBaseContext.bindService(service, conn, flags);
-	}
+    public boolean bindService(Intent service, ServiceConnection conn, int flags) {
+        return mBaseContext.bindService(service, conn, flags);
+    }
 
-	public void unbindService(ServiceConnection conn) {
-		mBaseContext.unbindService(conn);
-	}
+    public void unbindService(ServiceConnection conn) {
+        mBaseContext.unbindService(conn);
+    }
 }

@@ -54,305 +54,305 @@ import mindroid.util.logging.LogBuffer.LogRecord;
  * file name.
  */
 public class FileHandler {
-	private static final int DEFAULT_COUNT = 1;
-	private static final int DEFAULT_LIMIT = 0;
-	private static final boolean DEFAULT_APPEND = false;
-	private static final String DEFAULT_PATTERN = "%h/Mindroid-%g.log";
+    private static final int DEFAULT_COUNT = 1;
+    private static final int DEFAULT_LIMIT = 0;
+    private static final boolean DEFAULT_APPEND = false;
+    private static final String DEFAULT_PATTERN = "%h/Mindroid-%g.log";
 
-	private String mPattern;
-	private boolean mAppend;
-	private int mLimit;
-	private int mCount;
-	private Writer mWriter;
-	private File[] mFiles;
-	String mFileName = null;
+    private String mPattern;
+    private boolean mAppend;
+    private int mLimit;
+    private int mCount;
+    private Writer mWriter;
+    private File[] mFiles;
+    String mFileName = null;
 
-	public FileHandler() throws IOException {
-		init(null, null, null, null);
-	}
+    public FileHandler() throws IOException {
+        init(null, null, null, null);
+    }
 
-	private void init(String pattern, Boolean append, Integer limit, Integer count) throws IOException {
-		initProperties(pattern, append, limit, count);
-		initOutputFiles();
-	}
+    private void init(String pattern, Boolean append, Integer limit, Integer count) throws IOException {
+        initProperties(pattern, append, limit, count);
+        initOutputFiles();
+    }
 
-	private void initOutputFiles() throws FileNotFoundException, IOException {
-		for (int generation = 0; generation < mCount; generation++) {
-			mFiles[generation] = new File(parseFileName(generation));
-		}
-		mFileName = mFiles[0].getAbsolutePath();
-		if (mFiles[0].exists() && (!mAppend || mFiles[0].length() >= mLimit)) {
-			for (int i = mCount - 1; i > 0; i--) {
-				if (mFiles[i].exists()) {
-					mFiles[i].delete();
-				}
-				mFiles[i - 1].renameTo(mFiles[i]);
-			}
-		}
-		mWriter = new Writer(mFiles[0], mAppend);
-	}
+    private void initOutputFiles() throws FileNotFoundException, IOException {
+        for (int generation = 0; generation < mCount; generation++) {
+            mFiles[generation] = new File(parseFileName(generation));
+        }
+        mFileName = mFiles[0].getAbsolutePath();
+        if (mFiles[0].exists() && (!mAppend || mFiles[0].length() >= mLimit)) {
+            for (int i = mCount - 1; i > 0; i--) {
+                if (mFiles[i].exists()) {
+                    mFiles[i].delete();
+                }
+                mFiles[i - 1].renameTo(mFiles[i]);
+            }
+        }
+        mWriter = new Writer(mFiles[0], mAppend);
+    }
 
-	private void initProperties(String p, Boolean a, Integer l, Integer c) {
-		mPattern = (p == null) ? DEFAULT_PATTERN : p;
-		if (mPattern == null || (mPattern.length() == 0)) {
-			throw new NullPointerException("Pattern cannot be null or empty");
-		}
-		mAppend = (a == null) ? DEFAULT_APPEND : a.booleanValue();
-		mCount = (c == null) ? DEFAULT_COUNT : c.intValue();
-		mLimit = (l == null) ? DEFAULT_LIMIT : l.intValue();
-		mCount = mCount < 1 ? DEFAULT_COUNT : mCount;
-		mLimit = mLimit < 0 ? DEFAULT_LIMIT : mLimit;
-		mFiles = new File[mCount];
-	}
+    private void initProperties(String p, Boolean a, Integer l, Integer c) {
+        mPattern = (p == null) ? DEFAULT_PATTERN : p;
+        if (mPattern == null || (mPattern.length() == 0)) {
+            throw new NullPointerException("Pattern cannot be null or empty");
+        }
+        mAppend = (a == null) ? DEFAULT_APPEND : a.booleanValue();
+        mCount = (c == null) ? DEFAULT_COUNT : c.intValue();
+        mLimit = (l == null) ? DEFAULT_LIMIT : l.intValue();
+        mCount = mCount < 1 ? DEFAULT_COUNT : mCount;
+        mLimit = mLimit < 0 ? DEFAULT_LIMIT : mLimit;
+        mFiles = new File[mCount];
+    }
 
-	void findNextGeneration() {
-		close();
+    void findNextGeneration() {
+        close();
 
-		for (int i = mCount - 1; i > 0; i--) {
-			if (mFiles[i].exists()) {
-				mFiles[i].delete();
-			}
-			mFiles[i - 1].renameTo(mFiles[i]);
-		}
-		try {
-			mWriter = new Writer(mFiles[0], mAppend);
-		} catch (IOException e) {
-			System.out.println("Error opening log file");
-		}
-	}
+        for (int i = mCount - 1; i > 0; i--) {
+            if (mFiles[i].exists()) {
+                mFiles[i].delete();
+            }
+            mFiles[i - 1].renameTo(mFiles[i]);
+        }
+        try {
+            mWriter = new Writer(mFiles[0], mAppend);
+        } catch (IOException e) {
+            System.out.println("Error opening log file");
+        }
+    }
 
-	/**
-	 * Transform the pattern to the valid file name, replacing any patterns, and applying generation
-	 * if present.
-	 * 
-	 * @param gen Generation of this file.
-	 * @return Transformed filename ready for use.
-	 */
-	private String parseFileName(int gen) {
-		int curChar = 0;
-		int nextChar = 0;
-		boolean hasGeneration = false;
+    /**
+     * Transform the pattern to the valid file name, replacing any patterns, and applying generation
+     * if present.
+     * 
+     * @param gen Generation of this file.
+     * @return Transformed filename ready for use.
+     */
+    private String parseFileName(int gen) {
+        int curChar = 0;
+        int nextChar = 0;
+        boolean hasGeneration = false;
 
-		String tempPath = System.getProperty("java.io.tmpdir");
-		boolean tempPathHasSeparatorEnd = (tempPath == null ? false : tempPath.endsWith(File.separator));
+        String tempPath = System.getProperty("java.io.tmpdir");
+        boolean tempPathHasSeparatorEnd = (tempPath == null ? false : tempPath.endsWith(File.separator));
 
-		String homePath = System.getProperty("user.home");
-		boolean homePathHasSeparatorEnd = (homePath == null ? false : homePath.endsWith(File.separator));
+        String homePath = System.getProperty("user.home");
+        boolean homePathHasSeparatorEnd = (homePath == null ? false : homePath.endsWith(File.separator));
 
-		StringBuilder sb = new StringBuilder();
-		mPattern = mPattern.replace('/', File.separatorChar);
+        StringBuilder sb = new StringBuilder();
+        mPattern = mPattern.replace('/', File.separatorChar);
 
-		char[] value = mPattern.toCharArray();
-		while ((nextChar = mPattern.indexOf('%', curChar)) >= 0) {
-			if (++nextChar < mPattern.length()) {
-				switch (value[nextChar]) {
-				case 'g':
-					sb.append(value, curChar, nextChar - curChar - 1).append(gen);
-					hasGeneration = true;
-					break;
-				case 't':
-					sb.append(value, curChar, nextChar - curChar - 1).append(tempPath);
-					if (!tempPathHasSeparatorEnd) {
-						sb.append(File.separator);
-					}
-					if (nextChar + 1 < mPattern.length()) {
-						if (value[nextChar + 1] == File.separatorChar) {
-							++nextChar;
-						}
-					}
-					break;
-				case 'h':
-					sb.append(value, curChar, nextChar - curChar - 1).append(homePath);
-					if (!homePathHasSeparatorEnd) {
-						sb.append(File.separator);
-					}
-					if (nextChar + 1 < mPattern.length()) {
-						if (value[nextChar + 1] == File.separatorChar) {
-							++nextChar;
-						}
-					}
-					break;
-				case '%':
-					sb.append(value, curChar, nextChar - curChar - 1).append('%');
-					break;
-				default:
-					sb.append(value, curChar, nextChar - curChar);
-				}
-				curChar = ++nextChar;
-			}
-		}
+        char[] value = mPattern.toCharArray();
+        while ((nextChar = mPattern.indexOf('%', curChar)) >= 0) {
+            if (++nextChar < mPattern.length()) {
+                switch (value[nextChar]) {
+                case 'g':
+                    sb.append(value, curChar, nextChar - curChar - 1).append(gen);
+                    hasGeneration = true;
+                    break;
+                case 't':
+                    sb.append(value, curChar, nextChar - curChar - 1).append(tempPath);
+                    if (!tempPathHasSeparatorEnd) {
+                        sb.append(File.separator);
+                    }
+                    if (nextChar + 1 < mPattern.length()) {
+                        if (value[nextChar + 1] == File.separatorChar) {
+                            ++nextChar;
+                        }
+                    }
+                    break;
+                case 'h':
+                    sb.append(value, curChar, nextChar - curChar - 1).append(homePath);
+                    if (!homePathHasSeparatorEnd) {
+                        sb.append(File.separator);
+                    }
+                    if (nextChar + 1 < mPattern.length()) {
+                        if (value[nextChar + 1] == File.separatorChar) {
+                            ++nextChar;
+                        }
+                    }
+                    break;
+                case '%':
+                    sb.append(value, curChar, nextChar - curChar - 1).append('%');
+                    break;
+                default:
+                    sb.append(value, curChar, nextChar - curChar);
+                }
+                curChar = ++nextChar;
+            }
+        }
 
-		sb.append(value, curChar, value.length - curChar);
+        sb.append(value, curChar, value.length - curChar);
 
-		if (!hasGeneration && mCount > 1) {
-			sb.append(".").append(gen);
-		}
+        if (!hasGeneration && mCount > 1) {
+            sb.append(".").append(gen);
+        }
 
-		return sb.toString();
-	}
+        return sb.toString();
+    }
 
-	/**
-	 * Constructs a new {@code FileHandler}. The given name pattern is used as output filename, the
-	 * file limit is set to zero (no limit), the file count is set to one. This handler writes to
-	 * only one file with no size limit.
-	 * 
-	 * @param pattern The name pattern for the output file.
-	 * @throws IOException if any I/O error occurs.
-	 * @throws IllegalArgumentException if the pattern is empty.
-	 * @throws NullPointerException if the pattern is {@code null}.
-	 */
-	public FileHandler(String pattern) throws IOException {
-		if (pattern == null || pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be null or empty");
-		}
-		init(pattern, null, new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
-	}
+    /**
+     * Constructs a new {@code FileHandler}. The given name pattern is used as output filename, the
+     * file limit is set to zero (no limit), the file count is set to one. This handler writes to
+     * only one file with no size limit.
+     * 
+     * @param pattern The name pattern for the output file.
+     * @throws IOException if any I/O error occurs.
+     * @throws IllegalArgumentException if the pattern is empty.
+     * @throws NullPointerException if the pattern is {@code null}.
+     */
+    public FileHandler(String pattern) throws IOException {
+        if (pattern == null || pattern.length() == 0) {
+            throw new IllegalArgumentException("Pattern cannot be null or empty");
+        }
+        init(pattern, null, new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
+    }
 
-	/**
-	 * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
-	 * file limit is set to zero (no limit), the file count is initialized to one and the value of
-	 * {@code append} becomes the new instance's append mode. This handler writes to only one file
-	 * with no size limit.
-	 * 
-	 * @param pattern The name pattern for the output file.
-	 * @param append The append mode.
-	 * @throws IOException if any I/O error occurs.
-	 * @throws IllegalArgumentException if {@code pattern} is empty.
-	 * @throws NullPointerException if {@code pattern} is {@code null}.
-	 */
-	public FileHandler(String pattern, boolean append) throws IOException {
-		if (pattern == null || pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be null or empty");
-		}
-		init(pattern, Boolean.valueOf(append), new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
-	}
+    /**
+     * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
+     * file limit is set to zero (no limit), the file count is initialized to one and the value of
+     * {@code append} becomes the new instance's append mode. This handler writes to only one file
+     * with no size limit.
+     * 
+     * @param pattern The name pattern for the output file.
+     * @param append The append mode.
+     * @throws IOException if any I/O error occurs.
+     * @throws IllegalArgumentException if {@code pattern} is empty.
+     * @throws NullPointerException if {@code pattern} is {@code null}.
+     */
+    public FileHandler(String pattern, boolean append) throws IOException {
+        if (pattern == null || pattern.length() == 0) {
+            throw new IllegalArgumentException("Pattern cannot be null or empty");
+        }
+        init(pattern, Boolean.valueOf(append), new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
+    }
 
-	/**
-	 * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
-	 * maximum file size is set to {@code limit} and the file count is initialized to {@code count}.
-	 * This handler is configured to write to a rotating set of count files, when the limit of bytes
-	 * has been written to one output file, another file will be opened instead.
-	 * 
-	 * @param pattern The name pattern for the output file.
-	 * @param limit The data amount limit in bytes of one output file, can not be negative.
-	 * @param count The maximum number of files to use, can not be less than one.
-	 * @throws IOException if any I/O error occurs.
-	 * @throws IllegalArgumentException if {@code pattern} is empty, {@code limit < 0} or
-	 * {@code count < 1}.
-	 * @throws NullPointerException if {@code pattern} is {@code null}.
-	 */
-	public FileHandler(String pattern, int limit, int count) throws IOException {
-		if (pattern == null || pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be null or empty");
-		}
-		if (limit < 0 || count < 1) {
-			throw new IllegalArgumentException("limit < 0 || count < 1");
-		}
-		init(pattern, null, new Integer(limit), new Integer(count));
-	}
+    /**
+     * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
+     * maximum file size is set to {@code limit} and the file count is initialized to {@code count}.
+     * This handler is configured to write to a rotating set of count files, when the limit of bytes
+     * has been written to one output file, another file will be opened instead.
+     * 
+     * @param pattern The name pattern for the output file.
+     * @param limit The data amount limit in bytes of one output file, can not be negative.
+     * @param count The maximum number of files to use, can not be less than one.
+     * @throws IOException if any I/O error occurs.
+     * @throws IllegalArgumentException if {@code pattern} is empty, {@code limit < 0} or
+     * {@code count < 1}.
+     * @throws NullPointerException if {@code pattern} is {@code null}.
+     */
+    public FileHandler(String pattern, int limit, int count) throws IOException {
+        if (pattern == null || pattern.length() == 0) {
+            throw new IllegalArgumentException("Pattern cannot be null or empty");
+        }
+        if (limit < 0 || count < 1) {
+            throw new IllegalArgumentException("limit < 0 || count < 1");
+        }
+        init(pattern, null, new Integer(limit), new Integer(count));
+    }
 
-	/**
-	 * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
-	 * maximum file size is set to {@code limit}, the file count is initialized to {@code count} and
-	 * the append mode is set to {@code append}. This handler is configured to write to a rotating
-	 * set of count files, when the limit of bytes has been written to one output file, another file
-	 * will be opened instead.
-	 * 
-	 * @param pattern The name pattern for the output file.
-	 * @param limit The data amount limit in bytes of one output file, can not be negative.
-	 * @param count The maximum number of files to use, can not be less than one.
-	 * @param append The append mode.
-	 * @throws IOException if any I/O error occurs.
-	 * @throws IllegalArgumentException if {@code pattern} is empty, {@code limit < 0} or
-	 * {@code count < 1}.
-	 * @throws NullPointerException if {@code pattern} is {@code null}.
-	 */
-	public FileHandler(String pattern, int limit, int count, boolean append) throws IOException {
-		if (pattern == null || pattern.length() == 0) {
-			throw new IllegalArgumentException("Pattern cannot be null or empty");
-		}
-		if (limit < 0 || count < 1) {
-			throw new IllegalArgumentException("limit < 0 || count < 1");
-		}
-		init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count));
-	}
+    /**
+     * Construct a new {@code FileHandler}. The given name pattern is used as output filename, the
+     * maximum file size is set to {@code limit}, the file count is initialized to {@code count} and
+     * the append mode is set to {@code append}. This handler is configured to write to a rotating
+     * set of count files, when the limit of bytes has been written to one output file, another file
+     * will be opened instead.
+     * 
+     * @param pattern The name pattern for the output file.
+     * @param limit The data amount limit in bytes of one output file, can not be negative.
+     * @param count The maximum number of files to use, can not be less than one.
+     * @param append The append mode.
+     * @throws IOException if any I/O error occurs.
+     * @throws IllegalArgumentException if {@code pattern} is empty, {@code limit < 0} or
+     * {@code count < 1}.
+     * @throws NullPointerException if {@code pattern} is {@code null}.
+     */
+    public FileHandler(String pattern, int limit, int count, boolean append) throws IOException {
+        if (pattern == null || pattern.length() == 0) {
+            throw new IllegalArgumentException("Pattern cannot be null or empty");
+        }
+        if (limit < 0 || count < 1) {
+            throw new IllegalArgumentException("limit < 0 || count < 1");
+        }
+        init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count));
+    }
 
-	/**
-	 * Flushes and closes all opened files.
-	 */
-	public void close() {
-		try {
-			if (mWriter != null) {
-				mWriter.close();
-				mWriter = null;
-			}
-		} catch (IOException e) {
-		}
-	}
+    /**
+     * Flushes and closes all opened files.
+     */
+    public void close() {
+        try {
+            if (mWriter != null) {
+                mWriter.close();
+                mWriter = null;
+            }
+        } catch (IOException e) {
+        }
+    }
 
-	/**
-	 * Publish a {@code LogRecord}.
-	 * 
-	 * @param record The log record.
-	 */
-	public synchronized void publish(LogRecord record) {
-		try {
-			mWriter.write(record.toString());
-			mWriter.newLine();
-			mWriter.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		if (mLimit > 0 && mWriter.getSize() >= mLimit) {
-			findNextGeneration();
-		}
-	}
+    /**
+     * Publish a {@code LogRecord}.
+     * 
+     * @param record The log record.
+     */
+    public synchronized void publish(LogRecord record) {
+        try {
+            mWriter.write(record.toString());
+            mWriter.newLine();
+            mWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (mLimit > 0 && mWriter.getSize() >= mLimit) {
+            findNextGeneration();
+        }
+    }
 
-	static class Writer {
-		private OutputStreamWriter mWriter;
-		private long mSize;
+    static class Writer {
+        private OutputStreamWriter mWriter;
+        private long mSize;
 
-		public Writer(File file, boolean append) throws IOException {
-			if (!file.exists()) {
-				if (file.getParentFile() != null && !file.getParentFile().exists()) {
-					file.getParentFile().mkdir();
-				}
-				file.createNewFile();
-			}
+        public Writer(File file, boolean append) throws IOException {
+            if (!file.exists()) {
+                if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                    file.getParentFile().mkdir();
+                }
+                file.createNewFile();
+            }
 
-			mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append)));
-			mSize = file.length();
+            mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append)));
+            mSize = file.length();
 
-			if (append && file.length() > 0) {
-				newLine();
-			}
-		}
+            if (append && file.length() > 0) {
+                newLine();
+            }
+        }
 
-		public void write(String s) throws IOException {
-			mWriter.write(s);
-			mSize += s.length();
-		}
+        public void write(String s) throws IOException {
+            mWriter.write(s);
+            mSize += s.length();
+        }
 
-		public void write(String s, int offset, int length) throws IOException {
-			mWriter.write(s, offset, length);
-			mSize += length;
-		}
+        public void write(String s, int offset, int length) throws IOException {
+            mWriter.write(s, offset, length);
+            mSize += length;
+        }
 
-		public void close() throws IOException {
-			mWriter.close();
-		}
+        public void close() throws IOException {
+            mWriter.close();
+        }
 
-		public void flush() throws IOException {
-			mWriter.flush();
-		}
+        public void flush() throws IOException {
+            mWriter.flush();
+        }
 
-		public long getSize() {
-			return mSize;
-		}
+        public long getSize() {
+            return mSize;
+        }
 
-		public void newLine() throws IOException {
-			mWriter.write("\r\n");
-			mSize += 2;
-		}
-	}
+        public void newLine() throws IOException {
+            mWriter.write("\r\n");
+            mSize += 2;
+        }
+    }
 }

@@ -23,105 +23,105 @@ import mindroid.os.Binder;
 import mindroid.os.RemoteException;
 
 public interface IPackageManagerListener extends IInterface {
-	public static abstract class Stub extends Binder implements IPackageManagerListener {
-		private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageManagerListener";
+    public static abstract class Stub extends Binder implements IPackageManagerListener {
+        private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageManagerListener";
 
-		public Stub() {
-			this.attachInterface(this, DESCRIPTOR);
-		}
+        public Stub() {
+            this.attachInterface(this, DESCRIPTOR);
+        }
 
-		public static mindroid.content.pm.IPackageManagerListener asInterface(IBinder binder) {
-			if (binder == null) {
-				return null;
-			}
-			return new IPackageManagerListener.Stub.SmartProxy(binder);
-		}
+        public static mindroid.content.pm.IPackageManagerListener asInterface(IBinder binder) {
+            if (binder == null) {
+                return null;
+            }
+            return new IPackageManagerListener.Stub.SmartProxy(binder);
+        }
 
-		public IBinder asBinder() {
-			return this;
-		}
+        public IBinder asBinder() {
+            return this;
+        }
 
-		protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
-			switch (what) {
-			case MSG_NOTIFY_BOOT_COMPLETED: {
-				onBootCompleted();
-				return null;
-			}
-			default:
-				return super.onTransact(what, arg1, arg2, obj, data);
-			}
-		}
+        protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+            switch (what) {
+            case MSG_NOTIFY_BOOT_COMPLETED: {
+                onBootCompleted();
+                return null;
+            }
+            default:
+                return super.onTransact(what, arg1, arg2, obj, data);
+            }
+        }
 
-		private static class Proxy implements IPackageManagerListener {
-			private final IBinder mRemote;
+        private static class Proxy implements IPackageManagerListener {
+            private final IBinder mRemote;
 
-			Proxy(IBinder remote) {
-				mRemote = remote;
-			}
+            Proxy(IBinder remote) {
+                mRemote = remote;
+            }
 
-			public IBinder asBinder() {
-				return mRemote;
-			}
+            public IBinder asBinder() {
+                return mRemote;
+            }
 
-			public boolean equals(final Object obj) {
-				if (obj == null) return false;
-				if (obj == this) return true;
-				if (obj instanceof Proxy) {
-					final Proxy that = (Proxy) obj;
-					return this.mRemote.equals(that.mRemote);
-				}
-				return false;
-			}
+            public boolean equals(final Object obj) {
+                if (obj == null) return false;
+                if (obj == this) return true;
+                if (obj instanceof Proxy) {
+                    final Proxy that = (Proxy) obj;
+                    return this.mRemote.equals(that.mRemote);
+                }
+                return false;
+            }
 
-			public int hashCode() {
-				return mRemote.hashCode();
-			}
+            public int hashCode() {
+                return mRemote.hashCode();
+            }
 
-			public void onBootCompleted() throws RemoteException {
-				mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
-			}
-		}
+            public void onBootCompleted() throws RemoteException {
+                mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
+            }
+        }
 
-		private static class SmartProxy implements IPackageManagerListener {
-			private final IBinder mRemote;
-			private final IPackageManagerListener mStub;
-			private final IPackageManagerListener mProxy;
+        private static class SmartProxy implements IPackageManagerListener {
+            private final IBinder mRemote;
+            private final IPackageManagerListener mStub;
+            private final IPackageManagerListener mProxy;
 
-			SmartProxy(IBinder remote) {
-				mRemote = remote;
-				mStub = (mindroid.content.pm.IPackageManagerListener) remote.queryLocalInterface(DESCRIPTOR);
-				mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(remote);
-			}
+            SmartProxy(IBinder remote) {
+                mRemote = remote;
+                mStub = (mindroid.content.pm.IPackageManagerListener) remote.queryLocalInterface(DESCRIPTOR);
+                mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(remote);
+            }
 
-			public IBinder asBinder() {
-				return mRemote;
-			}
+            public IBinder asBinder() {
+                return mRemote;
+            }
 
-			public boolean equals(final Object obj) {
-				if (obj == null) return false;
-				if (obj == this) return true;
-				if (obj instanceof SmartProxy) {
-					final SmartProxy that = (SmartProxy) obj;
-					return this.mRemote.equals(that.mRemote);
-				}
-				return false;
-			}
+            public boolean equals(final Object obj) {
+                if (obj == null) return false;
+                if (obj == this) return true;
+                if (obj instanceof SmartProxy) {
+                    final SmartProxy that = (SmartProxy) obj;
+                    return this.mRemote.equals(that.mRemote);
+                }
+                return false;
+            }
 
-			public int hashCode() {
-				return mRemote.hashCode();
-			}
+            public int hashCode() {
+                return mRemote.hashCode();
+            }
 
-			public void onBootCompleted() throws RemoteException {
-				if (mRemote.runsOnSameThread()) {
-					mStub.onBootCompleted();
-				} else {
-					mProxy.onBootCompleted();
-				}
-			}
-		}
+            public void onBootCompleted() throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    mStub.onBootCompleted();
+                } else {
+                    mProxy.onBootCompleted();
+                }
+            }
+        }
 
-		static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
-	}
+        static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
+    }
 
-	public void onBootCompleted() throws RemoteException;
+    public void onBootCompleted() throws RemoteException;
 }

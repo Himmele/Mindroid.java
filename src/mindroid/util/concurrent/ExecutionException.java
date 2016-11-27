@@ -21,10 +21,10 @@ package mindroid.util.concurrent;
  * stopped.
  */
 public class ExecutionException extends Exception {
-	public ExecutionException() {
-	}
+    public ExecutionException() {
+    }
 
-	public ExecutionException(String message) {
-		super(message);
-	}
+    public ExecutionException(String message) {
+        super(message);
+    }
 };

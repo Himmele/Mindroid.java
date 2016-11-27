@@ -23,27 +23,27 @@ package mindroid.content.pm;
  */
 public class ServiceInfo extends ComponentInfo {
 
-	/**
-	 * Bit in {@link #flags}: If set, the service will automatically be started by the system after
-	 * boot completed.
-	 */
-	public static final int FLAG_AUTO_START = 0x0001;
+    /**
+     * Bit in {@link #flags}: If set, the service will automatically be started by the system after
+     * boot completed.
+     */
+    public static final int FLAG_AUTO_START = 0x0001;
 
-	/**
-	 * Bit in {@link #flags}: If set, the service is marked as system service.
-	 */
-	public static final int FLAG_SYSTEM_SERVICE = 0x40000000;
+    /**
+     * Bit in {@link #flags}: If set, the service is marked as system service.
+     */
+    public static final int FLAG_SYSTEM_SERVICE = 0x40000000;
 
-	/**
-	 * Options that have been set in the service declaration in the manifest. These include:
-	 * {@link #FLAG_AUTO_START}.
-	 */
-	public int flags = 0;
+    /**
+     * Options that have been set in the service declaration in the manifest. These include:
+     * {@link #FLAG_AUTO_START}.
+     */
+    public int flags = 0;
 
-	public ServiceInfo() {
-	}
+    public ServiceInfo() {
+    }
 
-	public boolean hasFlag(int flag) {
-		return (flags & flag) == flag;
-	}
+    public boolean hasFlag(int flag) {
+        return (flags & flag) == flag;
+    }
 }

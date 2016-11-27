@@ -17,9 +17,9 @@
 package mindroid.util.concurrent;
 
 public abstract class Executor {
-	public abstract void execute(Runnable runnable);
+    public abstract void execute(Runnable runnable);
 
-	public abstract boolean cancel(Runnable runnable);
+    public abstract boolean cancel(Runnable runnable);
 
-	protected abstract void finalize();
+    protected abstract void finalize();
 }

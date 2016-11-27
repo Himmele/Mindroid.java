@@ -84,66 +84,66 @@ package mindroid.os;
  * </ul>
  */
 public final class SystemClock {
-	/**
-	 * This class is uninstantiable.
-	 */
-	private SystemClock() {
-	}
+    /**
+     * This class is uninstantiable.
+     */
+    private SystemClock() {
+    }
 
-	/**
-	 * Waits a given number of milliseconds (of uptimeMillis) before returning. Similar to
-	 * {@link java.lang.Thread#sleep(long)}, but does not throw {@link InterruptedException};
-	 * {@link Thread#interrupt()} events are deferred until the next interruptible operation. Does
-	 * not return until at least the specified number of milliseconds has elapsed.
-	 * 
-	 * @param ms to sleep before returning, in milliseconds of uptime.
-	 */
-	public static void sleep(long ms) {
-		long start = uptimeMillis();
-		long duration = ms;
-		boolean interrupted = false;
-		do {
-			try {
-				Thread.sleep(duration);
-			} catch (InterruptedException e) {
-				interrupted = true;
-			}
-			duration = start + ms - uptimeMillis();
-		} while (duration > 0);
+    /**
+     * Waits a given number of milliseconds (of uptimeMillis) before returning. Similar to
+     * {@link java.lang.Thread#sleep(long)}, but does not throw {@link InterruptedException};
+     * {@link Thread#interrupt()} events are deferred until the next interruptible operation. Does
+     * not return until at least the specified number of milliseconds has elapsed.
+     * 
+     * @param ms to sleep before returning, in milliseconds of uptime.
+     */
+    public static void sleep(long ms) {
+        long start = uptimeMillis();
+        long duration = ms;
+        boolean interrupted = false;
+        do {
+            try {
+                Thread.sleep(duration);
+            } catch (InterruptedException e) {
+                interrupted = true;
+            }
+            duration = start + ms - uptimeMillis();
+        } while (duration > 0);
 
-		if (interrupted) {
-			// Important: we don't want to quietly eat an interrupt() event,
-			// so we make sure to re-interrupt the thread so that the next
-			// call to Thread.sleep() or Object.wait() will be interrupted.
-			Thread.currentThread().interrupt();
-		}
-	}
+        if (interrupted) {
+            // Important: we don't want to quietly eat an interrupt() event,
+            // so we make sure to re-interrupt the thread so that the next
+            // call to Thread.sleep() or Object.wait() will be interrupted.
+            Thread.currentThread().interrupt();
+        }
+    }
 
-	/**
-	 * Returns milliseconds since boot, not counting time spent in deep sleep. <b>Note:</b> This
-	 * value may get reset occasionally (before it would otherwise wrap around).
-	 * 
-	 * @return milliseconds of non-sleep uptime since boot.
-	 */
-	public static long uptimeMillis() {
-		return System.currentTimeMillis();
-	}
+    /**
+     * Returns milliseconds since boot, not counting time spent in deep sleep. <b>Note:</b> This
+     * value may get reset occasionally (before it would otherwise wrap around).
+     * 
+     * @return milliseconds of non-sleep uptime since boot.
+     */
+    public static long uptimeMillis() {
+        return System.currentTimeMillis();
+    }
 
-	/**
-	 * Returns milliseconds since boot, including time spent in sleep.
-	 * 
-	 * @return elapsed milliseconds since boot.
-	 */
-	public static long elapsedRealtime() {
-		return System.currentTimeMillis();
-	}
+    /**
+     * Returns milliseconds since boot, including time spent in sleep.
+     * 
+     * @return elapsed milliseconds since boot.
+     */
+    public static long elapsedRealtime() {
+        return System.currentTimeMillis();
+    }
 
-	/**
-	 * Returns nanoseconds since boot, including time spent in sleep.
-	 * 
-	 * @return elapsed nanoseconds since boot.
-	 */
-	public static long elapsedRealtimeNanos() {
-		return System.currentTimeMillis() * 1000000;
-	}
+    /**
+     * Returns nanoseconds since boot, including time spent in sleep.
+     * 
+     * @return elapsed nanoseconds since boot.
+     */
+    public static long elapsedRealtimeNanos() {
+        return System.currentTimeMillis() * 1000000;
+    }
 }

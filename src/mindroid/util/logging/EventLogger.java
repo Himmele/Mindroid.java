@@ -27,107 +27,107 @@ import mindroid.util.Log;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
 public class EventLogger extends Service {
-	private static final String LOG_TAG = "EventLogger";
-	private EventLoggerThread mEventLoggerThread = null;
+    private static final String LOG_TAG = "EventLogger";
+    private EventLoggerThread mEventLoggerThread = null;
 
-	class EventLoggerThread extends Thread {
-		private LogBuffer mLogBuffer;
-		private int mPriority;
-		private String mLogDirectory;
-		private String mLogFileName;
-		private int mLogFileSizeLimit;
-		private int mLogFileCount;
-		private FileHandler mFileHander;
+    class EventLoggerThread extends Thread {
+        private LogBuffer mLogBuffer;
+        private int mPriority;
+        private String mLogDirectory;
+        private String mLogFileName;
+        private int mLogFileSizeLimit;
+        private int mLogFileCount;
+        private FileHandler mFileHander;
 
-		public EventLoggerThread(int priority, String logDirectory, String logFileName, int logFileSizeLimit, int logFileCount) {
-			super(LOG_TAG);
-			mPriority = priority;
-			mLogBuffer = Log.getLogBuffer(Log.LOG_ID_EVENTS);
-			mLogDirectory = logDirectory;
-			mLogFileName = logFileName;
-			mLogFileSizeLimit = logFileSizeLimit;
-			mLogFileCount = logFileCount;
-		}
+        public EventLoggerThread(int priority, String logDirectory, String logFileName, int logFileSizeLimit, int logFileCount) {
+            super(LOG_TAG);
+            mPriority = priority;
+            mLogBuffer = Log.getLogBuffer(Log.LOG_ID_EVENTS);
+            mLogDirectory = logDirectory;
+            mLogFileName = logFileName;
+            mLogFileSizeLimit = logFileSizeLimit;
+            mLogFileCount = logFileCount;
+        }
 
-		public void run() {
-			open();
+        public void run() {
+            open();
 
-			while (!isInterrupted()) {
-				LogRecord logMessage;
-				try {
-					logMessage = mLogBuffer.take(mPriority);
-				} catch (InterruptedException e) {
-					break;
-				}
-				if (logMessage != null) {
-					if (mFileHander != null) {
-						mFileHander.publish(logMessage);
-					}
-				}
-			}
+            while (!isInterrupted()) {
+                LogRecord logMessage;
+                try {
+                    logMessage = mLogBuffer.take(mPriority);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                if (logMessage != null) {
+                    if (mFileHander != null) {
+                        mFileHander.publish(logMessage);
+                    }
+                }
+            }
 
-			close();
-		}
+            close();
+        }
 
-		private void open() {
-			try {
-				mFileHander = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+        private void open() {
+            try {
+                mFileHander = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
-		private void close() {
-			if (mFileHander != null) {
-				mFileHander.close();
-				mFileHander = null;
-			}
-		}
-		
-		void quit() {
-			interrupt();
-			mLogBuffer.quit();
-			try {
-				join();
-			} catch (InterruptedException e) {
-			}
-		}
-	}
+        private void close() {
+            if (mFileHander != null) {
+                mFileHander.close();
+                mFileHander = null;
+            }
+        }
+        
+        void quit() {
+            interrupt();
+            mLogBuffer.quit();
+            try {
+                join();
+            } catch (InterruptedException e) {
+            }
+        }
+    }
 
-	public void onCreate() {
-	}
+    public void onCreate() {
+    }
 
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		int threadPriority = intent.getIntExtra("threadPriority", Thread.MIN_PRIORITY);
-		ArrayList logBuffers = intent.getStringArrayListExtra("logBuffers");
-		if (logBuffers != null) {
-			if (logBuffers.contains("events")) {
-				String logDirectory = Environment.getLogDirectory().getAbsolutePath();
-				String logFileName = intent.getStringExtra("eventLogFileName");
-				int logFileSizeLimit = intent.getIntExtra("eventLogFileSizeLimit", 262144);
-				int logFileCount = intent.getIntExtra("eventLogFileCount", 4);
-				boolean log = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        int threadPriority = intent.getIntExtra("threadPriority", Thread.MIN_PRIORITY);
+        ArrayList logBuffers = intent.getStringArrayListExtra("logBuffers");
+        if (logBuffers != null) {
+            if (logBuffers.contains("events")) {
+                String logDirectory = Environment.getLogDirectory().getAbsolutePath();
+                String logFileName = intent.getStringExtra("eventLogFileName");
+                int logFileSizeLimit = intent.getIntExtra("eventLogFileSizeLimit", 262144);
+                int logFileCount = intent.getIntExtra("eventLogFileCount", 4);
+                boolean log = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
 
-				if (log) {
-					mEventLoggerThread = new EventLoggerThread(Log.DEBUG, logDirectory, logFileName, logFileSizeLimit, logFileCount);
-					mEventLoggerThread.setPriority(threadPriority);
-					mEventLoggerThread.start();
-				} else {
-					Log.e(LOG_TAG, "Invalid event logger configuration");
-				}
-			}
-		}
+                if (log) {
+                    mEventLoggerThread = new EventLoggerThread(Log.DEBUG, logDirectory, logFileName, logFileSizeLimit, logFileCount);
+                    mEventLoggerThread.setPriority(threadPriority);
+                    mEventLoggerThread.start();
+                } else {
+                    Log.e(LOG_TAG, "Invalid event logger configuration");
+                }
+            }
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 
-	public void onDestroy() {
-		if (mEventLoggerThread != null) {
-			mEventLoggerThread.quit();
-		}
-	}
+    public void onDestroy() {
+        if (mEventLoggerThread != null) {
+            mEventLoggerThread.quit();
+        }
+    }
 
-	public IBinder onBind(Intent intent) {
-		return null;
-	}
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 }

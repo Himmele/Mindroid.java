@@ -20,31 +20,31 @@ import mindroid.os.Handler;
 import mindroid.os.HandlerThread;
 
 public class SerialExecutor extends Executor {
-	private HandlerThread mHandlerThread;
-	private Handler mHandler;
+    private HandlerThread mHandlerThread;
+    private Handler mHandler;
 
-	public SerialExecutor() {
-		mHandlerThread = new HandlerThread("SerialExecutor");
-		mHandlerThread.setPriority(Thread.MIN_PRIORITY);
-		mHandlerThread.start();
-		mHandler = new Handler(mHandlerThread.getLooper());
-	}
+    public SerialExecutor() {
+        mHandlerThread = new HandlerThread("SerialExecutor");
+        mHandlerThread.setPriority(Thread.MIN_PRIORITY);
+        mHandlerThread.start();
+        mHandler = new Handler(mHandlerThread.getLooper());
+    }
 
-	protected void finalize() {
-		mHandlerThread.getLooper().quit();
-		try {
-			mHandlerThread.join();
-		} catch (InterruptedException e) {
-			// Ignore exceptions during shutdown.
-		}
-	}
+    protected void finalize() {
+        mHandlerThread.getLooper().quit();
+        try {
+            mHandlerThread.join();
+        } catch (InterruptedException e) {
+            // Ignore exceptions during shutdown.
+        }
+    }
 
-	public void execute(Runnable runnable) {
-		mHandler.post(runnable);
-	}
+    public void execute(Runnable runnable) {
+        mHandler.post(runnable);
+    }
 
-	public boolean cancel(Runnable runnable) {
-		mHandler.removeCallbacks(runnable);
-		return true;
-	}
+    public boolean cancel(Runnable runnable) {
+        mHandler.removeCallbacks(runnable);
+        return true;
+    }
 }

@@ -22,12 +22,12 @@ package mindroid.content.pm;
  * collected from the MindroidManifest.xml.
  */
 public class ResolveInfo {
-	/**
-	 * The service that corresponds to this resolution match, if this resolution is for a service.
-	 * {@link #serviceInfo} will be non-null.
-	 */
-	public ServiceInfo serviceInfo;
+    /**
+     * The service that corresponds to this resolution match, if this resolution is for a service.
+     * {@link #serviceInfo} will be non-null.
+     */
+    public ServiceInfo serviceInfo;
 
-	public ResolveInfo() {
-	}
+    public ResolveInfo() {
+    }
 }

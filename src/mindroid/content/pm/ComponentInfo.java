@@ -24,47 +24,47 @@ package mindroid.content.pm;
  */
 public class ComponentInfo {
 
-	/**
-	 * Public name of this item. From the "mindroid:name" attribute.
-	 */
-	public String name;
+    /**
+     * Public name of this item. From the "mindroid:name" attribute.
+     */
+    public String name;
 
-	/**
-	 * Name of the package that this item is in.
-	 */
-	public String packageName;
+    /**
+     * Name of the package that this item is in.
+     */
+    public String packageName;
 
-	/**
-	 * Global information about the application/package this component is a part of.
-	 */
-	public ApplicationInfo applicationInfo;
+    /**
+     * Global information about the application/package this component is a part of.
+     */
+    public ApplicationInfo applicationInfo;
 
-	/**
-	 * The name of the process this component should run in. From the "mindroid:process" attribute
-	 * or, if not set, the same as <var>applicationInfo.processName</var>.
-	 */
-	public String processName;
+    /**
+     * The name of the process this component should run in. From the "mindroid:process" attribute
+     * or, if not set, the same as <var>applicationInfo.processName</var>.
+     */
+    public String processName;
 
-	/**
-	 * Indicates whether or not this component may be instantiated. Note that this value can be
-	 * overriden by the one in its parent {@link ApplicationInfo}.
-	 */
-	public boolean enabled = true;
+    /**
+     * Indicates whether or not this component may be instantiated. Note that this value can be
+     * overriden by the one in its parent {@link ApplicationInfo}.
+     */
+    public boolean enabled = true;
 
-	public ComponentInfo() {
-	}
+    public ComponentInfo() {
+    }
 
-	/**
-	 * Return whether this component and its enclosing application are enabled.
-	 */
-	public boolean isEnabled() {
-		return enabled && applicationInfo.enabled;
-	}
+    /**
+     * Return whether this component and its enclosing application are enabled.
+     */
+    public boolean isEnabled() {
+        return enabled && applicationInfo.enabled;
+    }
 
-	/**
-	 * @hide
-	 */
-	protected ApplicationInfo getApplicationInfo() {
-		return applicationInfo;
-	}
+    /**
+     * @hide
+     */
+    protected ApplicationInfo getApplicationInfo() {
+        return applicationInfo;
+    }
 }

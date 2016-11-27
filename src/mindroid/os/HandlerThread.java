@@ -22,73 +22,73 @@ package mindroid.os;
  * handler classes. Note that start() must still be called.
  */
 public class HandlerThread extends Thread {
-	private Looper mLooper;
+    private Looper mLooper;
 
-	public HandlerThread() {
-		super();
-	}
+    public HandlerThread() {
+        super();
+    }
 
-	public HandlerThread(String name) {
-		super(name);
-	}
+    public HandlerThread(String name) {
+        super(name);
+    }
 
-	public HandlerThread(ThreadGroup threadGroup, String name) {
-		super(threadGroup, name);
-	}
+    public HandlerThread(ThreadGroup threadGroup, String name) {
+        super(threadGroup, name);
+    }
 
-	/**
-	 * Call back method that can be explicitly overridden if needed to execute some setup before
-	 * Looper loops.
-	 */
-	protected void onLooperPrepared() {
-	}
+    /**
+     * Call back method that can be explicitly overridden if needed to execute some setup before
+     * Looper loops.
+     */
+    protected void onLooperPrepared() {
+    }
 
-	public void run() {
-		Looper.prepare();
-		synchronized (this) {
-			mLooper = Looper.myLooper();
-			notifyAll();
-		}
-		onLooperPrepared();
-		Looper.loop();
-	}
+    public void run() {
+        Looper.prepare();
+        synchronized (this) {
+            mLooper = Looper.myLooper();
+            notifyAll();
+        }
+        onLooperPrepared();
+        Looper.loop();
+    }
 
-	/**
-	 * This method returns the Looper associated with this thread. If this thread not been started
-	 * or for any reason is isAlive() returns false, this method will return null. If this thread
-	 * has been started, this method will block until the looper has been initialized.
-	 * 
-	 * @return The looper.
-	 */
-	public Looper getLooper() {
-		if (!isAlive()) {
-			return null;
-		}
+    /**
+     * This method returns the Looper associated with this thread. If this thread not been started
+     * or for any reason is isAlive() returns false, this method will return null. If this thread
+     * has been started, this method will block until the looper has been initialized.
+     * 
+     * @return The looper.
+     */
+    public Looper getLooper() {
+        if (!isAlive()) {
+            return null;
+        }
 
-		// If the thread has been started, wait until the looper has been created.
-		synchronized (this) {
-			while (isAlive() && mLooper == null) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					return null;
-				}
-			}
-		}
-		return mLooper;
-	}
+        // If the thread has been started, wait until the looper has been created.
+        synchronized (this) {
+            while (isAlive() && mLooper == null) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    return null;
+                }
+            }
+        }
+        return mLooper;
+    }
 
-	/**
-	 * Ask the currently running looper to quit. If the thread has not been started or has finished
-	 * (that is if {@link #getLooper} returns null), then false is returned. Otherwise the looper is
-	 * asked to quit and true is returned.
-	 */
-	public boolean quit() {
-		Looper looper = getLooper();
-		if (looper != null) {
-			looper.quit();
-			return true;
-		}
-		return false;
-	}
+    /**
+     * Ask the currently running looper to quit. If the thread has not been started or has finished
+     * (that is if {@link #getLooper} returns null), then false is returned. Otherwise the looper is
+     * asked to quit and true is returned.
+     */
+    public boolean quit() {
+        Looper looper = getLooper();
+        if (looper != null) {
+            looper.quit();
+            return true;
+        }
+        return false;
+    }
 }

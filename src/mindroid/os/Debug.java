@@ -17,30 +17,30 @@
 package mindroid.os;
 
 public class Debug {
-	private static Class sDebugCreator = Debug.class;
+    private static Class sDebugCreator = Debug.class;
 
-	public static void setDebugCreator(Class debugCreator) {
-		if (debugCreator != null) {
-			sDebugCreator = debugCreator;
-		}
-	}
+    public static void setDebugCreator(Class debugCreator) {
+        if (debugCreator != null) {
+            sDebugCreator = debugCreator;
+        }
+    }
 
-	public static class Creator {
-		public static Debug createInstance() {
-			if (sDebugCreator != null) {
-				try {
-					return (Debug) sDebugCreator.newInstance();
-				} catch (InstantiationException e) {
-				} catch (IllegalAccessException e) {
-				}
-			}
-			return new Debug();
-		}
-	}
+    public static class Creator {
+        public static Debug createInstance() {
+            if (sDebugCreator != null) {
+                try {
+                    return (Debug) sDebugCreator.newInstance();
+                } catch (InstantiationException e) {
+                } catch (IllegalAccessException e) {
+                }
+            }
+            return new Debug();
+        }
+    }
 
-	public void start(Process process) {
-	}
+    public void start(Process process) {
+    }
 
-	public void stop() {
-	}
+    public void stop() {
+    }
 }

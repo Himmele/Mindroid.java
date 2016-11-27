@@ -26,46 +26,46 @@ package mindroid.os;
  * @see Binder
  */
 public interface IBinder {
-	/**
-	 * Flag to {@link #transact}: this is a one-way call, meaning that the caller returns
-	 * immediately, without waiting for a result from the callee. Applies only if the caller and
-	 * callee are in different processes.
-	 */
-	public static final int FLAG_ONEWAY = 0x00000001;
+    /**
+     * Flag to {@link #transact}: this is a one-way call, meaning that the caller returns
+     * immediately, without waiting for a result from the callee. Applies only if the caller and
+     * callee are in different processes.
+     */
+    public static final int FLAG_ONEWAY = 0x00000001;
 
-	/**
-	 * Get the canonical name of the interface supported by this binder.
-	 */
-	public String getInterfaceDescriptor() throws RemoteException;
+    /**
+     * Get the canonical name of the interface supported by this binder.
+     */
+    public String getInterfaceDescriptor() throws RemoteException;
 
-	/**
-	 * Attempt to retrieve a local implementation of an interface for this Binder object. If null is
-	 * returned, you will need to instantiate a proxy class to marshall calls through the transact()
-	 * method.
-	 */
-	public IInterface queryLocalInterface(String descriptor);
+    /**
+     * Attempt to retrieve a local implementation of an interface for this Binder object. If null is
+     * returned, you will need to instantiate a proxy class to marshall calls through the transact()
+     * method.
+     */
+    public IInterface queryLocalInterface(String descriptor);
 
-	/**
-	 * Perform a generic operation with the object.
-	 * 
-	 * @param what The action to perform.
-	 * @param data data to send to the target. Must not be null.
-	 * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}
-	 * for a one-way RPC.
-	 * @return data to be received from the target. May be null if you are not interested in the
-	 * return value.
-	 */
-	public Object transact(int what, int flags) throws RemoteException;
+    /**
+     * Perform a generic operation with the object.
+     * 
+     * @param what The action to perform.
+     * @param data data to send to the target. Must not be null.
+     * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}
+     * for a one-way RPC.
+     * @return data to be received from the target. May be null if you are not interested in the
+     * return value.
+     */
+    public Object transact(int what, int flags) throws RemoteException;
 
-	public Object transact(int what, Object obj, int flags) throws RemoteException;
+    public Object transact(int what, Object obj, int flags) throws RemoteException;
 
-	public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException;
+    public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException;
 
-	public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException;
+    public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException;
 
-	public Object transact(int what, Bundle data, int flags) throws RemoteException;
+    public Object transact(int what, Bundle data, int flags) throws RemoteException;
 
-	public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException;
+    public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException;
 
-	public boolean runsOnSameThread();
+    public boolean runsOnSameThread();
 }

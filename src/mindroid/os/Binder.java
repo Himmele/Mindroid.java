@@ -33,10 +33,10 @@ import mindroid.util.concurrent.Promise;
  * @see IBinder
  */
 public class Binder implements IBinder {
-	private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
-	private final IMessenger mTarget;
-	private IInterface mOwner;
-	private String mDescriptor;
+    private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
+    private final IMessenger mTarget;
+    private IInterface mOwner;
+    private String mDescriptor;
 
     public Binder() {
         mTarget = new Messenger();
@@ -45,195 +45,195 @@ public class Binder implements IBinder {
     public Binder(final Executor executor) {
         mTarget = new ThreadPoolMessenger(executor);
     }
-	
-	/**
-	 * Convenience method for associating a specific interface with the Binder. After calling,
-	 * queryInterface() will be implemented for you to return the given owner IInterface when the
-	 * corresponding descriptor is requested.
-	 */
-	public void attachInterface(IInterface owner, String descriptor) {
-		mOwner = owner;
-		mDescriptor = descriptor;
-	}
+    
+    /**
+     * Convenience method for associating a specific interface with the Binder. After calling,
+     * queryInterface() will be implemented for you to return the given owner IInterface when the
+     * corresponding descriptor is requested.
+     */
+    public void attachInterface(IInterface owner, String descriptor) {
+        mOwner = owner;
+        mDescriptor = descriptor;
+    }
 
-	/**
-	 * Default implementation returns an empty interface name.
-	 */
-	public String getInterfaceDescriptor() {
-		return mDescriptor;
-	}
+    /**
+     * Default implementation returns an empty interface name.
+     */
+    public String getInterfaceDescriptor() {
+        return mDescriptor;
+    }
 
-	/**
-	 * Use information supplied to attachInterface() to return the associated IInterface if it
-	 * matches the requested descriptor.
-	 */
-	public IInterface queryLocalInterface(String descriptor) {
-		if (mDescriptor.equals(descriptor)) {
-			return mOwner;
-		}
-		return null;
-	}
+    /**
+     * Use information supplied to attachInterface() to return the associated IInterface if it
+     * matches the requested descriptor.
+     */
+    public IInterface queryLocalInterface(String descriptor) {
+        if (mDescriptor.equals(descriptor)) {
+            return mOwner;
+        }
+        return null;
+    }
 
-	/**
-	 * Default implementations rewinds the parcels and calls onTransact. On the remote side,
-	 * transact calls into the binder to do the IPC.
-	 */
-	public Object transact(int what, int flags) throws RemoteException {
-	    Message message = Message.obtain();
+    /**
+     * Default implementations rewinds the parcels and calls onTransact. On the remote side,
+     * transact calls into the binder to do the IPC.
+     */
+    public Object transact(int what, int flags) throws RemoteException {
+        Message message = Message.obtain();
         message.what = what;
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public Object transact(int what, Object obj, int flags) throws RemoteException {
-		Message message = Message.obtain();
+    public Object transact(int what, Object obj, int flags) throws RemoteException {
+        Message message = Message.obtain();
         message.what = what;
         message.obj = obj;
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException {
-		Message message = Message.obtain();
-		message.what = what;
+    public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
         message.arg1 = arg1;
         message.arg2 = arg2;
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException {
-		Message message = Message.obtain();
-		message.what = what;
+    public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
         message.arg1 = arg1;
         message.arg2 = arg2;
         message.obj = obj;
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public Object transact(int what, Bundle data, int flags) throws RemoteException {
-		Message message = Message.obtain();
-		message.what = what;
-		message.setData(data);
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+    public Object transact(int what, Bundle data, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.setData(data);
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException {
-		Message message = Message.obtain();
-		message.what = what;
-		message.arg1 = arg1;
-		message.arg2 = arg2;
-		message.setData(data);
-		if (flags == FLAG_ONEWAY) {
-		    mTarget.send(message);
-			return null;
-		} else {
-			Promise promise = new Promise();
-			message.result = promise;
-			mTarget.send(message);
-			try {
-				return promise.get();
-			} catch (CancellationException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (ExecutionException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			} catch (InterruptedException e) {
-				throw new RemoteException(EXCEPTION_MESSAGE);
-			}
-		}
-	}
+    public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
+        message.setData(data);
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
 
-	public boolean runsOnSameThread() {
-	    return mTarget.runsOnSameThread();
-	}
+    public boolean runsOnSameThread() {
+        return mTarget.runsOnSameThread();
+    }
 
-	/**
-	 * Default implementation is a stub that returns null. You will want to override this to do the
-	 * appropriate unmarshalling of transactions.
-	 * 
-	 * <p>
-	 * If you want to call this, call transact().
-	 */
-	protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
-		return null;
-	}
+    /**
+     * Default implementation is a stub that returns null. You will want to override this to do the
+     * appropriate unmarshalling of transactions.
+     * 
+     * <p>
+     * If you want to call this, call transact().
+     */
+    protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+        return null;
+    }
 
     private interface IMessenger {
         public boolean runsOnSameThread();
