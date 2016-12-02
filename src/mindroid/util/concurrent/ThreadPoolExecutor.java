@@ -116,7 +116,9 @@ public class ThreadPoolExecutor extends Executor {
                 } catch (InterruptedException e) {
                     break;
                 }
-                runnable.run();
+                if (runnable != null) {
+                    runnable.run();
+                }
             }
         }
 
