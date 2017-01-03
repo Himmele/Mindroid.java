@@ -102,12 +102,7 @@ public class Handler {
      * If there isn't one, this handler won't be able to receive messages.
      */
     public Handler() {
-        mLooper = Looper.myLooper();
-        if (mLooper == null) {
-            throw new RuntimeException("Can't create handler inside thread that has not called Looper.prepare()");
-        }
-        mMessageQueue = mLooper.mMessageQueue;
-        mCallback = null;
+        this(Looper.myLooper());
     }
 
     /**
@@ -115,12 +110,7 @@ public class Handler {
      * callback interface in which you can handle messages.
      */
     public Handler(Callback callback) {
-        mLooper = Looper.myLooper();
-        if (mLooper == null) {
-            throw new RuntimeException("Can't create handler inside thread that has not called Looper.prepare()");
-        }
-        mMessageQueue = mLooper.mMessageQueue;
-        mCallback = callback;
+        this(Looper.myLooper(), callback);
     }
 
     /**
@@ -128,6 +118,9 @@ public class Handler {
      */
     public Handler(Looper looper) {
         mLooper = looper;
+        if (mLooper == null) {
+            throw new RuntimeException("Can't create handler inside thread that has not called Looper.prepare()");
+        }
         mMessageQueue = looper.mMessageQueue;
         mCallback = null;
     }
@@ -138,6 +131,9 @@ public class Handler {
      */
     public Handler(Looper looper, Callback callback) {
         mLooper = looper;
+        if (mLooper == null) {
+            throw new RuntimeException("Can't create handler inside thread that has not called Looper.prepare()");
+        }
         mMessageQueue = looper.mMessageQueue;
         mCallback = callback;
     }
