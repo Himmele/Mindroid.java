@@ -89,7 +89,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int v(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, VERBOSE, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, VERBOSE, tag, msg, tr);
     }
 
     /**
@@ -112,7 +112,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int d(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, DEBUG, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, DEBUG, tag, msg, tr);
     }
 
     /**
@@ -135,7 +135,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int i(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, INFO, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, INFO, tag, msg, tr);
     }
 
     /**
@@ -158,7 +158,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int w(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, WARN, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, WARN, tag, msg, tr);
     }
 
     /*
@@ -170,7 +170,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int w(String tag, Throwable tr) {
-        return println(LOG_ID_MAIN, WARN, tag, getStackTraceString(tr));
+        return println(LOG_ID_MAIN, WARN, tag, "", tr);
     }
 
     /**
@@ -193,7 +193,7 @@ public final class Log {
      * @param tr An exception to log
      */
     public static int e(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, ERROR, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, ERROR, tag, msg, tr);
     }
 
     /**
@@ -217,11 +217,11 @@ public final class Log {
      * @param tr An exception to log.
      */
     public static int wtf(String tag, Throwable tr) {
-        return println(LOG_ID_MAIN, WTF, tag, getStackTraceString(tr));
+        return println(LOG_ID_MAIN, WTF, tag, "", tr);
     }
 
     public static int wtf(String tag, String msg, Throwable tr) {
-        return println(LOG_ID_MAIN, WTF, tag, msg + '\n' + getStackTraceString(tr));
+        return println(LOG_ID_MAIN, WTF, tag, msg, tr);
     }
 
     /**
@@ -332,8 +332,21 @@ public final class Log {
         return println(LOG_ID_MAIN, priority, tag, msg);
     }
 
+    public static int println(int priority, String tag, String msg, Throwable tr) {
+        return println(LOG_ID_MAIN, priority, tag, msg, tr);
+    }
+
     /** @hide */
     public static int println(int logId, int priority, String tag, String msg) {
+        return println(logId, priority, tag, msg, null);
+    }
+
+    /** @hide */
+    public static int println(int logId, int priority, String tag, String msg, Throwable tr) {
+        if (tr != null) {
+            msg = msg + '\n' + getStackTraceString(tr);
+        }
+
         switch (logId) {
         case LOG_ID_MAIN:
             sMainLogBuffer.offer(priority, tag, msg);

@@ -42,6 +42,10 @@ public class Binder implements IBinder {
         mTarget = new Messenger();
     }
 
+    public Binder(final Looper looper) {
+        mTarget = new Messenger(looper);
+    }
+
     public Binder(final Executor executor) {
         mTarget = new ThreadPoolMessenger(executor);
     }
@@ -241,17 +245,25 @@ public class Binder implements IBinder {
     }
 
     private class Messenger implements IMessenger {
-        private final Handler mHandler = new Handler() {
-            public void handleMessage(Message message) {
-                try {
-                    Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
-                    if (message.result != null) {
-                        ((Promise) message.result).set(o);
+        private final Handler mHandler;
+
+        public Messenger() {
+            this(Looper.myLooper());
+        }
+
+        public Messenger(Looper looper) {
+            mHandler = new Handler(looper) {
+                public void handleMessage(Message message) {
+                    try {
+                        Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
+                        if (message.result != null) {
+                            ((Promise) message.result).set(o);
+                        }
+                    } catch (RemoteException e) {
                     }
-                } catch (RemoteException e) {
                 }
-            }
-        };
+            };
+        }
 
         public boolean runsOnSameThread() {
             return mHandler.getLooper().isCurrentThread();
