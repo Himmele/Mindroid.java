@@ -126,7 +126,7 @@ public final class SystemClock {
      * @return milliseconds of non-sleep uptime since boot.
      */
     public static long uptimeMillis() {
-        return System.currentTimeMillis();
+        return System.nanoTime() / 1000000;
     }
 
     /**
