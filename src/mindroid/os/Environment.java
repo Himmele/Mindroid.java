@@ -117,6 +117,9 @@ public class Environment {
      * Gets the Mindroid preferences directory.
      */
     public static File getPreferencesDirectory() {
+        if (!PREFERENCES_DIRECTORY.exists()) {
+            PREFERENCES_DIRECTORY.mkdirs();
+        }
         return PREFERENCES_DIRECTORY;
     }
     
@@ -124,6 +127,9 @@ public class Environment {
      * Gets the Mindroid cache directory.
      */
     public static File getCacheDirectory() {
+        if (!CACHE_DIRECTORY.exists()) {
+            CACHE_DIRECTORY.mkdirs();
+        }
         return CACHE_DIRECTORY;
     }
     
@@ -138,6 +144,9 @@ public class Environment {
      * Gets the Mindroid log directory.
      */
     public static File getLogDirectory() {
+        if (!LOG_DIRECTORY.exists()) {
+            LOG_DIRECTORY.mkdirs();
+        }
         return LOG_DIRECTORY;
     }
 
