@@ -43,7 +43,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 public final class SharedPreferencesImpl implements SharedPreferences {
-    private static final String LOG_TAG = "SharedPreferencesImpl";
+    private static final String LOG_TAG = "SharedPreferences";
     private static final String UTF_8 = "UTF-8";
     private static final int SIZE_16_KB = 16 * 1024;
     private final static String MAP_TAG = "map";

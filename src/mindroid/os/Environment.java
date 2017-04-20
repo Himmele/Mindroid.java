@@ -30,6 +30,8 @@ public class Environment {
     private static File APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
     private static File DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
     private static File PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+    private static File CACHE_DIRECTORY = new File(ROOT_DIRECTORY, "cache");
+    private static File CERTIFICATE_DIRECTORY = new File(ROOT_DIRECTORY, "certs");
     private static File LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
     private static final HashMap sSharedPrefs = new HashMap();
 
@@ -43,7 +45,51 @@ public class Environment {
         APPS_DIRECTORY = new File(ROOT_DIRECTORY, "apps");
         DATA_DIRECTORY = new File(ROOT_DIRECTORY, "data");
         PREFERENCES_DIRECTORY = new File(ROOT_DIRECTORY, "prefs");
+        CACHE_DIRECTORY = new File(ROOT_DIRECTORY, "cache");
+        CERTIFICATE_DIRECTORY = new File(ROOT_DIRECTORY, "certs");
         LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
+    }
+    
+    /**
+     * Sets the Mindroid apps directory.
+     */
+    public static void setAppsDirectory(String directory) {
+        APPS_DIRECTORY = new File(directory);
+    }
+    
+    /**
+     * Sets the Mindroid data directory.
+     */
+    public static void setDataDirectory(String directory) {
+        DATA_DIRECTORY = new File(directory);
+    }
+    
+    /**
+     * Sets the Mindroid preferences directory.
+     */
+    public static void setPreferencesDirectory(String directory) {
+        PREFERENCES_DIRECTORY = new File(directory);
+    }
+    
+    /**
+     * Sets the Mindroid cache directory.
+     */
+    public static void setCacheDirectory(String directory) {
+        CACHE_DIRECTORY = new File(directory);
+    }
+    
+    /**
+     * Sets the Mindroid certificates directory.
+     */
+    public static void setCertificatesDirectory(String directory) {
+        CERTIFICATE_DIRECTORY = new File(directory);
+    }
+    
+    /**
+     * Sets the Mindroid log directory.
+     */
+    public static void setLogDirectory(String directory) {
+        LOG_DIRECTORY = new File(directory);
     }
 
     /**
@@ -73,6 +119,20 @@ public class Environment {
     public static File getPreferencesDirectory() {
         return PREFERENCES_DIRECTORY;
     }
+    
+    /**
+     * Gets the Mindroid cache directory.
+     */
+    public static File getCacheDirectory() {
+        return CACHE_DIRECTORY;
+    }
+    
+    /**
+     * Gets the Mindroid certificates directory.
+     */
+    public static File getCertificatesDirectory() {
+        return CERTIFICATE_DIRECTORY;
+    }
 
     /**
      * Gets the Mindroid log directory.
@@ -81,13 +141,6 @@ public class Environment {
         return LOG_DIRECTORY;
     }
 
-    /**
-     * Sets the Mindroid log directory.
-     */
-    public static void setLogDirectory(String directory) {
-        LOG_DIRECTORY = new File(directory);
-    }
-    
     /**
      * Retrieve and hold the contents of the preferences file 'fileName', returning a SharedPreferences
      * through which you can retrieve and modify its values. Only one instance of the
