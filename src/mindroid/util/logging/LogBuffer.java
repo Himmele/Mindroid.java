@@ -24,7 +24,7 @@ public class LogBuffer {
     private static final int THREAD_ID_SIZE = 4;
     private static final int TAG_SIZE = 4;
     private static final int MESSAGE_SIZE = 4;
-    private String[] mLogLevels = { "V", "D", "I", "W", "E", "A" };
+    private static final String[] sLogLevels = { "V", "D", "I", "W", "E", "A" };
 
     private final int ID;
     private final int SIZE;
@@ -52,12 +52,12 @@ public class LogBuffer {
         }
 
         public String toShortString() {
-            return mLogLevels[mPriority] + "/" + mTag + "(" + toHexString(mThreadId) + "): " + mMessage;
+            return sLogLevels[mPriority] + "/" + mTag + "(" + toHexString(mThreadId) + "): " + mMessage;
         }
 
         public String toString() {
             mCalendar.setTimeInMillis(mTimestamp);
-            return mCalendar.toString() + "  " + toHexString(mThreadId) + "  " + mLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
+            return mCalendar.toString() + "  " + toHexString(mThreadId) + "  " + sLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
         }
 
         public int getLogId() {

@@ -193,7 +193,7 @@ public class ContextImpl extends Context {
 
     private File getPreferencesDir() {
         if (!Environment.getPreferencesDirectory().exists()) {
-            Environment.getPreferencesDirectory().mkdir();
+            Environment.getPreferencesDirectory().mkdirs();
         }
         return Environment.getPreferencesDirectory();
     }

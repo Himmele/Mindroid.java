@@ -272,7 +272,7 @@ public final class ServiceManager {
                             Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be stopped");
                         }
                     }
-                }, mMainHandler);
+                });
 
                 try {
                     process.stopService(service, callback.asInterface());
@@ -468,7 +468,7 @@ public final class ServiceManager {
                         }
                     }
                 }
-            }, mMainHandler);
+            });
 
             try {
                 process.createService(service, callback.asInterface());
@@ -497,7 +497,7 @@ public final class ServiceManager {
                     Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be started in process " + serviceRecord.processRecord.name);
                 }
             }
-        }, mMainHandler);
+        });
 
         try {
             serviceRecord.processRecord.process.startService(service, 0, mStartId++, callback.asInterface());

@@ -25,6 +25,7 @@ import mindroid.util.logging.LogBuffer.LogRecord;
 public class ConsoleHandler {
     public static final int FLAG_TIMESTAMP = 1;
     private static final int MAX_SYSOUT_LINE_LENGTH = 255;
+
     private int mFlags = 0;
 
     /**

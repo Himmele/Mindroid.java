@@ -22,8 +22,9 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -53,8 +54,8 @@ public class PackageManagerService extends Service {
     private static final int MSG_BOOT_COMPLETED = 2;
     private static final String UTF_8 = "UTF-8";
     private Thread mThread = null;
-    private HashMap mPackages = new HashMap();
-    private HashMap mComponents = new HashMap();
+    private Map mPackages = new LinkedHashMap();
+    private Map mComponents = new LinkedHashMap();
     private List mListeners = new ArrayList();
     private boolean mBootCompleted = false;
 
@@ -171,6 +172,7 @@ public class PackageManagerService extends Service {
             });
 
             if (apps != null) {
+                Arrays.sort(apps);
                 for (int i = 0; i < apps.length; i++) {
                     ZipInputStream inputStream = null;
                     try {

@@ -315,7 +315,7 @@ public class FileHandler {
         public Writer(File file, boolean append) throws IOException {
             if (!file.exists()) {
                 if (file.getParentFile() != null && !file.getParentFile().exists()) {
-                    file.getParentFile().mkdir();
+                    file.getParentFile().mkdirs();
                 }
                 file.createNewFile();
             }
