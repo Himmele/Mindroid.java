@@ -17,13 +17,15 @@
 package mindroid.util.concurrent;
 
 public class ThreadPoolExecutor extends Executor {
-    private final int THREAD_POOL_SIZE;
+    private final String mName;
+    private final int mSize;
     private WorkerThread[] mWorkerThreads;
     private LinkedBlockingQueue mQueue;
 
-    public ThreadPoolExecutor(int threadPoolSize) {
-        THREAD_POOL_SIZE = threadPoolSize;
-        mWorkerThreads = new WorkerThread[THREAD_POOL_SIZE];
+    public ThreadPoolExecutor(String name, int size) {
+        mName = name;
+        mSize = size;
+        mWorkerThreads = new WorkerThread[mSize];
         mQueue = new LinkedBlockingQueue();
         start();
     }
@@ -33,8 +35,8 @@ public class ThreadPoolExecutor extends Executor {
     }
 
     public void start() {
-        for (int i = 0; i < THREAD_POOL_SIZE; i++) {
-            mWorkerThreads[i] = new WorkerThread("ThreadPoolExecutor[Worker " + i + "]");
+        for (int i = 0; i < mSize; i++) {
+            mWorkerThreads[i] = new WorkerThread((mName != null ? mName : "ThreadPoolExecutor") + "[Worker " + i + "]");
             mWorkerThreads[i].setPriority(Thread.MIN_PRIORITY);
             mWorkerThreads[i].setQueue(mQueue);
             mWorkerThreads[i].start();
@@ -42,11 +44,11 @@ public class ThreadPoolExecutor extends Executor {
     }
 
     public void shutdown() {
-        for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+        for (int i = 0; i < mSize; i++) {
             mWorkerThreads[i].interrupt();
             mQueue.put(null);
         }
-        for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+        for (int i = 0; i < mSize; i++) {
             try {
                 mWorkerThreads[i].join();
             } catch (InterruptedException e) {

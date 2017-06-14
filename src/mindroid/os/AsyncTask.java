@@ -178,7 +178,7 @@ public abstract class AsyncTask {
     private boolean mCancelled;
 
     public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor();
-    public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor(4);
+    public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor("AsyncTask", 4);
 
     public AsyncTask() {
         mExecutor = null;
