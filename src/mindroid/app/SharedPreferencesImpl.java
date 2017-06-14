@@ -261,6 +261,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             return;
         }
         if (mBackupFile.exists()) {
+            Log.d(LOG_TAG, "Backup file " + mBackupFile + " found, restoring to " + mFile);
             if (!mFile.delete()) {
                 Log.e(LOG_TAG, "Cannot delete file " + mFile + " to restore backup file " + mBackupFile);
             }
