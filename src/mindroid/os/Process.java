@@ -40,6 +40,7 @@ import mindroid.util.concurrent.Promise;
 
 public class Process {
     private static final String LOG_TAG = "Process";
+    private static HashMap sPids = new HashMap();
     private final String mName;
     private final ThreadGroup mThreadGroup;
     private final HandlerThread mMainThread;
@@ -50,7 +51,7 @@ public class Process {
     private final Debug mDebug;
     private boolean mUncaughtException = false;
 
-    public Process(String name) {
+    Process(String name) {
         mName = name;
         mThreadGroup = new ThreadGroup("Process {" + name + "}") {
             public void uncaughtException(Thread thread, Throwable e) {
@@ -71,8 +72,13 @@ public class Process {
         mDebug = Debug.Creator.createInstance();
     }
 
-    public IProcess start() {
+    IProcess start() {
         Log.d(LOG_TAG, "Starting process " + mName);
+
+        synchronized (sPids) {
+            sPids.put(new Integer(getId()), mName);
+        }
+
         mMainThread.start();
         mMainHandler = new Handler(mMainThread.getLooper());
         final Promise promise = new Promise();
@@ -95,7 +101,7 @@ public class Process {
         return IProcess.Stub.asInterface(mStub);
     }
 
-    public void stop(long timeout) {
+    void stop(long timeout) {
         Log.d(LOG_TAG, "Stopping process " + mName);
 
         mDebug.stop();
@@ -136,26 +142,34 @@ public class Process {
         } catch (InterruptedException e) {
         }
 
+        synchronized (sPids) {
+            sPids.remove(new Integer(getId()));
+        }
+
         Log.d(LOG_TAG, "Process " + mName + " has been stopped");
     }
 
-    public String getName() {
+    int getId() {
+        return mThreadGroup.hashCode();
+    }
+
+    String getName() {
         return mName;
     }
 
-    public ThreadGroup getThreadGroup() {
+    ThreadGroup getThreadGroup() {
         return mThreadGroup;
     }
 
-    public HandlerThread getMainThread() {
+    HandlerThread getMainThread() {
         return mMainThread;
     }
 
-    public boolean isAlive() {
+    boolean isAlive() {
         return mMainThread.isAlive();
     }
 
-    class ProcessImpl extends IProcess.Stub {
+    private class ProcessImpl extends IProcess.Stub {
         public void createService(Intent intent, IRemoteCallback callback) throws RemoteException {
             Service service = null;
             Bundle result = new Bundle();
@@ -373,6 +387,23 @@ public class Process {
             if (callback != null) {
                 callback.sendResult(result);
             }
+        }
+    }
+
+    /**
+     * Returns the identifier of this process.
+     */
+    public static final int myPid() {
+        ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
+        if (threadGroup != null) {
+            return threadGroup.hashCode();
+        }
+        return 0;
+    }
+
+    public static final String getName(int pid) {
+        synchronized (sPids) {
+            return (String) sPids.get(new Integer(pid));
         }
     }
 }

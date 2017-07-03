@@ -45,10 +45,22 @@ public interface IPackageManager extends IInterface {
 
         protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
             switch (what) {
+            case MSG_GET_INSTALLED_PACKAGES: {
+                List packages = getInstalledPackages(arg1);
+                return packages;
+            }
             case MSG_RESOLVE_SERVICE: {
                 Intent intent = (Intent) obj;
                 ResolveInfo resolveInfo = resolveService(intent, arg1);
                 return resolveInfo;
+            }
+            case MSG_CHECK_PERMISSION: {
+                int permission = checkPermission((String) obj, arg1);
+                return new Integer(permission);
+            }
+            case MSG_GET_PERMISSIONS: {
+                String[] permissions = getPermissions(arg1);
+                return permissions;
             }
             case MSG_ADD_LISTENER: {
                 addListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
@@ -57,10 +69,6 @@ public interface IPackageManager extends IInterface {
             case MSG_REMOVE_LISTENER: {
                 removeListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
                 return null;
-            }
-            case MSG_GET_INSTALLED_PACKAGES: {
-                List packages = getInstalledPackages(arg1);
-                return packages;
             }
             default:
                 return super.onTransact(what, arg1, arg2, obj, data);
@@ -92,9 +100,24 @@ public interface IPackageManager extends IInterface {
                 return mRemote.hashCode();
             }
 
+            public List getInstalledPackages(int flags) throws RemoteException {
+                List packages = (List) mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, 0);
+                return packages;
+            }
+
             public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
                 ResolveInfo resolveInfo = (ResolveInfo) mRemote.transact(MSG_RESOLVE_SERVICE, flags, 0, intent, 0);
                 return resolveInfo;
+            }
+
+            public int checkPermission(String permissionName, int pid) throws RemoteException {
+                Integer permission = (Integer) mRemote.transact(MSG_CHECK_PERMISSION, pid, 0, permissionName, 0);
+                return permission.intValue();
+            }
+
+            public String[] getPermissions(int pid) throws RemoteException {
+                String[] permissions = (String[]) mRemote.transact(MSG_GET_PERMISSIONS, pid, 0, 0);
+                return permissions;
             }
 
             public void addListener(IPackageManagerListener listener) throws RemoteException {
@@ -103,11 +126,6 @@ public interface IPackageManager extends IInterface {
 
             public void removeListener(IPackageManagerListener listener) throws RemoteException {
                 mRemote.transact(MSG_REMOVE_LISTENER, listener.asBinder(), FLAG_ONEWAY);
-            }
-
-            public List getInstalledPackages(int flags) throws RemoteException {
-                List packages = (List) mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, 0);
-                return packages;
             }
         }
 
@@ -156,6 +174,22 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            public int checkPermission(String permissionName, int pid) throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    return mStub.checkPermission(permissionName, pid);
+                } else {
+                    return mProxy.checkPermission(permissionName, pid);
+                }
+            }
+
+            public String[] getPermissions(int pid) throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    return mStub.getPermissions(pid);
+                } else {
+                    return mProxy.getPermissions(pid);
+                }
+            }
+
             public void addListener(IPackageManagerListener listener) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.addListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
@@ -175,13 +209,19 @@ public interface IPackageManager extends IInterface {
 
         static final int MSG_GET_INSTALLED_PACKAGES = 1;
         static final int MSG_RESOLVE_SERVICE = 2;
-        static final int MSG_ADD_LISTENER = 3;
-        static final int MSG_REMOVE_LISTENER = 4;
+        static final int MSG_CHECK_PERMISSION = 3;
+        static final int MSG_GET_PERMISSIONS = 4;
+        static final int MSG_ADD_LISTENER = 5;
+        static final int MSG_REMOVE_LISTENER = 6;
     }
 
     public List getInstalledPackages(int flags) throws RemoteException;
 
     public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException;
+
+    public int checkPermission(String permissionName, int pid) throws RemoteException;
+
+    public String[] getPermissions(int pid) throws RemoteException;
 
     public void addListener(IPackageManagerListener listener) throws RemoteException;
 

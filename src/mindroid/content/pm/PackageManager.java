@@ -37,6 +37,18 @@ public class PackageManager {
      */
     public static final int GET_SERVICES = 0x00000004;
 
+    /**
+     * Permission check result: this is returned by {@link #checkPermission}
+     * if the permission has been granted to the given package.
+     */
+    public static final int PERMISSION_GRANTED = 0;
+
+    /**
+     * Permission check result: this is returned by {@link #checkPermission}
+     * if the permission has not been granted to the given package.
+     */
+    public static final int PERMISSION_DENIED = -1;
+
     public PackageManager(Context context) {
         mService = IPackageManager.Stub.asInterface(context.getSystemService(Context.PACKAGE_MANAGER));
     }
@@ -72,6 +84,36 @@ public class PackageManager {
     public ResolveInfo resolveService(Intent intent, int flags) {
         try {
             return mService.resolveService(intent, flags);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
+
+    /**
+     * Check whether a particular package has been granted a particular
+     * permission.
+     *
+     * @param permissionName The name of the permission you are checking for.
+     * @param pid The process id you are checking against.
+     *
+     * @return If the package has the permission, PERMISSION_GRANTED is
+     * returned.  If it does not have the permission, PERMISSION_DENIED
+     * is returned.
+     *
+     * @see #PERMISSION_GRANTED
+     * @see #PERMISSION_DENIED
+     */
+    public int checkPermission(String permissionName, int pid) {
+        try {
+            return mService.checkPermission(permissionName, pid);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
+
+    public String[] getPermissions(int pid) {
+        try {
+            return mService.getPermissions(pid);
         } catch (RemoteException e) {
             throw new RuntimeException("System failure");
         }

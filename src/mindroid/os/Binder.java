@@ -17,6 +17,7 @@
 
 package mindroid.os;
 
+import mindroid.util.Log;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Executor;
@@ -33,21 +34,26 @@ import mindroid.util.concurrent.Promise;
  * @see IBinder
  */
 public class Binder implements IBinder {
+    private static final String LOG_TAG = "Binder";
     private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
+    private static final ThreadLocal sCallingPid = new ThreadLocal();
     private final IMessenger mTarget;
     private IInterface mOwner;
     private String mDescriptor;
 
     public Binder() {
         mTarget = new Messenger();
+        setCallingPid(Process.myPid());
     }
 
     public Binder(final Looper looper) {
         mTarget = new Messenger(looper);
+        setCallingPid(Process.myPid());
     }
 
     public Binder(final Executor executor) {
         mTarget = new ThreadPoolMessenger(executor);
+        setCallingPid(Process.myPid());
     }
     
     /**
@@ -79,164 +85,170 @@ public class Binder implements IBinder {
     }
 
     /**
-     * Default implementations rewinds the parcels and calls onTransact. On the remote side,
-     * transact calls into the binder to do the IPC.
+     * Return the ID of the process that sent you the current transaction
+     * that is being processed.  This pid can be used with higher-level
+     * system services to determine its identity and check permissions.
+     * If the current thread is not currently executing an incoming transaction,
+     * then its own pid is returned.
      */
-    public Object transact(int what, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
+    public static final int getCallingPid() {
+        Integer callingPid = (Integer) sCallingPid.get();
+        if (callingPid != null) {
+            return callingPid.intValue();
         } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
+            return 0;
         }
     }
 
-    public Object transact(int what, Object obj, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.obj = obj;
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
-        } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
+    private static final int setCallingPid(int pid) {
+        int origPid = 0;
+        Integer callingPid = (Integer) sCallingPid.get();
+        if (callingPid != null) {
+            origPid = callingPid.intValue();
         }
-    }
-
-    public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
-        } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
-        }
-    }
-
-    public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        message.obj = obj;
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
-        } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
-        }
-    }
-
-    public Object transact(int what, Bundle data, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.setData(data);
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
-        } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
-        }
-    }
-
-    public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        message.setData(data);
-        if (flags == FLAG_ONEWAY) {
-            mTarget.send(message);
-            return null;
-        } else {
-            Promise promise = new Promise();
-            message.result = promise;
-            mTarget.send(message);
-            try {
-                return promise.get();
-            } catch (CancellationException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (ExecutionException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            } catch (InterruptedException e) {
-                throw new RemoteException(EXCEPTION_MESSAGE);
-            }
-        }
-    }
-
-    public boolean runsOnSameThread() {
-        return mTarget.runsOnSameThread();
+        sCallingPid.set(new Integer(pid));
+        return origPid;
     }
 
     /**
      * Default implementation is a stub that returns null. You will want to override this to do the
      * appropriate unmarshalling of transactions.
-     * 
+     *
      * <p>
      * If you want to call this, call transact().
      */
     protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
         return null;
+    }
+
+    /**
+     * Default implementations rewinds the parcels and calls onTransact. On the remote side,
+     * transact calls into the binder to do the IPC.
+     */
+    public final Object transact(int what, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        return transact(message, flags);
+    }
+
+    public final Object transact(int what, Object obj, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.obj = obj;
+        return transact(message, flags);
+    }
+
+    public final Object transact(int what, int arg1, int arg2, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
+        return transact(message, flags);
+    }
+
+    public final Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
+        message.obj = obj;
+        return transact(message, flags);
+    }
+
+    public final Object transact(int what, Bundle data, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.setData(data);
+        return transact(message, flags);
+    }
+
+    public final Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException {
+        Message message = Message.obtain();
+        message.what = what;
+        message.arg1 = arg1;
+        message.arg2 = arg2;
+        message.setData(data);
+        return transact(message, flags);
+    }
+
+    private final Object transact(Message message, int flags) throws RemoteException {
+        message.sendingPid = Process.myPid();
+        if (flags == FLAG_ONEWAY) {
+            mTarget.send(message);
+            return null;
+        } else {
+            Promise promise = new Promise();
+            message.result = promise;
+            mTarget.send(message);
+            try {
+                return promise.get();
+            } catch (CancellationException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            } catch (ExecutionException e) {
+                if (e.getCause() != null) {
+                    if (e.getCause() instanceof RemoteException) {
+                        throw (RemoteException) e.getCause();
+                    } else if (e.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) e.getCause();
+                    }
+                }
+                throw new RemoteException(EXCEPTION_MESSAGE, e.getCause());
+            } catch (InterruptedException e) {
+                throw new RemoteException(EXCEPTION_MESSAGE);
+            }
+        }
+    }
+
+    private final void onTransact(final Message message) {
+        final int origPid = setCallingPid(message.sendingPid);
+        try {
+            Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
+            if (message.result != null) {
+                ((Promise) message.result).set(o);
+            }
+        } catch (RemoteException e) {
+            Throwable caughtException = checkException(e);
+            if (message.result != null) {
+                ((Promise) message.result).setException(caughtException);
+            } else {
+                Log.w(LOG_TAG, EXCEPTION_MESSAGE, e);
+            }
+        } catch (RuntimeException e) {
+            Throwable caughtException = checkException(e);
+            if (message.result != null) {
+                ((Promise) message.result).setException(caughtException);
+            } else {
+                Log.w(LOG_TAG, EXCEPTION_MESSAGE, e);
+            }
+        } finally {
+            setCallingPid(origPid);
+        }
+    }
+
+    public final boolean runsOnSameThread() {
+        return mTarget.runsOnSameThread();
+    }
+
+    private final Throwable checkException(Exception e) throws RuntimeException {
+        Throwable caughtException = null;
+        if (e instanceof SecurityException) {
+            caughtException = e;
+        } else if (e instanceof IllegalArgumentException) {
+            caughtException = e;
+        } else if (e instanceof IllegalStateException) {
+            caughtException = e;
+        } else if (e instanceof UnsupportedOperationException) {
+            caughtException = e;
+        } else if (e instanceof RemoteException) {
+            caughtException = e;
+        }
+        if (caughtException == null) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
+            throw new RuntimeException(e);
+        }
+        return caughtException;
     }
 
     private interface IMessenger {
@@ -254,13 +266,7 @@ public class Binder implements IBinder {
         public Messenger(Looper looper) {
             mHandler = new Handler(looper) {
                 public void handleMessage(Message message) {
-                    try {
-                        Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
-                        if (message.result != null) {
-                            ((Promise) message.result).set(o);
-                        }
-                    } catch (RemoteException e) {
-                    }
+                    onTransact(message);
                 }
             };
         }
@@ -282,22 +288,16 @@ public class Binder implements IBinder {
             mExecutor = executor;
         }
 
+        public boolean runsOnSameThread() {
+            return false;
+        }
+
         public void send(final Message message) {
             mExecutor.execute(new Runnable() {
                 public void run() {
-                    try {
-                        Object o = onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData());
-                        if (message.result != null) {
-                            ((Promise) message.result).set(o);
-                        }
-                    } catch (RemoteException e) {
-                    }
+                    onTransact(message);
                 }
             });
-        }
-
-        public boolean runsOnSameThread() {
-            return false;
         }
     }
 }

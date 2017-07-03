@@ -364,4 +364,11 @@ public final class Message {
      * @hide
      */
     public Future result;
+
+    /**
+     * Optional field indicating the sender pid of the message.
+     *
+     * @hide
+     */
+    public int sendingPid = -1;
 }

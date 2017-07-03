@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +42,7 @@ import mindroid.os.Environment;
 import mindroid.os.Handler;
 import mindroid.os.IBinder;
 import mindroid.os.Message;
+import mindroid.os.Process;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
@@ -49,13 +52,15 @@ public class PackageManagerService extends Service {
     private static final String MANIFEST_TAG = "manifest";
     private static final String APPLICATION_TAG = "application";
     private static final String USES_LIBRARY_TAG = "uses-library";
+    private static final String USES_PERMISSION_TAG = "uses-permission";
     private static final String SERVICE_TAG = "service";
     private static final int MSG_ADD_PACKAGE = 1;
     private static final int MSG_BOOT_COMPLETED = 2;
     private static final String UTF_8 = "UTF-8";
     private Thread mThread = null;
     private Map mPackages = new LinkedHashMap();
-    private Map mComponents = new LinkedHashMap();
+    private Map mComponents = new HashMap();
+    private Map mPermissions = new HashMap();
     private List mListeners = new ArrayList();
     private boolean mBootCompleted = false;
 
@@ -105,6 +110,28 @@ public class PackageManagerService extends Service {
             return resolveInfo;
         }
 
+        public int checkPermission(String permissionName, int pid) throws RemoteException {
+            String process = Process.getName(pid);
+            if (process != null) {
+                HashSet permissions = (HashSet) mPermissions.get(process);
+                if (permissions != null && permissions.contains(permissionName)) {
+                    return PackageManager.PERMISSION_GRANTED;
+                }
+            }
+            return PackageManager.PERMISSION_DENIED;
+        }
+
+        public String[] getPermissions(int pid) throws RemoteException {
+            String process = Process.getName(pid);
+            if (process != null) {
+                HashSet permissions = (HashSet) mPermissions.get(process);
+                if (permissions != null) {
+                    return (String[]) permissions.toArray(new String[permissions.size()]);
+                }
+            }
+            return null;
+        }
+
         public void addListener(IPackageManagerListener listener) {
             if (!mListeners.contains(listener)) {
                 mListeners.add(listener);
@@ -134,6 +161,15 @@ public class PackageManagerService extends Service {
                 for (int i = 0; i < packageInfo.services.length; i++) {
                     ServiceInfo si = (ServiceInfo) packageInfo.services[i];
                     mComponents.put(new ComponentName(si.packageName, si.name), si);
+                }
+
+                if (packageInfo.applicationInfo.permissions != null) {
+                    final String processName = packageInfo.applicationInfo.processName;
+                    if (!mPermissions.containsKey(processName)) {
+                        mPermissions.put(processName, new HashSet());
+                    }
+                    HashSet permissions = (HashSet) mPermissions.get(processName);
+                    permissions.addAll(Arrays.asList(packageInfo.applicationInfo.permissions));
                 }
                 break;
             case MSG_BOOT_COMPLETED:
@@ -285,12 +321,18 @@ public class PackageManagerService extends Service {
         ai.enabled = enabled;
 
         List libraries = new ArrayList();
+        List permissions = new ArrayList();
         List services = new ArrayList();
         for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(USES_LIBRARY_TAG)) {
                 String library = parseLibrary(parser);
                 if (library != null) {
                     libraries.add(library);
+                }
+            } else if (parser.getName().equals(USES_PERMISSION_TAG)) {
+                String permission = parsePermission(parser);
+                if (permission != null) {
+                    permissions.add(permission);
                 }
             } else if (parser.getName().equals(SERVICE_TAG)) {
                 ServiceInfo si = parseService(parser, ai);
@@ -310,6 +352,9 @@ public class PackageManagerService extends Service {
 
         if (!libraries.isEmpty()) {
             ai.libraries = (String[]) libraries.toArray(new String[libraries.size()]);
+        }
+        if (!permissions.isEmpty()) {
+            ai.permissions = (String[]) permissions.toArray(new String[permissions.size()]);
         }
 
         parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);
@@ -342,6 +387,28 @@ public class PackageManagerService extends Service {
         } else {
             return null;
         }
+    }
+
+    String parsePermission(KXmlParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, null, USES_PERMISSION_TAG);
+
+        String name = null;
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            String attributeName = parser.getAttributeName(i);
+            String attributeValue = parser.getAttributeValue(i);
+            if (attributeName.equals("name")) {
+                name = attributeValue;
+            }
+        }
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(USES_PERMISSION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            String tag = parser.getName();
+            parser.skipSubTree();
+            parser.require(XmlPullParser.END_TAG, null, tag);
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, USES_PERMISSION_TAG);
+        return name;
     }
 
     ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {

@@ -57,6 +57,8 @@ public class ApplicationInfo {
      */
     public String[] libraries = null;
 
+    public String[] permissions = null;
+
     public String fileName = null;
 
     public ApplicationInfo() {

@@ -20,6 +20,7 @@ import mindroid.os.SystemClock;
 
 public class Promise implements Future {
     private Object mObject = null;
+    private Throwable mThrowable = null;
     private boolean mIsDone = false;
     private boolean mIsCancelled = false;
 
@@ -55,6 +56,9 @@ public class Promise implements Future {
                 throw e;
             }
         }
+        if (mThrowable != null) {
+            throw new ExecutionException(mThrowable);
+        }
         return mObject;
     }
 
@@ -75,12 +79,26 @@ public class Promise implements Future {
         if (!isDone() && !isCancelled()) {
             throw new TimeoutException("Future timed out");
         }
+        if (mThrowable != null) {
+            throw new ExecutionException(mThrowable);
+        }
         return mObject;
     }
 
     public synchronized boolean set(Object object) {
         if (!mIsCancelled) {
             mObject = object;
+            mIsDone = true;
+            notify();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public synchronized boolean setException(Throwable throwable) {
+        if (!mIsCancelled) {
+            mThrowable = throwable;
             mIsDone = true;
             notify();
             return true;

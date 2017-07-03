@@ -29,6 +29,14 @@ public class RemoteException extends Exception {
         super(message);
     }
 
+    public RemoteException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public RemoteException(Throwable cause) {
+        super(cause);
+    }
+
     /** {@hide} */
     public RuntimeException rethrowAsRuntimeException() {
         throw new RuntimeException(this);
