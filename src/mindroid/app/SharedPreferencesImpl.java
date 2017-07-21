@@ -626,7 +626,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
     }
 
     private static final Element writeValue(String name, Object value) throws XmlPullParserException, java.io.IOException {
-        if (value == null) {
+        if (name == null || value == null) {
             return null;
         } else if (value instanceof Boolean) {
             Element element = new Element();

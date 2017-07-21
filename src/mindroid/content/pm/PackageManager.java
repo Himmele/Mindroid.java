@@ -21,6 +21,7 @@ import java.util.List;
 import mindroid.content.Context;
 import mindroid.content.Intent;
 import mindroid.os.RemoteException;
+import mindroid.os.ServiceManager;
 
 /**
  * Class for retrieving various kinds of information related to the application packages that are
@@ -48,6 +49,13 @@ public class PackageManager {
      * if the permission has not been granted to the given package.
      */
     public static final int PERMISSION_DENIED = -1;
+
+    /**
+     * @hide
+     */
+    public PackageManager() {
+        mService = IPackageManager.Stub.asInterface(ServiceManager.getSystemService(Context.PACKAGE_MANAGER));
+    }
 
     public PackageManager(Context context) {
         mService = IPackageManager.Stub.asInterface(context.getSystemService(Context.PACKAGE_MANAGER));
