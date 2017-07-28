@@ -247,6 +247,10 @@ public class LogBuffer {
         mWriteIndex = 0;
     }
 
+    public int getId() {
+        return ID;
+    }
+
     private void write(final byte[] data) {
         if (mWriteIndex + data.length < SIZE) {
             System.arraycopy(data, 0, mData, mWriteIndex, data.length);

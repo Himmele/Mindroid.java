@@ -22,7 +22,7 @@ import mindroid.util.logging.LogBuffer.LogRecord;
 /**
  * A handler that writes log messages to the standard output stream {@code System.out}.
  */
-public class ConsoleHandler {
+public class ConsoleHandler extends Handler {
     public static final int FLAG_TIMESTAMP = 1;
     private static final int MAX_SYSOUT_LINE_LENGTH = 255;
 
@@ -38,6 +38,9 @@ public class ConsoleHandler {
      * Flushes and closes all opened files.
      */
     public void close() {
+    }
+
+    public void flush() {
     }
 
     /**

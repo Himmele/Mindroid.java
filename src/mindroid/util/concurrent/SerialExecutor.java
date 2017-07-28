@@ -24,7 +24,11 @@ public class SerialExecutor extends Executor {
     private Handler mHandler;
 
     public SerialExecutor() {
-        mHandlerThread = new HandlerThread("SerialExecutor");
+        this("SerialExecutor");
+    }
+
+    public SerialExecutor(String name) {
+        mHandlerThread = new HandlerThread((name != null ? name : "SerialExecutor") + "[Worker]");
         mHandlerThread.setPriority(Thread.MIN_PRIORITY);
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());

@@ -18,12 +18,16 @@
 package mindroid.util.logging;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-
+import mindroid.os.Environment;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
 /**
@@ -53,7 +57,7 @@ import mindroid.util.logging.LogBuffer.LogRecord;
  * specified in the pattern, then the generation number after a dot will be added to the end of the
  * file name.
  */
-public class FileHandler {
+public class FileHandler extends Handler {
     private static final int DEFAULT_COUNT = 1;
     private static final int DEFAULT_LIMIT = 0;
     private static final boolean DEFAULT_APPEND = false;
@@ -286,7 +290,16 @@ public class FileHandler {
                 mWriter.close();
                 mWriter = null;
             }
-        } catch (IOException e) {
+        } catch (IOException ignore) {
+        }
+    }
+
+    public void flush() {
+        try {
+            if (mWriter != null) {
+                mWriter.flush();
+            }
+        } catch (IOException ignore) {
         }
     }
 
@@ -296,16 +309,81 @@ public class FileHandler {
      * @param record The log record.
      */
     public synchronized void publish(LogRecord record) {
+        String logMessage = record.toString();
+        if (mLimit > 0 && (mWriter.getSize() + logMessage.length() + 2) >= mLimit) {
+            findNextGeneration();
+        }
         try {
-            mWriter.write(record.toString());
+            mWriter.write(logMessage);
             mWriter.newLine();
             mWriter.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (mLimit > 0 && mWriter.getSize() >= mLimit) {
-            findNextGeneration();
+    }
+
+    public synchronized boolean dump(String fileName) {
+        File tempFile = new File(Environment.getLogDirectory(), "LogDump.tmp");
+        try {
+            tempFile.createNewFile();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
+
+        try {
+            mWriter.flush();
+        } catch (IOException ignore) {
+        }
+
+        BufferedWriter writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tempFile, false)));
+            for (int i = mCount - 1; i >= 0; i--) {
+                if (!mFiles[i].exists()) {
+                    continue;
+                }
+
+                File inputFile = mFiles[i];
+                BufferedReader reader = null;
+                try {
+                    reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFile)));
+                    String logMessage = null;
+                    while ((logMessage = reader.readLine()) != null) {
+                        writer.write(logMessage);
+                        writer.newLine();
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                } finally {
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException ignore) {
+                        }
+                    }
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
+
+        return tempFile.renameTo(new File(fileName));
     }
 
     static class Writer {
@@ -339,6 +417,7 @@ public class FileHandler {
         }
 
         public void close() throws IOException {
+            mWriter.flush();
             mWriter.close();
         }
 

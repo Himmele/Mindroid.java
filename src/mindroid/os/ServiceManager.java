@@ -427,16 +427,15 @@ public final class ServiceManager {
             serviceInfo = resolveInfo.serviceInfo;
         }
 
-        IProcess process = prepareProcess(serviceInfo.processName);
-        if (process == null) {
-            return false;
-        }
-
+        final IProcess process;
+        final ProcessRecord processRecord;
         final ServiceRecord serviceRecord;
-        final ProcessRecord processRecord = (ProcessRecord) mProcesses.get(serviceInfo.processName);
-        if (mServices.containsKey(service.getComponent())) {
-            serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
-        } else {
+        if (!mServices.containsKey(service.getComponent())) {
+            process = prepareProcess(serviceInfo.processName);
+            if (process == null) {
+                return false;
+            }
+            processRecord = (ProcessRecord) mProcesses.get(serviceInfo.processName);
             boolean systemService = service.getBooleanExtra(SYSTEM_SERVICE, false);
             String name;
             if (systemService) {
@@ -446,9 +445,13 @@ public final class ServiceManager {
             }
             serviceRecord = new ServiceRecord(name, processRecord, systemService);
             mServices.put(service.getComponent(), serviceRecord);
-        }
-        if (!processRecord.containsService(service.getComponent())) {
-            processRecord.addService(service.getComponent(), serviceRecord);
+            if (!processRecord.containsService(service.getComponent())) {
+                processRecord.addService(service.getComponent(), serviceRecord);
+            }
+        } else {
+            serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+            processRecord = serviceRecord.processRecord;
+            process = processRecord.process;
         }
 
         if (!serviceRecord.alive) {

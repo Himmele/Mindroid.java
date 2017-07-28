@@ -18,9 +18,13 @@ package mindroid.util.logging;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import mindroid.app.Service;
 import mindroid.content.Intent;
+import mindroid.os.Bundle;
 import mindroid.os.Environment;
 import mindroid.os.IBinder;
 import mindroid.util.Log;
@@ -28,52 +32,88 @@ import mindroid.util.logging.LogBuffer.LogRecord;
 
 public class Logger extends Service {
     private static final String LOG_TAG = "Logger";
-    private LoggerThread mMainLoggerThread = null;
-    private LoggerThread mDebugLoggerThread = null;
 
-    class LoggerThread extends Thread {
+    public static final String ACTION_LOG = "mindroid.util.logging.LOG";
+    public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
+
+    private Map mLogWorkers = new HashMap();
+
+    class LogWorker extends Thread {
+        private static final int JOIN_TIMEOUT = 10000; //ms
+
         private LogBuffer mLogBuffer;
-        private boolean mConsoleLogging;
-        private boolean mFileLogging;
-        private boolean mTimestamps;
-        private int mPriority;
-        private String mLogDirectory;
-        private String mLogFileName;
-        private int mLogFileSizeLimit;
-        private int mLogFileCount;
+        private int mLogPriority;
+        private String[] mFlags;
         private ConsoleHandler mConsoleHandler;
         private FileHandler mFileHandler;
+        private Handler mCustomHandler;
 
-        public LoggerThread(String name, int logBufferId, boolean consoleLogging, boolean fileLogging, boolean timestamps, int priority, String logDirectory,
-                String logFileName, int logFileSizeLimit, int logFileCount) {
-            super(name);
-            mLogBuffer = Log.getLogBuffer(logBufferId);
-            mConsoleLogging = consoleLogging;
-            mFileLogging = fileLogging;
-            mTimestamps = timestamps;
-            mPriority = priority;
-            mLogDirectory = logDirectory;
-            mLogFileName = logFileName;
-            mLogFileSizeLimit = logFileSizeLimit;
-            mLogFileCount = logFileCount;
+        public LogWorker(Bundle arguments) {
+            super(LOG_TAG + " {" + arguments.getInt("logBuffer", Log.LOG_ID_MAIN) + "}");
+            int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+            mLogBuffer = Log.getLogBuffer(logBuffer);
+            if (mLogBuffer == null) {
+                throw new IllegalArgumentException("Invalid log buffer: " + logBuffer);
+            }
+            mLogPriority = arguments.getInt("logPriority", Log.INFO);
+            mFlags = arguments.getStringArray("logFlags");
+            boolean consoleLogging = arguments.getBoolean("consoleLogging", false);
+            if (consoleLogging) {
+                mConsoleHandler = new ConsoleHandler();
+                if (mFlags != null && Arrays.asList(mFlags).contains("timestamp")) {
+                    mConsoleHandler.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
+                }
+            } else {
+                System.out.println("D/" + LOG_TAG + ": Console logging: disabled");
+            }
+            boolean fileLogging = arguments.getBoolean("fileLogging", false);
+            if (fileLogging) {
+                String logDirectory = arguments.getString("logDirectory", Environment.getLogDirectory().getAbsolutePath());
+                String logFileName = arguments.getString("logFileName", "Log" + mLogBuffer.getId() + "-%g.log");
+                int logFileSizeLimit = arguments.getInt("logFileSizeLimit", 262144);
+                int logFileCount = arguments.getInt("logFileCount", 4);
+                try {
+                    mFileHandler = new FileHandler(logDirectory + File.separator + logFileName, logFileSizeLimit, logFileCount, true);
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "File logging error: " + e.getMessage(), e);
+                }
+            }
+            final String customHandler = arguments.getString("customLogging", null);
+            if (customHandler != null && customHandler.length() > 0) {
+                try {
+                    Class clazz = Class.forName(customHandler);
+                    mCustomHandler = (Handler) clazz.newInstance();
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Cannot find class \'" + customHandler + "\': " + e.getMessage(), e);
+                } catch (LinkageError e) {
+                    Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
+                }
+            }
+
+            if (mConsoleHandler == null && mFileHandler == null && mCustomHandler == null) {
+                throw new IllegalStateException("Invalid logging configuration");
+            }
         }
 
         public void run() {
             open();
 
             while (!isInterrupted()) {
-                LogRecord logMessage;
+                LogRecord logRecord;
                 try {
-                    logMessage = mLogBuffer.take(mPriority);
+                    logRecord = mLogBuffer.take(mLogPriority);
                 } catch (InterruptedException e) {
                     break;
                 }
-                if (logMessage != null) {
+                if (logRecord != null) {
                     if (mConsoleHandler != null) {
-                        mConsoleHandler.publish(logMessage);
+                        mConsoleHandler.publish(logRecord);
                     }
                     if (mFileHandler != null) {
-                        mFileHandler.publish(logMessage);
+                        mFileHandler.publish(logRecord);
+                    }
+                    if (mCustomHandler != null) {
+                        mCustomHandler.publish(logRecord);
                     }
                 }
             }
@@ -82,20 +122,6 @@ public class Logger extends Service {
         }
 
         private void open() {
-            if (mConsoleLogging) {
-                mConsoleHandler = new ConsoleHandler();
-                if (mTimestamps) {
-                    mConsoleHandler.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
-                }
-            }
-
-            if (mFileLogging) {
-                try {
-                    mFileHandler = new FileHandler(mLogDirectory + File.separator + mLogFileName, mLogFileSizeLimit, mLogFileCount, true);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
 
         private void close() {
@@ -108,14 +134,31 @@ public class Logger extends Service {
                 mFileHandler.close();
                 mFileHandler = null;
             }
+
+            if (mCustomHandler != null) {
+                mCustomHandler.close();
+                mCustomHandler = null;
+            }
         }
         
         void quit() {
             interrupt();
             mLogBuffer.quit();
             try {
-                join();
-            } catch (InterruptedException e) {
+                join(JOIN_TIMEOUT);
+                if (isAlive()) {
+                    Log.e(LOG_TAG, "Cannot join thread " + getName());
+                    mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
+                }
+            } catch (InterruptedException ignore) {
+            }
+        }
+
+        boolean dumpLog(String fileName) {
+            if (mFileHandler != null) {
+                return mFileHandler.dump(fileName);
+            } else {
+                return false;
             }
         }
     }
@@ -124,48 +167,73 @@ public class Logger extends Service {
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int threadPriority = intent.getIntExtra("threadPriority", Thread.MIN_PRIORITY);
-        ArrayList logBuffers = intent.getStringArrayListExtra("logBuffers");
-        if (logBuffers != null) {
-            if (logBuffers.contains("main")) {
-                boolean timestamps = intent.getBooleanExtra("timestamps", false);
-                int priority = intent.getIntExtra("priority", Log.ERROR);
-                String logDirectory = Environment.getLogDirectory().getAbsolutePath();
-                String logFileName = intent.getStringExtra("logFileName");
-                int logFileSizeLimit = intent.getIntExtra("logFileSizeLimit", 0);
-                int logFileCount = intent.getIntExtra("logFileCount", 2);
-                boolean fileLogging = (logDirectory != null && logDirectory.length() > 0 && logFileName != null && logFileName.length() > 0);
-
-                mMainLoggerThread = new LoggerThread(LOG_TAG + " {main}", Log.LOG_ID_MAIN, true, fileLogging, timestamps, priority,
-                        logDirectory, logFileName, logFileSizeLimit, logFileCount);
-                mMainLoggerThread.setPriority(threadPriority);
-                mMainLoggerThread.start();
-            }
-
-            if (logBuffers.contains("debug")) {
-                if (mDebugLoggerThread == null) {
-                    mDebugLoggerThread = new LoggerThread(LOG_TAG + " {debug}", Log.LOG_ID_DEBUG, true, false, true, Log.DEBUG,
-                            null, null, 0, 0);
-                    mDebugLoggerThread.setPriority(threadPriority);
-                    mDebugLoggerThread.start();
-                }
-            }
+        String action = intent.getAction();
+        if (ACTION_LOG.equals(action)) {
+            stopLogging(intent.getExtras());
+            startLogging(intent.getExtras());
+        } else if (ACTION_DUMP_LOG.equals(action)) {
+            dumpLog(intent.getExtras());
         }
 
         return 0;
     }
 
     public void onDestroy() {
-        if (mMainLoggerThread != null) {
-            mMainLoggerThread.quit();
-        }
-
-        if (mDebugLoggerThread != null) {
-            mDebugLoggerThread.quit();
+        Iterator itr = mLogWorkers.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry entry = (Map.Entry) itr.next();
+            LogWorker logWorker = (LogWorker) entry.getValue();
+            logWorker.quit();
+            itr.remove();
         }
     }
 
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void startLogging(Bundle arguments) {
+        final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+        final int threadPriority = arguments.getInt("threadPriority", Thread.MIN_PRIORITY);
+        if (!mLogWorkers.containsKey(new Integer(logBuffer))) {
+            System.out.println("D/" + LOG_TAG + ": Starting logging {" + logBuffer + "}");
+            try {
+                LogWorker logWorker = new LogWorker(arguments);
+                mLogWorkers.put(new Integer(logBuffer), logWorker);
+                logWorker.setPriority(threadPriority);
+                logWorker.start();
+                System.out.println("D/" + LOG_TAG + ": Logging has been started {" + logBuffer + "}");
+            } catch (IllegalArgumentException e) {
+                System.out.println("D/" + LOG_TAG + ": Failed to start logging {" + logBuffer + "}");
+                e.printStackTrace();
+            } catch (IllegalStateException e) {
+                System.out.println("D/" + LOG_TAG + ": Logging: disabled {" + logBuffer + "}");
+            }
+        }
+    }
+
+    private void stopLogging(Bundle arguments) {
+        final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+            System.out.println("D/" + LOG_TAG + ": Stopping logging {" + logBuffer + "}");
+            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            logWorker.quit();
+            mLogWorkers.remove(new Integer(logBuffer));
+            System.out.println("D/" + LOG_TAG + ": Logging has been stopped {" + logBuffer + "}");
+        }
+    }
+
+    private void dumpLog(Bundle arguments) {
+        final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+        final String fileName = arguments.getString("fileName");
+        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+            System.out.println("D/" + LOG_TAG + ": Dumping log to file " + fileName + " {" + logBuffer + "}");
+            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            if (logWorker.dumpLog(fileName)) {
+                System.out.println("D/" + LOG_TAG + ": Log has been dumped to file " + fileName + " {" + logBuffer + "}");
+            } else {
+                System.out.println("D/" + LOG_TAG + ": Failed to dump log to file " + fileName + " {" + logBuffer + "}");
+            }
+        }
     }
 }

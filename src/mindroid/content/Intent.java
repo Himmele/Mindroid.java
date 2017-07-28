@@ -34,6 +34,7 @@ import mindroid.os.Bundle;
  * 
  */
 public class Intent {
+    private String mAction;
     private ComponentName mComponent;
     private Bundle mExtras;
 
@@ -47,6 +48,7 @@ public class Intent {
      * Copy constructor.
      */
     public Intent(Intent o) {
+        this.mAction = o.mAction;
         this.mComponent = o.mComponent;
         if (o.mExtras != null) {
             this.mExtras = new Bundle(o.mExtras);
@@ -55,6 +57,53 @@ public class Intent {
 
     public Object clone() {
         return new Intent(this);
+    }
+
+    /**
+     * Create an intent with a given action.  All other fields (data, type,
+     * class) are null.  Note that the action <em>must</em> be in a
+     * namespace because Intents are used globally in the system -- for
+     * example the system VIEW action is android.intent.action.VIEW; an
+     * application's custom action would be something like
+     * com.google.app.myapp.CUSTOM_ACTION.
+     *
+     * @param action The Intent action, such as ACTION_VIEW.
+     */
+    public Intent(String action) {
+        setAction(action);
+    }
+
+    /**
+     * Create an intent for a specific component.  All other fields (action, data,
+     * type, class) are null, though they can be modified later with explicit
+     * calls.  This provides a convenient way to create an intent that is
+     * intended to execute a hard-coded class name, rather than relying on the
+     * system to find an appropriate class for you; see {@link #setComponent}
+     * for more information on the repercussions of this.
+     *
+     * @param packageContext A Context of the application package implementing
+     * this class.
+     * @param cls The component class that is to be used for the intent.
+     *
+     * @see #setClass
+     * @see #setComponent
+     */
+    public Intent(Context packageContext, Class cls) {
+        mComponent = new ComponentName(packageContext, cls);
+    }
+
+    /**
+     * Retrieve the general action to be performed, such as
+     * {@link #ACTION_VIEW}.  The action describes the general way the rest of
+     * the information in the intent should be interpreted -- most importantly,
+     * what to do with the data returned by {@link #getData}.
+     *
+     * @return The action of this intent or null if none is specified.
+     *
+     * @see #setAction
+     */
+    public String getAction() {
+        return mAction;
     }
 
     /**
@@ -398,6 +447,22 @@ public class Intent {
      */
     public ComponentName getComponent() {
         return mComponent;
+    }
+
+    /**
+     * Set the general action to be performed.
+     *
+     * @param action An action name, such as ACTION_VIEW.  Application-specific
+     *               actions should be prefixed with the vendor's package name.
+     *
+     * @return Returns the same Intent object, for chaining multiple calls
+     * into a single statement.
+     *
+     * @see #getAction
+     */
+    public Intent setAction(String action) {
+        mAction = action != null ? action.intern() : null;
+        return this;
     }
 
     /**

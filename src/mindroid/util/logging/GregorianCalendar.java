@@ -1556,6 +1556,8 @@ class GregorianCalendar {
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append(fields[YEAR]);
+        sb.append('-');
         if (fields[MONTH] + 1 <= 9) {
             sb.append('0');
         }
