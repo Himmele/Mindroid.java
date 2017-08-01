@@ -184,10 +184,10 @@
 	<target name="run">
 		<java dir="." classname="main.Main" failonerror="true" fork="true">
 			<arg value="rootDir=out/pc"/>
-        	<classpath>
-        		<pathelement location="out/pc/Mindroid.jar"/>
+			<classpath>
+				<pathelement location="out/pc/Mindroid.jar"/>
 				<pathelement location="out/pc/Main.jar"/>
-        	</classpath>
+			</classpath>
 		</java>
 	</target>
 	
@@ -242,6 +242,7 @@
 					<include name="mindroid/os/RemoteException.java"/>
 					<include name="mindroid/os/SystemClock.java"/>
 					<include name="mindroid/util/Base64.java"/>
+					<include name="mindroid/util/EventLog.java"/>
 					<include name="mindroid/util/Log.java"/>
 					<include name="mindroid/util/Pair.java"/>
 					<include name="mindroid/util/concurrent/Executor.java"/>

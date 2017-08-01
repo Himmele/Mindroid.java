@@ -46,10 +46,10 @@ import java.net.UnknownHostException;
  * <b>Tip:</b> Don't forget that when you make a call like
  * 
  * <pre>
- * Log.v(LOG_TAG, &quot;index=&quot; + i);
+ * EventLog.v(LOG_TAG, &quot;index=&quot; + i);
  * </pre>
  * 
- * that when you're building the string to pass into Log.d, the compiler uses a StringBuilder and at
+ * that when you're building the string to pass into EventLog.d, the compiler uses a StringBuilder and at
  * least three allocations occur: the StringBuilder itself, the buffer, and the String object.
  * Realistically, there is also another buffer allocation and copy, and even more pressure on the
  * gc. That means that if your log message is filtered out, you might be doing significant work and
