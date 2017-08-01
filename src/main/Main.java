@@ -71,7 +71,7 @@ public class Main {
                 .putExtra("consoleLogging", true)
                 .putExtra("fileLogging", false)
                 .putExtra("logFileName", "Log-%g.log")
-                .putExtra("logFileSizeLimit", 262144)
+                .putExtra("logFileLimit", 262144)
                 .putExtra("logFileCount", 4));
 
         serviceManager.startSystemService(new Intent()

@@ -129,7 +129,7 @@ public class PackageManagerService extends Service {
                     return (String[]) permissions.toArray(new String[permissions.size()]);
                 }
             }
-            return null;
+            return new String[] {};
         }
 
         public void addListener(IPackageManagerListener listener) {

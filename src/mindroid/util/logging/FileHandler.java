@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import mindroid.content.SharedPreferences;
 import mindroid.os.Environment;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
@@ -62,6 +63,8 @@ public class FileHandler extends Handler {
     private static final int DEFAULT_LIMIT = 0;
     private static final boolean DEFAULT_APPEND = false;
     private static final String DEFAULT_PATTERN = "%h/Mindroid-%g.log";
+    private static final String CRLF = "\r\n";
+    private static final String DATA_VOLUME = "dataVolume";
 
     private String mPattern;
     private boolean mAppend;
@@ -69,22 +72,41 @@ public class FileHandler extends Handler {
     private int mCount;
     private Writer mWriter;
     private File[] mFiles;
-    String mFileName = null;
+    private int mBufferSize = 0;
+    private int mFlushSize = 0;
+    private int mDataVolume = 0;
+    private int mDataVolumeLimit = 0;
+    private SharedPreferences mPreferences;
 
     public FileHandler() throws IOException {
-        init(null, null, null, null);
+        init(null, null, null, null, null, null);
     }
 
-    private void init(String pattern, Boolean append, Integer limit, Integer count) throws IOException {
-        initProperties(pattern, append, limit, count);
+    private void init(String pattern, Boolean append, Integer limit, Integer count, Integer bufferSize, Integer dataVolume) throws IOException {
+        initProperties(pattern, append, limit, count, bufferSize, dataVolume);
         initOutputFiles();
+        initPreferences();
     }
 
+    private void initProperties(String p, Boolean a, Integer l, Integer c, Integer bufferSize, Integer dataVolumeLimit) {
+        mPattern = (p == null) ? DEFAULT_PATTERN : p;
+        if (mPattern == null || (mPattern.length() == 0)) {
+            throw new NullPointerException("Pattern cannot be null or empty");
+        }
+        mAppend = (a == null) ? DEFAULT_APPEND : a.booleanValue();
+        mCount = (c == null) ? DEFAULT_COUNT : c.intValue();
+        mLimit = (l == null) ? DEFAULT_LIMIT : l.intValue();
+        mBufferSize = (bufferSize == null) ? 0 : bufferSize.intValue();
+        mDataVolumeLimit = (dataVolumeLimit == null) ? 0 : dataVolumeLimit.intValue();
+        mCount = mCount < 1 ? DEFAULT_COUNT : mCount;
+        mLimit = mLimit < 0 ? DEFAULT_LIMIT : mLimit;
+        mFiles = new File[mCount];
+    }
+    
     private void initOutputFiles() throws FileNotFoundException, IOException {
         for (int generation = 0; generation < mCount; generation++) {
             mFiles[generation] = new File(parseFileName(generation));
         }
-        mFileName = mFiles[0].getAbsolutePath();
         if (mFiles[0].exists() && (!mAppend || mFiles[0].length() >= mLimit)) {
             for (int i = mCount - 1; i > 0; i--) {
                 if (mFiles[i].exists()) {
@@ -95,18 +117,13 @@ public class FileHandler extends Handler {
         }
         mWriter = new Writer(mFiles[0], mAppend);
     }
-
-    private void initProperties(String p, Boolean a, Integer l, Integer c) {
-        mPattern = (p == null) ? DEFAULT_PATTERN : p;
-        if (mPattern == null || (mPattern.length() == 0)) {
-            throw new NullPointerException("Pattern cannot be null or empty");
+    
+    private void initPreferences() {
+        if (mDataVolumeLimit > 0) {
+            String fileName = Integer.toHexString(mFiles[0].getAbsolutePath().hashCode()) + ".xml";
+            mPreferences = Environment.getSharedPreferences(mFiles[0].getParentFile(), fileName, 0);
+            mDataVolume = mPreferences.getInt(DATA_VOLUME, 0);
         }
-        mAppend = (a == null) ? DEFAULT_APPEND : a.booleanValue();
-        mCount = (c == null) ? DEFAULT_COUNT : c.intValue();
-        mLimit = (l == null) ? DEFAULT_LIMIT : l.intValue();
-        mCount = mCount < 1 ? DEFAULT_COUNT : mCount;
-        mLimit = mLimit < 0 ? DEFAULT_LIMIT : mLimit;
-        mFiles = new File[mCount];
     }
 
     void findNextGeneration() {
@@ -209,7 +226,7 @@ public class FileHandler extends Handler {
         if (pattern == null || pattern.length() == 0) {
             throw new IllegalArgumentException("Pattern cannot be null or empty");
         }
-        init(pattern, null, new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
+        init(pattern, null, new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT), null, null);
     }
 
     /**
@@ -228,7 +245,7 @@ public class FileHandler extends Handler {
         if (pattern == null || pattern.length() == 0) {
             throw new IllegalArgumentException("Pattern cannot be null or empty");
         }
-        init(pattern, Boolean.valueOf(append), new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT));
+        init(pattern, Boolean.valueOf(append), new Integer(DEFAULT_LIMIT), new Integer(DEFAULT_COUNT), null, null);
     }
 
     /**
@@ -252,7 +269,7 @@ public class FileHandler extends Handler {
         if (limit < 0 || count < 1) {
             throw new IllegalArgumentException("limit < 0 || count < 1");
         }
-        init(pattern, null, new Integer(limit), new Integer(count));
+        init(pattern, null, new Integer(limit), new Integer(count), null, null);
     }
 
     /**
@@ -278,28 +295,47 @@ public class FileHandler extends Handler {
         if (limit < 0 || count < 1) {
             throw new IllegalArgumentException("limit < 0 || count < 1");
         }
-        init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count));
+        init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count), null, null);
+    }
+    
+    public FileHandler(String pattern, int limit, int count, boolean append, int bufferSize, int dataVolumeLimit) throws IOException {
+        if (pattern == null || pattern.length() == 0) {
+            throw new IllegalArgumentException("Pattern cannot be null or empty");
+        }
+        if (limit < 0 || count < 1) {
+            throw new IllegalArgumentException("limit < 0 || count < 1");
+        }
+        if (bufferSize < 0 || dataVolumeLimit < 0) {
+            throw new IllegalArgumentException("bufferSize < 0 || dataVolumeLimit < 0");
+        }
+        init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count), new Integer(bufferSize), new Integer(dataVolumeLimit));
     }
 
     /**
      * Flushes and closes all opened files.
      */
     public void close() {
-        try {
-            if (mWriter != null) {
+        flush();
+        
+        if (mWriter != null) {
+            try {
                 mWriter.close();
-                mWriter = null;
+            } catch (IOException ignore) {
             }
-        } catch (IOException ignore) {
+            mWriter = null;
         }
     }
 
     public void flush() {
-        try {
-            if (mWriter != null) {
-                mWriter.flush();
+        if (mWriter != null) {
+            if (mDataVolumeLimit > 0) {
+                mPreferences.edit().putInt(DATA_VOLUME, mDataVolume).commit();
             }
-        } catch (IOException ignore) {
+        
+            try {
+                mWriter.flush();
+            } catch (IOException ignore) {
+            }
         }
     }
 
@@ -310,20 +346,38 @@ public class FileHandler extends Handler {
      */
     public synchronized void publish(LogRecord record) {
         String logMessage = record.toString();
-        if (mLimit > 0 && (mWriter.getSize() + logMessage.length() + 2) >= mLimit) {
+        final int logMessageSize = logMessage.length() + CRLF.length();
+        
+        if (mDataVolumeLimit > 0) {
+            if (mDataVolume + logMessageSize > mDataVolumeLimit) {
+                return;
+            }
+        }
+        
+        if (mLimit > 0 && (mWriter.size() + logMessageSize) >= mLimit) {
             findNextGeneration();
         }
+        
         try {
             mWriter.write(logMessage);
             mWriter.newLine();
-            mWriter.flush();
+            mFlushSize += logMessageSize;
+            mDataVolume += logMessageSize;
+            if (mFlushSize >= mBufferSize) {
+                flush();
+                mFlushSize = 0;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public synchronized boolean dump(String fileName) {
-        File tempFile = new File(Environment.getLogDirectory(), "LogDump.tmp");
+        if (fileName == null) {
+            return false;
+        }
+        
+        File tempFile = new File(mFiles[0].getParentFile(), Integer.toHexString(mFiles[0].getAbsolutePath().hashCode()) + ".tmp");
         try {
             tempFile.createNewFile();
         } catch (FileNotFoundException e) {
@@ -331,14 +385,14 @@ public class FileHandler extends Handler {
             return false;
         } catch (IOException e) {
             e.printStackTrace();
+            tempFile.delete();
             return false;
         }
 
-        try {
-            mWriter.flush();
-        } catch (IOException ignore) {
-        }
+        flush();
 
+        Exception exception = null;
+        BufferedReader reader = null;
         BufferedWriter writer = null;
         try {
             writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tempFile, false)));
@@ -348,45 +402,47 @@ public class FileHandler extends Handler {
                 }
 
                 File inputFile = mFiles[i];
-                BufferedReader reader = null;
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFile)));
+                String logMessage = null;
+                while ((logMessage = reader.readLine()) != null) {
+                    writer.write(logMessage);
+                    writer.newLine();
+                }
                 try {
-                    reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFile)));
-                    String logMessage = null;
-                    while ((logMessage = reader.readLine()) != null) {
-                        writer.write(logMessage);
-                        writer.newLine();
-                    }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    return false;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return false;
-                } finally {
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (IOException ignore) {
-                        }
-                    }
+                    reader.close();
+                } catch (IOException ignore) {
                 }
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+            exception = e;
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            exception = e;
             return false;
         } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException ignore) {
+                }
+            }
             if (writer != null) {
                 try {
                     writer.close();
                 } catch (IOException ignore) {
                 }
             }
+            if (exception != null) {
+                tempFile.delete();
+            }
         }
 
-        return tempFile.renameTo(new File(fileName));
+        return tempFile.renameTo(new File(Environment.getLogDirectory(), fileName));
     }
 
-    static class Writer {
+    class Writer {
         private OutputStreamWriter mWriter;
         private long mSize;
 
@@ -397,15 +453,15 @@ public class FileHandler extends Handler {
                 }
                 file.createNewFile();
             }
-
-            mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append)));
-            mSize = file.length();
-
-            if (append && file.length() > 0) {
-                newLine();
+            
+            if (mBufferSize > 0) {
+                mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append), mBufferSize));
+            } else {
+                mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append)));
             }
+            mSize = file.length();
         }
-
+        
         public void write(String s) throws IOException {
             mWriter.write(s);
             mSize += s.length();
@@ -417,7 +473,6 @@ public class FileHandler extends Handler {
         }
 
         public void close() throws IOException {
-            mWriter.flush();
             mWriter.close();
         }
 
@@ -425,13 +480,13 @@ public class FileHandler extends Handler {
             mWriter.flush();
         }
 
-        public long getSize() {
+        public long size() {
             return mSize;
         }
 
         public void newLine() throws IOException {
-            mWriter.write("\r\n");
-            mSize += 2;
+            mWriter.write(CRLF);
+            mSize += CRLF.length();
         }
     }
 }

@@ -27,6 +27,8 @@ import mindroid.content.Intent;
 import mindroid.os.Bundle;
 import mindroid.os.Environment;
 import mindroid.os.IBinder;
+import mindroid.os.IRemoteCallback;
+import mindroid.os.RemoteException;
 import mindroid.util.Log;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
@@ -35,7 +37,8 @@ public class Logger extends Service {
 
     public static final String ACTION_LOG = "mindroid.util.logging.LOG";
     public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
-
+    public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
+    
     private Map mLogWorkers = new HashMap();
 
     class LogWorker extends Thread {
@@ -68,12 +71,15 @@ public class Logger extends Service {
             }
             boolean fileLogging = arguments.getBoolean("fileLogging", false);
             if (fileLogging) {
-                String logDirectory = arguments.getString("logDirectory", Environment.getLogDirectory().getAbsolutePath());
-                String logFileName = arguments.getString("logFileName", "Log" + mLogBuffer.getId() + "-%g.log");
-                int logFileSizeLimit = arguments.getInt("logFileSizeLimit", 262144);
-                int logFileCount = arguments.getInt("logFileCount", 4);
+                String directory = arguments.getString("logDirectory", Environment.getLogDirectory().getAbsolutePath());
+                String fileName = arguments.getString("logFileName", "Log" + mLogBuffer.getId() + "-%g.log");
+                int fileLimit = arguments.getInt("logFileLimit", 262144);
+                int fileCount = arguments.getInt("logFileCount", 4);
+                int bufferSize = arguments.getInt("logBufferSize", 0);
+                int dataVolumeLimit = arguments.getInt("logDataVolumeLimit", 0);
                 try {
-                    mFileHandler = new FileHandler(logDirectory + File.separator + logFileName, logFileSizeLimit, logFileCount, true);
+                    mFileHandler = new FileHandler(directory + File.separator + fileName, fileLimit, fileCount, true,
+                            bufferSize, dataVolumeLimit);
                 } catch (IOException e) {
                     Log.e(LOG_TAG, "File logging error: " + e.getMessage(), e);
                 }
@@ -84,7 +90,7 @@ public class Logger extends Service {
                     Class clazz = Class.forName(customHandler);
                     mCustomHandler = (Handler) clazz.newInstance();
                 } catch (Exception e) {
-                    Log.e(LOG_TAG, "Cannot find class \'" + customHandler + "\': " + e.getMessage(), e);
+                    Log.e(LOG_TAG, "Cannot create custom handler \'" + customHandler + "\': " + e.getMessage(), e);
                 } catch (LinkageError e) {
                     Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
                 }
@@ -161,6 +167,12 @@ public class Logger extends Service {
                 return false;
             }
         }
+        
+        void flush() {
+            if (mFileHandler != null) {
+                mFileHandler.flush();
+            }
+        }
     }
 
     public void onCreate() {
@@ -173,6 +185,8 @@ public class Logger extends Service {
             startLogging(intent.getExtras());
         } else if (ACTION_DUMP_LOG.equals(action)) {
             dumpLog(intent.getExtras());
+        } else if (ACTION_FLUSH_LOG.equals(action)) {
+            flushLog(intent.getExtras());
         }
 
         return 0;
@@ -226,14 +240,32 @@ public class Logger extends Service {
     private void dumpLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         final String fileName = arguments.getString("fileName");
+        IRemoteCallback callback = IRemoteCallback.Stub.asInterface(arguments.getBinder("binder"));
         if (mLogWorkers.containsKey(new Integer(logBuffer))) {
             System.out.println("D/" + LOG_TAG + ": Dumping log to file " + fileName + " {" + logBuffer + "}");
             LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            Bundle result = new Bundle();
             if (logWorker.dumpLog(fileName)) {
                 System.out.println("D/" + LOG_TAG + ": Log has been dumped to file " + fileName + " {" + logBuffer + "}");
+                result.putBoolean("result", true);
             } else {
                 System.out.println("D/" + LOG_TAG + ": Failed to dump log to file " + fileName + " {" + logBuffer + "}");
+                result.putBoolean("result", false);
             }
+            if (callback != null) {
+                try {
+                    callback.sendResult(result);
+                } catch (RemoteException ignore) {
+                }
+            }
+        }
+    }
+    
+    private void flushLog(Bundle arguments) {
+        final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            logWorker.flush();
         }
     }
 }
