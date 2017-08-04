@@ -100,8 +100,46 @@ public class PackageManagerService extends Service {
             }
         }
 
+        public List queryIntentServices(Intent intent, int flags) throws RemoteException {
+            List services = new ArrayList();
+            if (mComponents.containsKey(intent.getComponent())) {
+                ComponentInfo componentInfo = (ComponentInfo) mComponents.get(intent.getComponent());
+                if (componentInfo != null && componentInfo instanceof ServiceInfo) {
+                    ResolveInfo resolveInfo = new ResolveInfo();
+                    resolveInfo.serviceInfo = (ServiceInfo) componentInfo;
+                    services.add(resolveInfo);
+                }
+            } else {
+                if (intent.hasExtra("path")) {
+                    File app = new File(intent.getStringExtra("path"));
+                    if (app.exists()) {
+                        PackageInfo packageInfo = loadPackage(app);
+                        if (packageInfo != null && packageInfo.services != null) {
+                            for (int i = 0; i < packageInfo.services.length; i++) {
+                                ResolveInfo resolveInfo = new ResolveInfo();
+                                resolveInfo.serviceInfo = packageInfo.services[i];
+                                services.add(resolveInfo);
+                            }
+                        }
+                    }
+                }
+            }
+            return services;
+        }
+
         public ResolveInfo resolveService(Intent intent, int flags) {
             ResolveInfo resolveInfo = null;
+            if (!mComponents.containsKey(intent.getComponent())) {
+                if (intent.hasExtra("path")) {
+                    File app = new File(intent.getStringExtra("path"));
+                    if (app.exists()) {
+                        PackageInfo packageInfo = loadPackage(app);
+                        if (packageInfo != null) {
+                            addPackage(packageInfo);
+                        }
+                    }
+                }
+            }
             ComponentInfo componentInfo = (ComponentInfo) mComponents.get(intent.getComponent());
             if (componentInfo != null && componentInfo instanceof ServiceInfo) {
                 resolveInfo = new ResolveInfo();
@@ -151,26 +189,12 @@ public class PackageManagerService extends Service {
         }
     };
 
-    Handler mHandler = new Handler() {
+    private Handler mHandler = new Handler() {
         public void handleMessage(Message msg) {
             switch (msg.what) {
             case MSG_ADD_PACKAGE:
                 PackageInfo packageInfo = (PackageInfo) msg.obj;
-                mPackages.put(packageInfo.packageName, packageInfo);
-
-                for (int i = 0; i < packageInfo.services.length; i++) {
-                    ServiceInfo si = (ServiceInfo) packageInfo.services[i];
-                    mComponents.put(new ComponentName(si.packageName, si.name), si);
-                }
-
-                if (packageInfo.applicationInfo.permissions != null) {
-                    final String processName = packageInfo.applicationInfo.processName;
-                    if (!mPermissions.containsKey(processName)) {
-                        mPermissions.put(processName, new HashSet());
-                    }
-                    HashSet permissions = (HashSet) mPermissions.get(processName);
-                    permissions.addAll(Arrays.asList(packageInfo.applicationInfo.permissions));
-                }
+                addPackage(packageInfo);
                 break;
             case MSG_BOOT_COMPLETED:
                 onBootCompleted();
@@ -181,7 +205,25 @@ public class PackageManagerService extends Service {
         }
     };
 
-    void bootCompleted() {
+    private void addPackage(PackageInfo packageInfo) {
+        mPackages.put(packageInfo.packageName, packageInfo);
+
+        for (int i = 0; i < packageInfo.services.length; i++) {
+            ServiceInfo si = (ServiceInfo) packageInfo.services[i];
+            mComponents.put(new ComponentName(si.packageName, si.name), si);
+        }
+
+        if (packageInfo.applicationInfo.permissions != null) {
+            final String processName = packageInfo.applicationInfo.processName;
+            if (!mPermissions.containsKey(processName)) {
+                mPermissions.put(processName, new HashSet());
+            }
+            HashSet permissions = (HashSet) mPermissions.get(processName);
+            permissions.addAll(Arrays.asList(packageInfo.applicationInfo.permissions));
+        }
+    }
+
+    private void bootCompleted() {
         Message msg = mHandler.obtainMessage(MSG_BOOT_COMPLETED);
         msg.sendToTarget();
     }
@@ -210,33 +252,9 @@ public class PackageManagerService extends Service {
             if (apps != null) {
                 Arrays.sort(apps);
                 for (int i = 0; i < apps.length; i++) {
-                    ZipInputStream inputStream = null;
-                    try {
-                        inputStream = new ZipInputStream(new FileInputStream(apps[i]));
-                        ZipEntry entry = inputStream.getNextEntry();
-
-                        while (entry != null) {
-                            String fileName = entry.getName();
-                            if (fileName.equals("MindroidManifest.xml")) {
-                                ApplicationInfo ai = new ApplicationInfo();
-                                ai.fileName = apps[i].getAbsolutePath();
-                                parseManifest(inputStream, ai);
-                                break;
-                            } else {
-                                entry = inputStream.getNextEntry();
-                            }
-                        }
-                    } catch (XmlPullParserException e) {
-                        Log.e(LOG_TAG, "Cannot read manifest file in " + apps[i].getPath(), e);
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Cannot read manifest file in " + apps[i].getPath(), e);
-                    } finally {
-                        if (inputStream != null) {
-                            try {
-                                inputStream.close();
-                            } catch (IOException e) {
-                            }
-                        }
+                    PackageInfo packageInfo = loadPackage(apps[i]);
+                    if (packageInfo != null) {
+                        mHandler.obtainMessage(MSG_ADD_PACKAGE, packageInfo).sendToTarget();
                     }
                 }
             }
@@ -246,7 +264,49 @@ public class PackageManagerService extends Service {
         }
     };
 
-    public void parseManifest(InputStream input, ApplicationInfo ai) throws XmlPullParserException, IOException {
+    private static PackageInfo loadPackage(File app) {
+        ZipInputStream inputStream = null;
+        try {
+            inputStream = new ZipInputStream(new FileInputStream(app));
+            ZipEntry entry = inputStream.getNextEntry();
+
+            while (entry != null) {
+                String fileName = entry.getName();
+                if (fileName.equals("MindroidManifest.xml")) {
+                    ApplicationInfo ai = new ApplicationInfo();
+                    ai.fileName = app.getAbsolutePath();
+                    List services = parseManifest(inputStream, ai);
+
+                    if (services != null && !services.isEmpty()) {
+                        PackageInfo packageInfo = new PackageInfo();
+                        packageInfo.packageName = ai.packageName;
+                        packageInfo.applicationInfo = ai;
+                        packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
+                        return packageInfo;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    entry = inputStream.getNextEntry();
+                }
+            }
+        } catch (XmlPullParserException e) {
+            Log.e(LOG_TAG, "Cannot read manifest file in " + app.getPath(), e);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Cannot read manifest file in " + app.getPath(), e);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static List parseManifest(InputStream input, ApplicationInfo ai) throws XmlPullParserException, IOException {
         KXmlParser parser;
         parser = new KXmlParser();
         parser.setInput((InputStream) input, UTF_8);
@@ -268,7 +328,7 @@ public class PackageManagerService extends Service {
         }
         ai.packageName = packageName;
 
-        List services = null;
+        List services = new ArrayList();
         boolean applicationTagDone = false;
         for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(APPLICATION_TAG)) {
@@ -288,16 +348,10 @@ public class PackageManagerService extends Service {
         parser.next();
         parser.require(XmlPullParser.END_DOCUMENT, null, null);
 
-        if (services != null && !services.isEmpty()) {
-            PackageInfo packageInfo = new PackageInfo();
-            packageInfo.packageName = packageName;
-            packageInfo.applicationInfo = ai;
-            packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
-            mHandler.obtainMessage(MSG_ADD_PACKAGE, packageInfo).sendToTarget();
-        }
+        return services;
     }
 
-    List parseApplication(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
+    private static List parseApplication(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, APPLICATION_TAG);
 
         String processName = ai.packageName;
@@ -362,7 +416,7 @@ public class PackageManagerService extends Service {
         return services;
     }
 
-    String parseLibrary(KXmlParser parser) throws IOException, XmlPullParserException {
+    private static String parseLibrary(KXmlParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, USES_LIBRARY_TAG);
 
         String name = null;
@@ -389,7 +443,7 @@ public class PackageManagerService extends Service {
         }
     }
 
-    String parsePermission(KXmlParser parser) throws IOException, XmlPullParserException {
+    private static String parsePermission(KXmlParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, USES_PERMISSION_TAG);
 
         String name = null;
@@ -411,7 +465,7 @@ public class PackageManagerService extends Service {
         return name;
     }
 
-    ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
+    private static ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, SERVICE_TAG);
 
         String processName = ai.processName;

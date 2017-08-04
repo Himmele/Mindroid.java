@@ -49,6 +49,11 @@ public interface IPackageManager extends IInterface {
                 List packages = getInstalledPackages(arg1);
                 return packages;
             }
+            case MSG_QUERY_INTENT_SERVICES: {
+                Intent intent = (Intent) obj;
+                List services = queryIntentServices(intent, arg1);
+                return services;
+            }
             case MSG_RESOLVE_SERVICE: {
                 Intent intent = (Intent) obj;
                 ResolveInfo resolveInfo = resolveService(intent, arg1);
@@ -103,6 +108,11 @@ public interface IPackageManager extends IInterface {
             public List getInstalledPackages(int flags) throws RemoteException {
                 List packages = (List) mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, 0);
                 return packages;
+            }
+
+            public List queryIntentServices(Intent intent, int flags) throws RemoteException {
+                List services = (List) mRemote.transact(MSG_QUERY_INTENT_SERVICES, flags, 0, intent, 0);
+                return services;
             }
 
             public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
@@ -166,6 +176,14 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            public List queryIntentServices(Intent intent, int flags) throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    return mStub.queryIntentServices(intent, flags);
+                } else {
+                    return mProxy.queryIntentServices(intent, flags);
+                }
+            }
+
             public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.resolveService(intent, flags);
@@ -208,14 +226,17 @@ public interface IPackageManager extends IInterface {
         }
 
         static final int MSG_GET_INSTALLED_PACKAGES = 1;
-        static final int MSG_RESOLVE_SERVICE = 2;
-        static final int MSG_CHECK_PERMISSION = 3;
-        static final int MSG_GET_PERMISSIONS = 4;
-        static final int MSG_ADD_LISTENER = 5;
-        static final int MSG_REMOVE_LISTENER = 6;
+        static final int MSG_QUERY_INTENT_SERVICES = 2;
+        static final int MSG_RESOLVE_SERVICE = 3;
+        static final int MSG_CHECK_PERMISSION = 4;
+        static final int MSG_GET_PERMISSIONS = 5;
+        static final int MSG_ADD_LISTENER = 6;
+        static final int MSG_REMOVE_LISTENER = 7;
     }
 
     public List getInstalledPackages(int flags) throws RemoteException;
+
+    public List queryIntentServices(Intent intent, int flags) throws RemoteException;
 
     public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException;
 

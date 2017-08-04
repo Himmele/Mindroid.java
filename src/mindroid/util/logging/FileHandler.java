@@ -339,6 +339,21 @@ public class FileHandler extends Handler {
         }
     }
 
+    public void clear() {
+        close();
+
+        for (int i = 0; i < mCount; i++) {
+            if (mFiles[i].exists()) {
+                mFiles[i].delete();
+            }
+        }
+        try {
+            mWriter = new Writer(mFiles[0], mAppend);
+        } catch (IOException e) {
+            System.out.println("Error opening log file");
+        }
+    }
+
     /**
      * Publish a {@code LogRecord}.
      * 

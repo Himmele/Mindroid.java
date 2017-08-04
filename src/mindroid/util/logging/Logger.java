@@ -38,6 +38,7 @@ public class Logger extends Service {
     public static final String ACTION_LOG = "mindroid.util.logging.LOG";
     public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
     public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
+    public static final String ACTION_CLEAR_LOG = "mindroid.util.logging.CLEAR_LOG";
     
     private Map mLogWorkers = new HashMap();
 
@@ -173,6 +174,12 @@ public class Logger extends Service {
                 mFileHandler.flush();
             }
         }
+
+        void clear() {
+            if (mFileHandler != null) {
+                mFileHandler.clear();
+            }
+        }
     }
 
     public void onCreate() {
@@ -187,16 +194,20 @@ public class Logger extends Service {
             dumpLog(intent.getExtras());
         } else if (ACTION_FLUSH_LOG.equals(action)) {
             flushLog(intent.getExtras());
+        } else if (ACTION_CLEAR_LOG.equals(action)) {
+            clearLog(intent.getExtras());
         }
 
         return 0;
     }
 
     public void onDestroy() {
+        System.out.println("D/" + LOG_TAG + ": Flushing logs");
         Iterator itr = mLogWorkers.entrySet().iterator();
         while (itr.hasNext()) {
             Map.Entry entry = (Map.Entry) itr.next();
             LogWorker logWorker = (LogWorker) entry.getValue();
+            logWorker.flush();
             logWorker.quit();
             itr.remove();
         }
@@ -264,8 +275,18 @@ public class Logger extends Service {
     private void flushLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+            System.out.println("D/" + LOG_TAG + ": Flushing log {" + logBuffer + "}");
             LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
             logWorker.flush();
+        }
+    }
+
+    private void clearLog(Bundle arguments) {
+        final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
+        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+            System.out.println("D/" + LOG_TAG + ": Clearing log {" + logBuffer + "}");
+            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            logWorker.clear();
         }
     }
 }

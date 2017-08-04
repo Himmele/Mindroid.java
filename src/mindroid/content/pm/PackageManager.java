@@ -80,6 +80,26 @@ public class PackageManager {
     }
 
     /**
+     * Retrieve all services that can match the given intent.
+     *
+     * @param intent The desired intent as per resolveService().
+     * @param flags Additional option flags.
+     *
+     * @return A List&lt;ResolveInfo&gt; containing one entry for each matching
+     *         ServiceInfo. These are ordered from best to worst match -- that
+     *         is, the first item in the list is what is returned by
+     *         resolveService().  If there are no matching services, an empty
+     *         list or {@code null} is returned.
+     */
+    public List queryIntentServices(Intent intent, int flags) {
+        try {
+            return mService.queryIntentServices(intent, flags);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
+
+    /**
      * Determine the best service to handle for a given Intent.
      * 
      * @param intent An intent containing all of the desired specification (action, data, type,
