@@ -17,10 +17,6 @@
 
 package mindroid.util;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.net.UnknownHostException;
-
 /**
  * Mindroid event logger.
  * 
@@ -56,15 +52,6 @@ import java.net.UnknownHostException;
  * incurring significant overhead.
  */
 public final class EventLog {
-    public static final int VERBOSE = 0;
-    public static final int DEBUG = 1;
-    public static final int INFO = 2;
-    public static final int WARN = 3;
-    public static final int ERROR = 4;
-    public static final int WTF = 5;
-
-    private static final int MAX_STACK_TRACE_SIZE = 4096;
-
     private EventLog() {
     }
 
@@ -76,7 +63,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int v(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, VERBOSE, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.VERBOSE, tag, msg);
     }
 
     /**
@@ -88,7 +75,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int v(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, VERBOSE, tag, msg + " \n" + getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.VERBOSE, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 
     /**
@@ -99,7 +86,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int d(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, DEBUG, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.DEBUG, tag, msg);
     }
 
     /**
@@ -111,7 +98,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int d(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, DEBUG, tag, msg + " \n" + getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.DEBUG, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 
     /**
@@ -122,7 +109,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int i(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, INFO, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.INFO, tag, msg);
     }
 
     /**
@@ -134,7 +121,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int i(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, INFO, tag, msg + " \n" + getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.INFO, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 
     /**
@@ -145,7 +132,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int w(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, WARN, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.WARN, tag, msg);
     }
 
     /**
@@ -157,7 +144,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int w(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, WARN, tag, msg + " \n" + getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.WARN, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 
     /*
@@ -169,7 +156,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int w(String tag, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, WARN, tag, getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.WARN, tag, Log.getStackTraceString(tr));
     }
 
     /**
@@ -180,7 +167,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int e(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, ERROR, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.ERROR, tag, msg);
     }
 
     /**
@@ -192,7 +179,7 @@ public final class EventLog {
      * @param tr An exception to log
      */
     public static int e(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, ERROR, tag, msg + " \n" + getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.ERROR, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 
     /**
@@ -205,7 +192,7 @@ public final class EventLog {
      * @param msg The message you would like logged.
      */
     public static int wtf(String tag, String msg) {
-        return Log.println(Log.LOG_ID_EVENTS, WTF, tag, msg);
+        return Log.println(Log.LOG_ID_EVENTS, Log.WTF, tag, msg);
     }
 
     /**
@@ -216,41 +203,10 @@ public final class EventLog {
      * @param tr An exception to log.
      */
     public static int wtf(String tag, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, WTF, tag, getStackTraceString(tr));
+        return Log.println(Log.LOG_ID_EVENTS, Log.WTF, tag, Log.getStackTraceString(tr));
     }
 
     public static int wtf(String tag, String msg, Throwable tr) {
-        return Log.println(Log.LOG_ID_EVENTS, WTF, tag, msg + " \n" + getStackTraceString(tr));
-    }
-
-    /**
-     * Handy function to get a loggable stack trace from a Throwable
-     * 
-     * @param tr An exception to log
-     */
-    public static String getStackTraceString(Throwable tr) {
-        if (tr == null) {
-            return "";
-        }
-
-        // This is to reduce the amount of log spew that apps do in the non-error
-        // condition of the network being unavailable.
-        Throwable t = tr;
-        while (t != null) {
-            if (t instanceof UnknownHostException) {
-                return "";
-            }
-            t = t.getCause();
-        }
-
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        tr.printStackTrace(pw);
-        String stackTrace = sw.toString();
-        if (stackTrace.length() > MAX_STACK_TRACE_SIZE) {
-            return stackTrace.substring(0, MAX_STACK_TRACE_SIZE - 4) + " ...";
-        } else {
-            return stackTrace;
-        }
+        return Log.println(Log.LOG_ID_EVENTS, Log.WTF, tag, msg + " \n" + Log.getStackTraceString(tr));
     }
 }

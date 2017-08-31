@@ -327,7 +327,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             Log.w(LOG_TAG, "Cannot write file: " + mFile.getName(), e);
         }
 
-        // Clean up an unsuccessfully written file
+        // Clean up an unsuccessfully written file.
         if (mFile.exists()) {
             if (!mFile.delete()) {
                 Log.e(LOG_TAG, "Cannot clean up partially-written file " + mFile);
