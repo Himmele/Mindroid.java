@@ -23,7 +23,7 @@ import mindroid.util.concurrent.Future;
  * Defines a message containing a description and arbitrary data object that can be sent to a
  * {@link Handler}. This object contains two extra int fields and an extra object field that allow
  * you to not do allocations in many cases.
- * 
+ *
  * <p class="note">
  * While the constructor of Message is public, the best way to get one of these is to call
  * {@link #obtain Message.obtain()} or one of the {@link Handler#obtainMessage
@@ -96,7 +96,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but copies the values of an existing message (including its
      * target) into the new one.
-     * 
+     *
      * @param origMessage Original message to copy.
      * @return A Message object from the global pool.
      */
@@ -118,7 +118,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but sets the value for the <em>target</em> member on the Message
      * returned.
-     * 
+     *
      * @param handler Handler to assign to the returned Message object's <em>target</em> member.
      * @return A Message object from the global pool.
      */
@@ -132,7 +132,7 @@ public final class Message {
     /**
      * Same as {@link #obtain(Handler)}, but assigns a callback Runnable on the Message that is
      * returned.
-     * 
+     *
      * @param handler Handler to assign to the returned Message object's <em>target</em> member.
      * @param callback Runnable that will execute when the message is handled.
      * @return A Message object from the global pool.
@@ -148,7 +148,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but sets the values for both <em>target</em> and <em>what</em>
      * members on the Message.
-     * 
+     *
      * @param handler Value to assign to the <em>target</em> member.
      * @param what Value to assign to the <em>what</em> member.
      * @return A Message object from the global pool.
@@ -164,7 +164,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but sets the values of the <em>target</em>, <em>what</em>, and
      * <em>obj</em> members.
-     * 
+     *
      * @param handler The <em>target</em> value to set.
      * @param what The <em>what</em> value to set.
      * @param obj The <em>object</em> method to set.
@@ -182,7 +182,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but sets the values of the <em>target</em>, <em>what</em>,
      * <em>arg1</em>, and <em>arg2</em> members.
-     * 
+     *
      * @param handler The <em>target</em> value to set.
      * @param what The <em>what</em> value to set.
      * @param arg1 The <em>arg1</em> value to set.
@@ -202,7 +202,7 @@ public final class Message {
     /**
      * Same as {@link #obtain()}, but sets the values of the <em>target</em>, <em>what</em>,
      * <em>arg1</em>, <em>arg2</em>, and <em>obj</em> members.
-     * 
+     *
      * @param handler The <em>target</em> value to set.
      * @param what The <em>what</em> value to set.
      * @param arg1 The <em>arg1</em> value to set.
@@ -292,7 +292,7 @@ public final class Message {
      * Retrieve callback object that will execute when this message is handled. This object must
      * implement Runnable. This is called by the <em>target</em> {@link Handler} that is receiving
      * this Message to dispatch it. If not set, the message will be dispatched to the receiving
-     * Handler's {@link Handler#handleMessage(Message Handler.handleMessage())}.
+     * Handler's {@link Handler#handleMessage(Message)}.
      */
     public Runnable getCallback() {
         return callback;
@@ -301,7 +301,7 @@ public final class Message {
     /**
      * Obtains a Bundle of arbitrary data associated with this event, lazily creating it if
      * necessary. Set this value by calling {@link #setData(Bundle)}.
-     * 
+     *
      * @see #peekData()
      * @see #setData(Bundle)
      */
@@ -316,7 +316,7 @@ public final class Message {
     /**
      * Like getData(), but does not lazily create the Bundle. A null is returned if the Bundle does
      * not already exist. See {@link #getData} for further information on this.
-     * 
+     *
      * @see #getData()
      * @see #setData(Bundle)
      */
@@ -327,7 +327,7 @@ public final class Message {
     /**
      * Sets a Bundle of arbitrary data values. Use arg1 and arg1 members as a lower cost way to send
      * a few simple integer values, if you can.
-     * 
+     *
      * @see #getData()
      * @see #peekData()
      */
@@ -360,7 +360,7 @@ public final class Message {
 
     /**
      * Optional result. The semantics of exactly how this is used are up to the sender and receiver.
-     * 
+     *
      * @hide
      */
     public Future result;

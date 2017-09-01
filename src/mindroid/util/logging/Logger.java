@@ -39,7 +39,7 @@ public class Logger extends Service {
     public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
     public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
     public static final String ACTION_CLEAR_LOG = "mindroid.util.logging.CLEAR_LOG";
-    
+
     private Map mLogWorkers = new HashMap();
 
     class LogWorker extends Thread {
@@ -147,7 +147,7 @@ public class Logger extends Service {
                 mCustomHandler = null;
             }
         }
-        
+
         void quit() {
             interrupt();
             mLogBuffer.quit();
@@ -168,7 +168,7 @@ public class Logger extends Service {
                 return false;
             }
         }
-        
+
         void flush() {
             if (mFileHandler != null) {
                 mFileHandler.flush();
@@ -271,7 +271,7 @@ public class Logger extends Service {
             }
         }
     }
-    
+
     private void flushLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         if (mLogWorkers.containsKey(new Integer(logBuffer))) {

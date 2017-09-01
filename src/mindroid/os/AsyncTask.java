@@ -27,7 +27,7 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * operations and publish results on the UI thread without having to manipulate threads and/or
  * handlers.
  * </p>
- * 
+ *
  * <p>
  * AsyncTask is designed to be a helper class around {@link Thread} and {@link Handler} and does not
  * constitute a generic threading framework. AsyncTasks should ideally be used for short operations
@@ -35,7 +35,7 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * highly recommended you use the various APIs provided by the <code>java.util.concurrent</code>
  * package such as {@link Executor}, {@link ThreadPoolExecutor}.
  * </p>
- * 
+ *
  * <p>
  * An asynchronous task is defined by a computation that runs on a background thread and whose
  * result is published on the UI thread. An asynchronous task is defined by 3 generic types, called
@@ -43,24 +43,24 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * <code>onPreExecute</code>, <code>doInBackground</code>, <code>onProgressUpdate</code> and
  * <code>onPostExecute</code>.
  * </p>
- * 
+ *
  * <div class="special reference"> <h3>Developer Guides</h3>
  * <p>
  * For more information about using tasks and threads, read the <a href="{@docRoot}
  * guide/topics/fundamentals/processes-and-threads.html">Processes and Threads</a> developer guide.
  * </p>
  * </div>
- * 
+ *
  * <h2>Usage</h2>
  * <p>
  * AsyncTask must be subclassed to be used. The subclass will override at least one method (
  * {@link #doInBackground}), and most often will override a second one ({@link #onPostExecute}.)
  * </p>
- * 
+ *
  * <p>
  * Here is an example of subclassing:
  * </p>
- * 
+ *
  * <pre class="prettyprint">
  * private class DownloadFilesTask extends AsyncTask&lt;URL, Integer, Long&gt; {
  *     protected Long doInBackground(Object urls) {
@@ -74,25 +74,25 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  *         }
  *         return totalSize;
  *     }
- * 
+ *
  *     protected void onProgressUpdate(Integer... progress) {
  *         setProgressPercent(progress[0]);
  *     }
- * 
+ *
  *     protected void onPostExecute(Long result) {
  *         showDialog(&quot;Downloaded &quot; + result + &quot; bytes&quot;);
  *     }
  * }
  * </pre>
- * 
+ *
  * <p>
  * Once created, a task is executed very simply:
  * </p>
- * 
+ *
  * <pre class="prettyprint">
  * new DownloadFilesTask().execute(url1, url2, url3);
  * </pre>
- * 
+ *
  * <h2>AsyncTask's generic types</h2>
  * <p>
  * The three types used by an asynchronous task are the following:
@@ -107,11 +107,11 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * Not all types are always used by an asynchronous task. To mark a type as unused, simply use the
  * type {@link Void}:
  * </p>
- * 
+ *
  * <pre>
  * private class MyTask extends AsyncTask&lt;Void, Void, Void&gt; { ... }
  * </pre>
- * 
+ *
  * <h2>The 4 steps</h2>
  * <p>
  * When an asynchronous task is executed, the task goes through 4 steps:
@@ -133,17 +133,17 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * <li>{@link #onPostExecute}, invoked on the UI thread after the background computation finishes.
  * The result of the background computation is passed to this step as a parameter.</li>
  * </ol>
- * 
+ *
  * <h2>Cancelling a task</h2>
  * <p>
  * A task can be cancelled at any time by invoking {@link #cancel(boolean)}. Invoking this method
  * will cause subsequent calls to {@link #isCancelled()} to return true. After invoking this method,
  * {@link #onCancelled(Object)}, instead of {@link #onPostExecute(Object)} will be invoked after
- * {@link #doInBackground(Object)} returns. To ensure that a task is cancelled as quickly as
+ * {@link #doInBackground(Object[])} returns. To ensure that a task is cancelled as quickly as
  * possible, you should always check the return value of {@link #isCancelled()} periodically from
- * {@link #doInBackground(Object)}, if possible (inside a loop for instance.)
+ * {@link #doInBackground(Object[])}, if possible (inside a loop for instance.)
  * </p>
- * 
+ *
  * <h2>Threading rules</h2>
  * <p>
  * There are a few threading rules that must be followed for this class to work properly:
@@ -157,7 +157,7 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * <li>The task can be executed only once (an exception will be thrown if a second execution is
  * attempted.)</li>
  * </ul>
- * 
+ *
  * <h2>Memory observability</h2>
  * <p>
  * AsyncTask guarantees that all callback calls are synchronized in such a way that the following
@@ -171,14 +171,13 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
  * </ul>
  */
 public abstract class AsyncTask {
-    private static final String LOG_TAG = "AsyncTask";
     private Executor mExecutor;
     private InternalHandler mHandler;
     private WorkerRunnable mWorkerRunnable;
     private boolean mCancelled;
 
-    public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor();
-    public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor("AsyncTask", 4);
+    public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor("AsyncTask", false);
+    public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor("AsyncTask", 4, false);
 
     public AsyncTask() {
         mExecutor = null;
@@ -214,13 +213,13 @@ public abstract class AsyncTask {
     /**
      * Override this method to perform a computation on a background thread. The specified
      * parameters are the parameters passed to {@link #execute} by the caller of this task.
-     * 
+     *
      * This method can call {@link #publishProgress} to publish updates on the UI thread.
-     * 
+     *
      * @param params The parameters of the task.
-     * 
+     *
      * @return A result, defined by the subclass of this task.
-     * 
+     *
      * @see #onPreExecute()
      * @see #onPostExecute
      * @see #publishProgress
@@ -229,7 +228,7 @@ public abstract class AsyncTask {
 
     /**
      * Runs on the UI thread before {@link #doInBackground}.
-     * 
+     *
      * @see #onPostExecute
      * @see #doInBackground
      */
@@ -241,13 +240,13 @@ public abstract class AsyncTask {
      * Runs on the UI thread after {@link #doInBackground}. The specified result is the value
      * returned by {@link #doInBackground}.
      * </p>
-     * 
+     *
      * <p>
      * This method won't be invoked if the task was cancelled.
      * </p>
-     * 
+     *
      * @param result The result of the operation computed by {@link #doInBackground}.
-     * 
+     *
      * @see #onPreExecute
      * @see #doInBackground
      * @see #onCancelled(Object)
@@ -258,9 +257,9 @@ public abstract class AsyncTask {
     /**
      * Runs on the UI thread after {@link #publishProgress} is invoked. The specified values are the
      * values passed to {@link #publishProgress}.
-     * 
+     *
      * @param values The values indicating progress.
-     * 
+     *
      * @see #publishProgress
      * @see #doInBackground
      */
@@ -270,16 +269,16 @@ public abstract class AsyncTask {
     /**
      * <p>
      * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
-     * {@link #doInBackground(Object)} has finished.
+     * {@link #doInBackground(Object[])} has finished.
      * </p>
-     * 
+     *
      * <p>
      * The default implementation simply invokes {@link #onCancelled()} and ignores the result. If
      * you write your own implementation, do not call <code>super.onCancelled(result)</code>.
      * </p>
-     * 
-     * @param result The result, if any, computed in {@link #doInBackground(Object)}, can be null
-     * 
+     *
+     * @param result The result, if any, computed in {@link #doInBackground(Object[])}, can be null
+     *
      * @see #cancel(boolean)
      * @see #isCancelled()
      */
@@ -292,12 +291,12 @@ public abstract class AsyncTask {
      * Applications should preferably override {@link #onCancelled(Object)}. This method is invoked
      * by the default implementation of {@link #onCancelled(Object)}.
      * </p>
-     * 
+     *
      * <p>
      * Runs on the UI thread after {@link #cancel(boolean)} is invoked and
-     * {@link #doInBackground(Object)} has finished.
+     * {@link #doInBackground(Object[])} has finished.
      * </p>
-     * 
+     *
      * @see #onCancelled(Object)
      * @see #cancel(boolean)
      * @see #isCancelled()
@@ -308,11 +307,11 @@ public abstract class AsyncTask {
     /**
      * Returns <tt>true</tt> if this task was cancelled before it completed normally. If you are
      * calling {@link #cancel(boolean)} on the task, the value returned by this method should be
-     * checked periodically from {@link #doInBackground(Object)} to end the task as soon as
+     * checked periodically from {@link #doInBackground(Object[])} to end the task as soon as
      * possible.
-     * 
+     *
      * @return <tt>true</tt> if task was cancelled before it completed
-     * 
+     *
      * @see #cancel(boolean)
      */
     public final boolean isCancelled() {
@@ -330,21 +329,21 @@ public abstract class AsyncTask {
      * determines whether the thread executing this task should be interrupted in an attempt to stop
      * the task.
      * </p>
-     * 
+     *
      * <p>
      * Calling this method will result in {@link #onCancelled(Object)} being invoked on the UI
-     * thread after {@link #doInBackground(Object)} returns. Calling this method guarantees that
+     * thread after {@link #doInBackground(Object[])} returns. Calling this method guarantees that
      * {@link #onPostExecute(Object)} is never invoked. After invoking this method, you should check
      * the value returned by {@link #isCancelled()} periodically from
-     * {@link #doInBackground(Object)} to finish the task as early as possible.
+     * {@link #doInBackground(Object[])} to finish the task as early as possible.
      * </p>
-     * 
+     *
      * @param mayInterruptIfRunning <tt>true</tt> if the thread executing this task should be
      * interrupted; otherwise, in-progress tasks are allowed to complete.
-     * 
+     *
      * @return <tt>false</tt> if the task could not be cancelled, typically because it has already
      * completed normally; <tt>true</tt> otherwise
-     * 
+     *
      * @see #isCancelled()
      * @see #onCancelled(Object)
      */
@@ -365,11 +364,11 @@ public abstract class AsyncTask {
     }
 
     /**
-     * Convenience version of {@link #execute(Object)} for use with a simple Runnable object. See
-     * {@link #execute(Object)} for more information on the order of execution.
-     * 
-     * @see #execute(Object)
-     * @see #executeOnExecutor(mindroid.util.concurrent.Executor, Object)
+     * Convenience version of {@link #execute(Object[])} for use with a simple Runnable object. See
+     * {@link #execute(Object[])} for more information on the order of execution.
+     *
+     * @see #execute(Object[])
+     * @see #executeOnExecutor(Executor, Object[])
      */
     public static void execute(Runnable runnable) {
         SERIAL_EXECUTOR.execute(runnable);
@@ -379,11 +378,11 @@ public abstract class AsyncTask {
      * This method can be invoked from {@link #doInBackground} to publish updates on the UI thread
      * while the background computation is still running. Each call to this method will trigger the
      * execution of {@link #onProgressUpdate} on the UI thread.
-     * 
+     *
      * {@link #onProgressUpdate} will note be called if the task has been canceled.
-     * 
+     *
      * @param values The progress values to update the UI with.
-     * 
+     *
      * @see #onProgressUpdate
      * @see #doInBackground
      */

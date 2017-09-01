@@ -25,7 +25,7 @@ import java.util.Set;
 
 /**
  * A mapping from String values to various types.
- * 
+ *
  */
 public final class Bundle {
     private HashMap mMap;
@@ -36,8 +36,8 @@ public final class Bundle {
 
     /**
      * Constructs a Bundle containing a copy of the mappings from the given Bundle.
-     * 
-     * @param otherBundle a Bundle to be copied.
+     *
+     * @param other a Bundle to be copied.
      */
     public Bundle(Bundle other) {
         mMap = new HashMap();
@@ -67,7 +67,7 @@ public final class Bundle {
 
     /**
      * Returns the number of mappings contained in this Bundle.
-     * 
+     *
      * @return the number of mappings as an int.
      */
     public int size() {
@@ -83,7 +83,7 @@ public final class Bundle {
 
     /**
      * Returns true if the given key is contained in the mapping of this Bundle.
-     * 
+     *
      * @param key a String key
      * @return true if the key is part of the mapping, false otherwise
      */
@@ -93,7 +93,7 @@ public final class Bundle {
 
     /**
      * Returns a Set containing the Strings used as keys in this Bundle.
-     * 
+     *
      * @return a Set of String keys
      */
     public Set keySet() {
@@ -102,7 +102,7 @@ public final class Bundle {
 
     /**
      * Returns the entry with the given key as an object.
-     * 
+     *
      * @param key a String key
      * @return an Object, or null
      */
@@ -112,7 +112,7 @@ public final class Bundle {
 
     /**
      * Removes any entry with the given key from the mapping of this Bundle.
-     * 
+     *
      * @param key a String key
      */
     public void remove(String key) {
@@ -121,7 +121,7 @@ public final class Bundle {
 
     /**
      * Inserts all key-value pairs from the given Bundle into this Bundle.
-     * 
+     *
      * @param bundle a Bundle
      */
     public void putAll(Bundle bundle) {
@@ -133,7 +133,7 @@ public final class Bundle {
     /**
      * Inserts a Boolean value into the mapping of this Bundle, replacing any existing value for the
      * given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a Boolean, or null
      */
@@ -144,7 +144,7 @@ public final class Bundle {
     /**
      * Inserts a byte value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a byte
      */
@@ -155,7 +155,7 @@ public final class Bundle {
     /**
      * Inserts a char value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a char, or null
      */
@@ -166,7 +166,7 @@ public final class Bundle {
     /**
      * Inserts a short value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a short
      */
@@ -177,7 +177,7 @@ public final class Bundle {
     /**
      * Inserts an int value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value an int, or null
      */
@@ -188,7 +188,7 @@ public final class Bundle {
     /**
      * Inserts a long value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a long
      */
@@ -199,7 +199,7 @@ public final class Bundle {
     /**
      * Inserts a float value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a float
      */
@@ -210,7 +210,7 @@ public final class Bundle {
     /**
      * Inserts a double value into the mapping of this Bundle, replacing any existing value for the
      * given key.
-     * 
+     *
      * @param key a String, or null
      * @param value a double
      */
@@ -221,7 +221,7 @@ public final class Bundle {
     /**
      * Inserts a String value into the mapping of this Bundle, replacing any existing value for the
      * given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a String, or null
      */
@@ -234,7 +234,7 @@ public final class Bundle {
     /**
      * Inserts an object value into the mapping of this Bundle, replacing any existing value for the
      * given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value an object, or null
      */
@@ -247,7 +247,7 @@ public final class Bundle {
     /**
      * Inserts a boolean array value into the mapping of this Bundle, replacing any existing value
      * for the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a boolean array object, or null
      */
@@ -260,7 +260,7 @@ public final class Bundle {
     /**
      * Inserts a byte array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a byte array object, or null
      */
@@ -273,7 +273,7 @@ public final class Bundle {
     /**
      * Inserts a short array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a short array object, or null
      */
@@ -286,7 +286,7 @@ public final class Bundle {
     /**
      * Inserts a char array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a char array object, or null
      */
@@ -299,7 +299,7 @@ public final class Bundle {
     /**
      * Inserts an int array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value an int array object, or null
      */
@@ -312,7 +312,7 @@ public final class Bundle {
     /**
      * Inserts a long array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a long array object, or null
      */
@@ -325,7 +325,7 @@ public final class Bundle {
     /**
      * Inserts a float array value into the mapping of this Bundle, replacing any existing value for
      * the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a float array object, or null
      */
@@ -338,7 +338,7 @@ public final class Bundle {
     /**
      * Inserts a double array value into the mapping of this Bundle, replacing any existing value
      * for the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a double array object, or null
      */
@@ -351,7 +351,7 @@ public final class Bundle {
     /**
      * Inserts a String array value into the mapping of this Bundle, replacing any existing value
      * for the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a String array object, or null
      */
@@ -364,7 +364,7 @@ public final class Bundle {
     /**
      * Inserts an ArrayList<Integer> value into the mapping of this Bundle, replacing any existing
      * value for the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value an ArrayList<Integer> object, or null
      */
@@ -377,7 +377,7 @@ public final class Bundle {
     /**
      * Inserts an ArrayList<String> value into the mapping of this Bundle, replacing any existing
      * value for the given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value an ArrayList<String> object, or null
      */
@@ -390,7 +390,7 @@ public final class Bundle {
     /**
      * Inserts a Bundle value into the mapping of this Bundle, replacing any existing value for the
      * given key. Either key or value may be null.
-     * 
+     *
      * @param key a String, or null
      * @param value a Bundle object, or null
      */
@@ -403,7 +403,7 @@ public final class Bundle {
     /**
      * Inserts an {@link IBinder} value into the mapping of this Bundle, replacing any existing
      * value for the given key. Either key or value may be null.
-     * 
+     *
      * <p class="note">
      * You should be very careful when using this function. In many places where Bundles are used
      * (such as inside of Intent objects), the Bundle can live longer inside of another process than
@@ -411,7 +411,7 @@ public final class Bundle {
      * become invalid when your process goes away, and no longer usable, even if a new process is
      * created for you later on.
      * </p>
-     * 
+     *
      * @param key a String, or null
      * @param value an IBinder object, or null
      */
@@ -424,7 +424,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or false if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a boolean value
      */
@@ -435,7 +435,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a boolean value
@@ -455,7 +455,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or (byte) 0 if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a byte value
      */
@@ -466,7 +466,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a byte value
@@ -486,7 +486,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or (char) 0 if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a char value
      */
@@ -497,7 +497,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a char value
@@ -517,7 +517,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or (short) 0 if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a short value
      */
@@ -528,7 +528,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a short value
@@ -548,7 +548,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or 0 if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return an int value
      */
@@ -559,7 +559,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return an int value
@@ -579,7 +579,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or 0L if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a long value
      */
@@ -590,7 +590,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a long value
@@ -610,7 +610,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or 0.0f if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a float value
      */
@@ -621,7 +621,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a float value
@@ -641,7 +641,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or 0.0 if no mapping of the desired type
      * exists for the given key.
-     * 
+     *
      * @param key a String
      * @return a double value
      */
@@ -652,7 +652,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String
      * @param defaultValue Value to return if key does not exist
      * @return a double value
@@ -672,7 +672,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a String value, or null
      */
@@ -691,7 +691,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String, or null
      * @param defaultValue Value to return if key does not exist
      * @return a String value, or null
@@ -711,7 +711,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return an object value, or null
      */
@@ -723,7 +723,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or defaultValue if no mapping of the desired
      * type exists for the given key.
-     * 
+     *
      * @param key a String, or null
      * @param defaultValue Value to return if key does not exist
      * @return an object value, or null
@@ -739,7 +739,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a boolean[] value, or null
      */
@@ -758,7 +758,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a byte[] value, or null
      */
@@ -777,7 +777,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a short[] value, or null
      */
@@ -796,7 +796,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a char[] value, or null
      */
@@ -815,7 +815,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return an int[] value, or null
      */
@@ -834,7 +834,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a long[] value, or null
      */
@@ -853,7 +853,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a float[] value, or null
      */
@@ -872,7 +872,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a double[] value, or null
      */
@@ -891,7 +891,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a String[] value, or null
      */
@@ -910,7 +910,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return an ArrayList<String> value, or null
      */
@@ -929,7 +929,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return an ArrayList<String> value, or null
      */
@@ -948,7 +948,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return a Bundle value, or null
      */
@@ -967,7 +967,7 @@ public final class Bundle {
     /**
      * Returns the value associated with the given key, or null if no mapping of the desired type
      * exists for the given key or a null value is explicitly associated with the key.
-     * 
+     *
      * @param key a String, or null
      * @return an IBinder value, or null
      */
@@ -999,7 +999,7 @@ public final class Bundle {
 
     /**
      * Retain only basic types within the Bundle.
-     * 
+     *
      * @hide
      */
     public void retainBasicTypes() {

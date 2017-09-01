@@ -22,7 +22,7 @@ package mindroid.os;
  * mechanism designed for high performance when performing in-process and cross-process calls. This
  * interface describes the abstract protocol for interacting with a remotable object. Do not
  * implement this interface directly, instead extend from {@link Binder}.
- * 
+ *
  * @see Binder
  */
 public interface IBinder {
@@ -47,7 +47,7 @@ public interface IBinder {
 
     /**
      * Perform a generic operation with the object.
-     * 
+     *
      * @param what The action to perform.
      * @param data data to send to the target. Must not be null.
      * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}

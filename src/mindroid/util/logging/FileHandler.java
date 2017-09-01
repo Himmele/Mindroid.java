@@ -102,7 +102,7 @@ public class FileHandler extends Handler {
         mLimit = mLimit < 0 ? DEFAULT_LIMIT : mLimit;
         mFiles = new File[mCount];
     }
-    
+
     private void initOutputFiles() throws FileNotFoundException, IOException {
         for (int generation = 0; generation < mCount; generation++) {
             mFiles[generation] = new File(parseFileName(generation));
@@ -117,7 +117,7 @@ public class FileHandler extends Handler {
         }
         mWriter = new Writer(mFiles[0], mAppend);
     }
-    
+
     private void initPreferences() {
         if (mDataVolumeLimit > 0) {
             String fileName = Integer.toHexString(mFiles[0].getAbsolutePath().hashCode()) + ".xml";
@@ -297,7 +297,7 @@ public class FileHandler extends Handler {
         }
         init(pattern, Boolean.valueOf(append), new Integer(limit), new Integer(count), null, null);
     }
-    
+
     public FileHandler(String pattern, int limit, int count, boolean append, int bufferSize, int dataVolumeLimit) throws IOException {
         if (pattern == null || pattern.length() == 0) {
             throw new IllegalArgumentException("Pattern cannot be null or empty");
@@ -316,7 +316,7 @@ public class FileHandler extends Handler {
      */
     public void close() {
         flush();
-        
+
         if (mWriter != null) {
             try {
                 mWriter.close();
@@ -331,7 +331,7 @@ public class FileHandler extends Handler {
             if (mDataVolumeLimit > 0) {
                 mPreferences.edit().putInt(DATA_VOLUME, mDataVolume).commit();
             }
-        
+
             try {
                 mWriter.flush();
             } catch (IOException ignore) {
@@ -362,17 +362,17 @@ public class FileHandler extends Handler {
     public synchronized void publish(LogRecord record) {
         String logMessage = record.toString();
         final int logMessageSize = logMessage.length() + CRLF.length();
-        
+
         if (mDataVolumeLimit > 0) {
             if (mDataVolume + logMessageSize > mDataVolumeLimit) {
                 return;
             }
         }
-        
+
         if (mLimit > 0 && (mWriter.size() + logMessageSize) >= mLimit) {
             findNextGeneration();
         }
-        
+
         try {
             mWriter.write(logMessage);
             mWriter.newLine();
@@ -391,7 +391,7 @@ public class FileHandler extends Handler {
         if (fileName == null) {
             return false;
         }
-        
+
         File tempFile = new File(mFiles[0].getParentFile(), Integer.toHexString(mFiles[0].getAbsolutePath().hashCode()) + ".tmp");
         try {
             tempFile.createNewFile();
@@ -468,7 +468,7 @@ public class FileHandler extends Handler {
                 }
                 file.createNewFile();
             }
-            
+
             if (mBufferSize > 0) {
                 mWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file, append), mBufferSize));
             } else {
@@ -476,7 +476,7 @@ public class FileHandler extends Handler {
             }
             mSize = file.length();
         }
-        
+
         public void write(String s) throws IOException {
             mWriter.write(s);
             mSize += s.length();

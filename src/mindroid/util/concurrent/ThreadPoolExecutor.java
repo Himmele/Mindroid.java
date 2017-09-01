@@ -16,25 +16,36 @@
 
 package mindroid.util.concurrent;
 
+import mindroid.os.SystemClock;
+import mindroid.util.Log;
+
 public class ThreadPoolExecutor extends Executor {
+    private static final String LOG_TAG = "ThreadPoolExecutor";
+
     private final String mName;
     private final int mSize;
-    private WorkerThread[] mWorkerThreads;
+    private final boolean mShutdownAllowed;
     private LinkedBlockingQueue mQueue;
+    private WorkerThread[] mWorkerThreads;
 
     public ThreadPoolExecutor(String name, int size) {
+        this(name, size, true);
+    }
+
+    public ThreadPoolExecutor(String name, int size, boolean shutdownAllowed) {
         mName = name;
         mSize = size;
-        mWorkerThreads = new WorkerThread[mSize];
+        mShutdownAllowed = shutdownAllowed;
         mQueue = new LinkedBlockingQueue();
         start();
     }
 
     protected void finalize() {
-        shutdown();
+        shutdown(10000, true);
     }
 
-    public void start() {
+    private void start() {
+        mWorkerThreads = new WorkerThread[mSize];
         for (int i = 0; i < mSize; i++) {
             mWorkerThreads[i] = new WorkerThread((mName != null ? mName : "ThreadPoolExecutor") + "[Worker " + i + "]");
             mWorkerThreads[i].setPriority(Thread.MIN_PRIORITY);
@@ -43,17 +54,36 @@ public class ThreadPoolExecutor extends Executor {
         }
     }
 
-    public void shutdown() {
-        for (int i = 0; i < mSize; i++) {
-            mWorkerThreads[i].interrupt();
-            mQueue.put(null);
+    public boolean shutdown(long timeout) {
+        return shutdown(timeout, mShutdownAllowed);
+    }
+
+    private boolean shutdown(long timeout, boolean shutdownAllowed) {
+        if (!shutdownAllowed) {
+            IllegalStateException e = new IllegalStateException("Worker threads are not allowed to shut down");
+            Log.w(LOG_TAG, e.getMessage(), e);
+            return false;
         }
-        for (int i = 0; i < mSize; i++) {
-            try {
-                mWorkerThreads[i].join();
-            } catch (InterruptedException e) {
+        if (mWorkerThreads != null) {
+            for (int i = 0; i < mSize; i++) {
+                mWorkerThreads[i].interrupt();
+                mQueue.put(null);
             }
+            final long start = SystemClock.uptimeMillis();
+            long t = timeout;
+            for (int i = 0; i < mSize; i++) {
+                try {
+                    mWorkerThreads[i].join((t <= 0) ? 1 : t);
+                    if (mWorkerThreads[i].isAlive()) {
+                        Log.e(LOG_TAG, "Cannot join thread " + mWorkerThreads[i].getName());
+                    }
+                } catch (InterruptedException ignore) {
+                }
+                t = start + t - SystemClock.uptimeMillis();
+            }
+            mWorkerThreads = null;
         }
+        return true;
     }
 
     public void execute(Runnable runnable) {
@@ -61,38 +91,7 @@ public class ThreadPoolExecutor extends Executor {
     }
 
     public boolean cancel(Runnable runnable) {
-        mQueue.remove(runnable);
-        return true;
-    }
-
-    class AtomicBoolean {
-        private boolean mValue;
-
-        public AtomicBoolean(boolean value) {
-            mValue = value;
-        }
-
-        public synchronized boolean get() {
-            return mValue;
-        }
-
-        public synchronized void set(boolean newValue) {
-            mValue = newValue;
-        }
-
-        public synchronized boolean compareAndSet(boolean expectedValue, boolean updateValue) {
-            if (mValue == expectedValue) {
-                mValue = updateValue;
-                return true;
-            }
-            return false;
-        }
-
-        public synchronized boolean getAndSet(boolean newValue) {
-            boolean value = mValue;
-            mValue = newValue;
-            return value;
-        }
+        return mQueue.remove(runnable);
     }
 
     class WorkerThread extends Thread {
@@ -126,6 +125,36 @@ public class ThreadPoolExecutor extends Executor {
 
         private void setQueue(LinkedBlockingQueue queue) {
             mQueue = queue;
+        }
+    }
+
+    class AtomicBoolean {
+        private boolean mValue;
+
+        public AtomicBoolean(boolean value) {
+            mValue = value;
+        }
+
+        public synchronized boolean get() {
+            return mValue;
+        }
+
+        public synchronized void set(boolean newValue) {
+            mValue = newValue;
+        }
+
+        public synchronized boolean compareAndSet(boolean expectedValue, boolean updateValue) {
+            if (mValue == expectedValue) {
+                mValue = updateValue;
+                return true;
+            }
+            return false;
+        }
+
+        public synchronized boolean getAndSet(boolean newValue) {
+            boolean value = mValue;
+            mValue = newValue;
+            return value;
         }
     }
 }

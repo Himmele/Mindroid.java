@@ -37,7 +37,7 @@ public class Environment {
 
     /**
      * Sets the Mindroid root directory.
-     * 
+     *
      * @hide
      */
     public static void setRootDirectory(String rootDirectory) {
@@ -49,42 +49,42 @@ public class Environment {
         CERTIFICATE_DIRECTORY = new File(ROOT_DIRECTORY, "certs");
         LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
     }
-    
+
     /**
      * Sets the Mindroid apps directory.
      */
     public static void setAppsDirectory(String directory) {
         APPS_DIRECTORY = new File(directory);
     }
-    
+
     /**
      * Sets the Mindroid data directory.
      */
     public static void setDataDirectory(String directory) {
         DATA_DIRECTORY = new File(directory);
     }
-    
+
     /**
      * Sets the Mindroid preferences directory.
      */
     public static void setPreferencesDirectory(String directory) {
         PREFERENCES_DIRECTORY = new File(directory);
     }
-    
+
     /**
      * Sets the Mindroid cache directory.
      */
     public static void setCacheDirectory(String directory) {
         CACHE_DIRECTORY = new File(directory);
     }
-    
+
     /**
      * Sets the Mindroid certificates directory.
      */
     public static void setCertificatesDirectory(String directory) {
         CERTIFICATE_DIRECTORY = new File(directory);
     }
-    
+
     /**
      * Sets the Mindroid log directory.
      */
@@ -119,14 +119,14 @@ public class Environment {
     public static File getPreferencesDirectory() {
         return PREFERENCES_DIRECTORY;
     }
-    
+
     /**
      * Gets the Mindroid cache directory.
      */
     public static File getCacheDirectory() {
         return CACHE_DIRECTORY;
     }
-    
+
     /**
      * Gets the Mindroid certificates directory.
      */
@@ -146,13 +146,13 @@ public class Environment {
      * through which you can retrieve and modify its values. Only one instance of the
      * SharedPreferences object is returned to any callers for the same name, meaning they will see
      * each other's edits as soon as they are made.
-     * 
+     *
      * @param baseDir The base directory of the preferences file.
      * @param fileName Desired preferences file name. If a preferences file by this name does not exist, it
      * will be created when you retrieve an editor (SharedPreferences.edit()) and then commit
      * changes (Editor.commit()).
-     * @param mode Operating mode. Use 0 or {@link #MODE_PRIVATE} for the default operation.
-     * 
+     * @param mode Operating mode. Use 0 or {@link mindroid.content.Context#MODE_PRIVATE} for the default operation.
+     *
      * @return Returns the single SharedPreferences instance that can be used to retrieve and modify
      * the preference values.
      */
@@ -160,18 +160,18 @@ public class Environment {
         File sharedPrefsFile = new File(baseDir, fileName);
         return getSharedPreferences(sharedPrefsFile, mode);
     }
-    
+
     /**
      * Retrieve and hold the contents of the preferences file 'fileName', returning a SharedPreferences
      * through which you can retrieve and modify its values. Only one instance of the
      * SharedPreferences object is returned to any callers for the same name, meaning they will see
      * each other's edits as soon as they are made.
-     * 
+     *
      * @param sharedPrefsFile Desired preferences file. If a preferences file by this name does not exist, it
      * will be created when you retrieve an editor (SharedPreferences.edit()) and then commit
      * changes (Editor.commit()).
-     * @param mode Operating mode. Use 0 or {@link #MODE_PRIVATE} for the default operation.
-     * 
+     * @param mode Operating mode. Use 0 or {@link mindroid.content.Context#MODE_PRIVATE} for the default operation.
+     *
      * @return Returns the single SharedPreferences instance that can be used to retrieve and modify
      * the preference values.
      */

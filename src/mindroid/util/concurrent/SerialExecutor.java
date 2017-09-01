@@ -18,29 +18,59 @@ package mindroid.util.concurrent;
 
 import mindroid.os.Handler;
 import mindroid.os.HandlerThread;
+import mindroid.util.Log;
 
 public class SerialExecutor extends Executor {
+    private static final String LOG_TAG = "SerialExecutor";
+
+    private final String mName;
+    private final boolean mShutdownAllowed;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
 
-    public SerialExecutor() {
-        this("SerialExecutor");
+    public SerialExecutor(String name) {
+        this(name, true);
     }
 
-    public SerialExecutor(String name) {
-        mHandlerThread = new HandlerThread((name != null ? name : "SerialExecutor") + "[Worker]");
+    public SerialExecutor(String name, boolean shutdownAllowed) {
+        mName = name;
+        mShutdownAllowed = shutdownAllowed;
+        start();
+    }
+
+    protected void finalize() {
+        shutdown(10000, true);
+    }
+
+    private void start() {
+        mHandlerThread = new HandlerThread((mName != null ? mName : "SerialExecutor") + "[Worker]");
         mHandlerThread.setPriority(Thread.MIN_PRIORITY);
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
     }
 
-    protected void finalize() {
-        mHandlerThread.getLooper().quit();
-        try {
-            mHandlerThread.join();
-        } catch (InterruptedException e) {
-            // Ignore exceptions during shutdown.
+    public boolean shutdown(long timeout) {
+        return shutdown(timeout, mShutdownAllowed);
+    }
+
+    private boolean shutdown(long timeout, boolean shutdownAllowed) {
+        if (!shutdownAllowed) {
+            IllegalStateException e = new IllegalStateException("Worker thread is not allowed to shut down");
+            Log.w(LOG_TAG, e.getMessage(), e);
+            return false;
         }
+        if (mHandlerThread != null) {
+            mHandlerThread.getLooper().quit();
+            try {
+                mHandlerThread.join((timeout <= 0) ? 1 : timeout);
+                if (mHandlerThread.isAlive()) {
+                    Log.e(LOG_TAG, "Cannot join thread " + mHandlerThread.getName());
+                }
+            } catch (InterruptedException ignore) {
+            }
+            mHandlerThread = null;
+        }
+        return true;
     }
 
     public void execute(Runnable runnable) {
@@ -48,7 +78,6 @@ public class SerialExecutor extends Executor {
     }
 
     public boolean cancel(Runnable runnable) {
-        mHandler.removeCallbacks(runnable);
-        return true;
+        return mHandler.removeCallbacks(runnable);
     }
 }
