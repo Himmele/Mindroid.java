@@ -351,12 +351,14 @@ public abstract class AsyncTask {
         boolean isAlreadyCancelled = isCancelled();
         synchronized (this) {
             if (mExecutor != null && !isAlreadyCancelled) {
-                mExecutor.cancel(mWorkerRunnable);
-                mCancelled = true;
-                Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
-                message.obj = mWorkerRunnable;
-                message.sendToTarget();
-                return true;
+                boolean result = mExecutor.cancel(mWorkerRunnable);
+                if (result) {
+                    mCancelled = true;
+                    Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
+                    message.obj = mWorkerRunnable;
+                    message.sendToTarget();
+                }
+                return result;
             } else {
                 return false;
             }
