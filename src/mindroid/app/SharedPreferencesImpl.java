@@ -601,6 +601,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
 
             Document doc = new Document();
+            doc.setEncoding(UTF_8);
             doc.addChild(0, Node.ELEMENT, rootTag);
 
             KXmlSerializer serializer = new KXmlSerializer();

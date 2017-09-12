@@ -82,7 +82,8 @@ public class Logger extends Service {
                     mFileHandler = new FileHandler(directory + File.separator + fileName, fileLimit, fileCount, true,
                             bufferSize, dataVolumeLimit);
                 } catch (IOException e) {
-                    Log.e(LOG_TAG, "File logging error: " + e.getMessage(), e);
+                    System.out.println("E/" + LOG_TAG + ": File logging error: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
             final String customHandler = arguments.getString("customLogging", null);
@@ -91,9 +92,11 @@ public class Logger extends Service {
                     Class clazz = Class.forName(customHandler);
                     mCustomHandler = (Handler) clazz.newInstance();
                 } catch (Exception e) {
-                    Log.e(LOG_TAG, "Cannot create custom handler \'" + customHandler + "\': " + e.getMessage(), e);
+                    System.out.println("E/" + LOG_TAG + ": Cannot create custom handler \'" + customHandler + "\': " + e.getMessage());
+                    e.printStackTrace();
                 } catch (LinkageError e) {
-                    Log.e(LOG_TAG, "Linkage error: " + e.getMessage(), e);
+                    System.out.println("E/" + LOG_TAG + ": Linkage error: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
 
@@ -154,7 +157,7 @@ public class Logger extends Service {
             try {
                 join(JOIN_TIMEOUT);
                 if (isAlive()) {
-                    Log.e(LOG_TAG, "Cannot join thread " + getName());
+                    System.out.println("E/" + LOG_TAG + ": Cannot join thread " + getName());
                     mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
                 }
             } catch (InterruptedException ignore) {
