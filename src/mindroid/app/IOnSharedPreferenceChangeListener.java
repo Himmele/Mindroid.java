@@ -16,7 +16,6 @@
 
 package mindroid.app;
 
-import mindroid.content.SharedPreferences;
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
 import mindroid.os.IBinder;
@@ -44,10 +43,13 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
 
         protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
             switch (what) {
+            case MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY: {
+                String key = (String) obj;
+                onSharedPreferenceChanged(key);
+                return null;
+            }
             case MSG_ON_SHARED_PREFERENCE_CHANGED: {
-                SharedPreferences sharedPreferences = (SharedPreferences) data.getObject("sharedPreferences");
-                String key = data.getString("key");
-                onSharedPreferenceChanged(sharedPreferences, key);
+                onSharedPreferenceChanged();
                 return null;
             }
             default:
@@ -80,11 +82,12 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
                 return mRemote.hashCode();
             }
 
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException {
-                Bundle data = new Bundle();
-                data.putObject("sharedPreferences", sharedPreferences);
-                data.putString("key", key);
-                mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED, data, FLAG_ONEWAY);
+            public void onSharedPreferenceChanged(String key) throws RemoteException {
+                mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY, key, FLAG_ONEWAY);
+            }
+
+            public void onSharedPreferenceChanged() throws RemoteException {
+                mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED, FLAG_ONEWAY);
             }
         }
 
@@ -117,17 +120,27 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
                 return mRemote.hashCode();
             }
 
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException {
+            public void onSharedPreferenceChanged(String key) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
-                    mStub.onSharedPreferenceChanged(sharedPreferences, key);
+                    mStub.onSharedPreferenceChanged(key);
                 } else {
-                    mProxy.onSharedPreferenceChanged(sharedPreferences, key);
+                    mProxy.onSharedPreferenceChanged(key);
+                }
+            }
+
+            public void onSharedPreferenceChanged() throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    mStub.onSharedPreferenceChanged();
+                } else {
+                    mProxy.onSharedPreferenceChanged();
                 }
             }
         }
 
-        static final int MSG_ON_SHARED_PREFERENCE_CHANGED = 1;
+        static final int MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY = 1;
+        static final int MSG_ON_SHARED_PREFERENCE_CHANGED = 2;
     }
 
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException;
+    public void onSharedPreferenceChanged(String key) throws RemoteException;
+    public void onSharedPreferenceChanged() throws RemoteException;
 }

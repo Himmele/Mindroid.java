@@ -46,18 +46,30 @@ public interface SharedPreferences {
     /**
      * Interface definition for a callback to be invoked when a shared preference is changed.
      */
-    public interface OnSharedPreferenceChangeListener {
+    public abstract class OnSharedPreferenceChangeListener {
         /**
          * Called when a shared preference is changed, added, or removed. This may be called even if
          * a preference is set to its existing value.
-         * 
+         *
          * <p>
          * This callback will be run on the specified looper thread.
-         * 
+         *
          * @param sharedPreferences The {@link SharedPreferences} that received the change.
          * @param key The key of the preference that was changed, added, or removed.
          */
-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key);
+        public abstract void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key);
+
+        /**
+         * Called when a shared preference is changed, added, or removed. This may be called even if
+         * a preference is set to its existing value.
+         *
+         * <p>
+         * This callback will be run on the specified looper thread.
+         *
+         * @param sharedPreferences The {@link SharedPreferences} that received the change.
+         */
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences) {
+        }
     }
 
     /**

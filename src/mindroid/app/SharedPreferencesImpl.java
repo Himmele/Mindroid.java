@@ -344,8 +344,12 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             mListener = listener;
         }
 
-        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) throws RemoteException {
-            mListener.onSharedPreferenceChanged(sharedPreferences, key);
+        public void onSharedPreferenceChanged(String key) throws RemoteException {
+            mListener.onSharedPreferenceChanged(SharedPreferencesImpl.this, key);
+        }
+
+        public void onSharedPreferenceChanged() throws RemoteException {
+            mListener.onSharedPreferenceChanged(SharedPreferencesImpl.this);
         }
     }
 
@@ -380,10 +384,21 @@ public final class SharedPreferencesImpl implements SharedPreferences {
                 Map.Entry entry = (Map.Entry) itr.next();
                 IOnSharedPreferenceChangeListener listener = (IOnSharedPreferenceChangeListener) entry.getValue();
                 try {
-                    listener.onSharedPreferenceChanged(this, key);
+                    listener.onSharedPreferenceChanged(key);
                 } catch (RemoteException e) {
                     itr.remove();
                 }
+            }
+        }
+
+        Iterator itr = mListeners.entrySet().iterator();
+        while (itr.hasNext()) {
+            Map.Entry entry = (Map.Entry) itr.next();
+            IOnSharedPreferenceChangeListener listener = (IOnSharedPreferenceChangeListener) entry.getValue();
+            try {
+                listener.onSharedPreferenceChanged();
+            } catch (RemoteException e) {
+                itr.remove();
             }
         }
     }
