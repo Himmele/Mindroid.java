@@ -17,6 +17,7 @@
 
 package mindroid.os;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import mindroid.util.concurrent.Executor;
 import mindroid.util.concurrent.SerialExecutor;
 import mindroid.util.concurrent.ThreadPoolExecutor;
@@ -173,41 +174,65 @@ import mindroid.util.concurrent.ThreadPoolExecutor;
 public abstract class AsyncTask {
     private Executor mExecutor;
     private InternalHandler mHandler;
-    private WorkerRunnable mWorkerRunnable;
-    private boolean mCancelled;
+    private WorkerRunnable mRunnable;
+    private final AtomicBoolean mCancelled = new AtomicBoolean();
+
+    /**
+     * Indicates that the task has not been executed yet.
+     */
+    private static final int PENDING = 0;
+    /**
+     * Indicates that the task is running.
+     */
+    private static final int RUNNING = 1;
+    /**
+     * Indicates that {@link AsyncTask#onPostExecute} has finished.
+     */
+    private static final int FINISHED = 2;
+
+    /**
+     * Indicates the current status of the task. Each status will be set only once
+     * during the lifetime of a task.
+     */
+    private int mStatus = PENDING;
+
+    private static final int MESSAGE_POST_RESULT = 1;
+    private static final int MESSAGE_POST_PROGRESS = 2;
 
     public static final Executor SERIAL_EXECUTOR = (Executor) new SerialExecutor("AsyncTask", false);
     public static final Executor THREAD_POOL_EXECUTOR = (Executor) new ThreadPoolExecutor("AsyncTask", 4, false);
 
     public AsyncTask() {
-        mExecutor = null;
-        mCancelled = false;
         mHandler = new InternalHandler();
-        mWorkerRunnable = new WorkerRunnable(this);
+        mRunnable = new WorkerRunnable(this);
     }
 
     public AsyncTask execute(Object[] params) {
-        if (mExecutor == null) {
-            mExecutor = SERIAL_EXECUTOR;
-            onPreExecute();
-            mWorkerRunnable.mParams = params;
-            mExecutor.execute(mWorkerRunnable);
-            return this;
-        } else {
-            return null;
-        }
+        return executeOnExecutor(SERIAL_EXECUTOR, params);
     }
 
     public AsyncTask executeOnExecutor(Executor executor, Object[] params) {
-        if (mExecutor == null) {
-            mExecutor = executor;
-            onPreExecute();
-            mWorkerRunnable.mParams = params;
-            mExecutor.execute(mWorkerRunnable);
-            return this;
-        } else {
-            return null;
+        if (mStatus != PENDING) {
+            switch (mStatus) {
+            case RUNNING:
+                throw new IllegalStateException("Cannot execute task:"
+                        + " the task is already running");
+            case FINISHED:
+                throw new IllegalStateException("Cannot execute task:"
+                        + " the task has already been executed "
+                        + "(a task can be executed only once)");
+            }
         }
+
+        mStatus = RUNNING;
+        mExecutor = executor;
+
+        onPreExecute();
+
+        mRunnable.mParams = params;
+        executor.execute(mRunnable);
+
+        return this;
     }
 
     /**
@@ -315,9 +340,7 @@ public abstract class AsyncTask {
      * @see #cancel(boolean)
      */
     public final boolean isCancelled() {
-        synchronized (this) {
-            return mCancelled;
-        }
+        return mCancelled.get();
     }
 
     /**
@@ -348,20 +371,17 @@ public abstract class AsyncTask {
      * @see #onCancelled(Object)
      */
     public final boolean cancel(boolean mayInterruptIfRunning) {
-        boolean isAlreadyCancelled = isCancelled();
-        synchronized (this) {
-            if (mExecutor != null && !isAlreadyCancelled) {
-                boolean result = mExecutor.cancel(mWorkerRunnable);
-                if (result) {
-                    mCancelled = true;
-                    Message message = mHandler.obtainMessage(ON_TASK_CANCELLED_MESSAGE);
-                    message.obj = mWorkerRunnable;
-                    message.sendToTarget();
-                }
-                return result;
-            } else {
-                return false;
+        if (!isCancelled() && mStatus == RUNNING) {
+            mCancelled.set(true);
+            boolean cancelled = mExecutor.cancel(mRunnable);
+            if (cancelled) {
+                Message message = mHandler.obtainMessage(MESSAGE_POST_RESULT,
+                        new AsyncTaskResult(this, new Object[] { null }));
+                message.sendToTarget();
             }
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -390,64 +410,59 @@ public abstract class AsyncTask {
      */
     protected final void publishProgress(Object[] values) {
         if (!isCancelled()) {
-            Message message = mHandler.obtainMessage(ON_PROGRESS_UPDATE_MESSAGE);
-            message.obj = new AsyncTaskResult(this, values);
-            message.sendToTarget();
+            mHandler.obtainMessage(MESSAGE_POST_PROGRESS,
+                    new AsyncTaskResult(this, values)).sendToTarget();
         }
     }
 
-    static final int ON_POST_EXECUTE_MESSAGE = 1;
-    static final int ON_PROGRESS_UPDATE_MESSAGE = 2;
-    static final int ON_TASK_CANCELLED_MESSAGE = 3;
+    private void finish(Object result) {
+        if (isCancelled()) {
+            onCancelled(result);
+        } else {
+            onPostExecute(result);
+        }
+        mStatus = FINISHED;
+    }
 
-    class InternalHandler extends Handler {
+    private static class InternalHandler extends Handler {
         public void handleMessage(Message message) {
+            AsyncTaskResult result = (AsyncTaskResult) message.obj;
             switch (message.what) {
-            case ON_POST_EXECUTE_MESSAGE: {
-                WorkerRunnable runnable = (WorkerRunnable) message.obj;
-                runnable.mTask.onPostExecute(runnable.mResult);
+            case MESSAGE_POST_RESULT: {
+                result.mTask.finish(result.mData[0]);
                 break;
             }
-            case ON_PROGRESS_UPDATE_MESSAGE: {
-                AsyncTaskResult result = (AsyncTaskResult) message.obj;
-                result.mTask.onProgressUpdate(result.mValues);
-                break;
-            }
-            case ON_TASK_CANCELLED_MESSAGE: {
-                WorkerRunnable runnable = (WorkerRunnable) message.obj;
-                runnable.mTask.onCancelled();
+            case MESSAGE_POST_PROGRESS: {
+                result.mTask.onProgressUpdate(result.mData);
                 break;
             }
             }
         }
     }
 
-    class WorkerRunnable implements Runnable {
-        private AsyncTask mTask;
-        private Object[] mParams;
-        private Object mResult;
+    private static class WorkerRunnable implements Runnable {
+        final AsyncTask mTask;
+        Object[] mParams;
 
         public WorkerRunnable(AsyncTask task) {
             mTask = task;
         }
 
         public void run() {
-            mResult = mTask.doInBackground(mParams);
-            if (!isCancelled()) {
-                Message message = mTask.mHandler.obtainMessage(ON_POST_EXECUTE_MESSAGE);
-                message.obj = this;
-                message.sendToTarget();
-            }
+            Object result = mTask.doInBackground(mParams);
+            Message message = mTask.mHandler.obtainMessage(MESSAGE_POST_RESULT,
+                    new AsyncTaskResult(mTask, new Object[] { result }));
+            message.sendToTarget();
         }
     }
 
-    class AsyncTaskResult {
-        private AsyncTask mTask;
-        private Object[] mValues;
+    private static class AsyncTaskResult {
+        final AsyncTask mTask;
+        final Object[] mData;
 
-        public AsyncTaskResult(AsyncTask task, Object[] values) {
+        public AsyncTaskResult(AsyncTask task, Object[] data) {
             mTask = task;
-            mValues = values;
+            mData = data;
         }
     }
 }
