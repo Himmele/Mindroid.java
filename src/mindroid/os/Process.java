@@ -104,6 +104,7 @@ public class Process {
     void stop(long timeout) {
         Log.d(LOG_TAG, "Stopping process " + mName);
 
+        long start = SystemClock.uptimeMillis();
         mDebug.stop();
 
         synchronized (mServices) {
@@ -124,7 +125,6 @@ public class Process {
                     }
                 }
 
-                long start = SystemClock.uptimeMillis();
                 long duration = timeout;
                 while (!mUncaughtException && !mServices.isEmpty() && (duration > 0)) {
                     try {
@@ -147,6 +147,9 @@ public class Process {
         }
 
         Log.d(LOG_TAG, "Process " + mName + " has been stopped");
+        if (SystemClock.uptimeMillis() - start >= 1000) {
+            System.out.println("W/Process: Stopping process " + mName + " took " + (SystemClock.uptimeMillis() - start) + "ms");
+        }
     }
 
     int getId() {
