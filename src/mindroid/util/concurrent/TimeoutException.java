@@ -20,6 +20,8 @@ package mindroid.util.concurrent;
  * Exception indicating that the result of a future cannot be retrieved because the task timed out.
  */
 public class TimeoutException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     public TimeoutException() {
     }
 

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.kxml2.io.KXmlParser;
@@ -58,16 +59,19 @@ public class PackageManagerService extends Service {
     private static final int MSG_BOOT_COMPLETED = 2;
     private static final String UTF_8 = "UTF-8";
     private Thread mThread = null;
-    private Map mPackages = new LinkedHashMap();
-    private Map mComponents = new HashMap();
-    private Map mPermissions = new HashMap();
-    private List mListeners = new ArrayList();
+    private Map<String, PackageInfo> mPackages = new LinkedHashMap<>();
+    private Map<ComponentName, ComponentInfo> mComponents = new HashMap<>();
+    private Map<String, Set<String>> mPermissions = new HashMap<>();
+    private List<IPackageManagerListener> mListeners = new ArrayList<>();
     private boolean mBootCompleted = false;
 
+    @Override
     public void onCreate() {
-        ServiceManager.addService(Context.PACKAGE_MANAGER, mBinder);
+        ServiceManager.addService(Context.PACKAGE_MANAGER, mManager);
+        ServiceManager.addService(Context.PACKAGE_INSTALLER, mInstaller);
     }
 
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (mThread == null) {
             mThread = new Thread(mScanner, LOG_TAG);
@@ -76,22 +80,26 @@ public class PackageManagerService extends Service {
         return 0;
     }
 
+    @Override
     public void onDestroy() {
+        ServiceManager.removeService(Context.PACKAGE_INSTALLER);
         ServiceManager.removeService(Context.PACKAGE_MANAGER);
     }
 
+    @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+        return mManager;
     }
 
-    private final IPackageManager.Stub mBinder = new IPackageManager.Stub() {
-        public List getInstalledPackages(int flags) throws RemoteException {
+    private final IPackageManager.Stub mManager = new IPackageManager.Stub() {
+        @Override
+        public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException {
             if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
-                ArrayList packages = new ArrayList();
-                Iterator itr = mPackages.entrySet().iterator();
+                ArrayList<PackageInfo> packages = new ArrayList<>();
+                Iterator<Map.Entry<String, PackageInfo>> itr = mPackages.entrySet().iterator();
                 while (itr.hasNext()) {
-                    Map.Entry entry = (Map.Entry) itr.next();
-                    PackageInfo p = (PackageInfo) entry.getValue();
+                    Map.Entry<String, PackageInfo> entry = itr.next();
+                    PackageInfo p = entry.getValue();
                     packages.add(p);
                 }
                 return packages.isEmpty() ? null : packages;
@@ -100,58 +108,44 @@ public class PackageManagerService extends Service {
             }
         }
 
-        public List queryIntentServices(Intent intent, int flags) throws RemoteException {
-            List services = new ArrayList();
-            if (mComponents.containsKey(intent.getComponent())) {
-                ComponentInfo componentInfo = (ComponentInfo) mComponents.get(intent.getComponent());
-                if (componentInfo != null && componentInfo instanceof ServiceInfo) {
-                    ResolveInfo resolveInfo = new ResolveInfo();
-                    resolveInfo.serviceInfo = (ServiceInfo) componentInfo;
-                    services.add(resolveInfo);
-                }
+        @Override
+        public PackageInfo getPackageInfo(String packageName, int flags) throws RemoteException {
+            if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
+                return mPackages.get(packageName);
             } else {
-                if (intent.hasExtra("path")) {
-                    File app = new File(intent.getStringExtra("path"));
-                    if (app.exists()) {
-                        PackageInfo packageInfo = loadPackage(app);
-                        if (packageInfo != null && packageInfo.services != null) {
-                            for (int i = 0; i < packageInfo.services.length; i++) {
-                                ResolveInfo resolveInfo = new ResolveInfo();
-                                resolveInfo.serviceInfo = packageInfo.services[i];
-                                services.add(resolveInfo);
-                            }
-                        }
-                    }
-                }
+                return null;
             }
-            return services;
         }
 
-        public ResolveInfo resolveService(Intent intent, int flags) {
-            ResolveInfo resolveInfo = null;
-            if (!mComponents.containsKey(intent.getComponent())) {
-                if (intent.hasExtra("path")) {
-                    File app = new File(intent.getStringExtra("path"));
-                    if (app.exists()) {
-                        PackageInfo packageInfo = loadPackage(app);
-                        if (packageInfo != null) {
-                            addPackage(packageInfo);
-                        }
-                    }
+        @Override
+        public PackageInfo getPackageArchiveInfo(String archiveFilePath, int flags) throws RemoteException {
+            if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
+                File app = new File(archiveFilePath);
+                if (app.exists()) {
+                    return loadPackage(app);
                 }
             }
-            ComponentInfo componentInfo = (ComponentInfo) mComponents.get(intent.getComponent());
-            if (componentInfo != null && componentInfo instanceof ServiceInfo) {
-                resolveInfo = new ResolveInfo();
-                resolveInfo.serviceInfo = (ServiceInfo) componentInfo;
+            return null;
+        }
+
+        @Override
+        public ResolveInfo resolveService(Intent intent, int flags) {
+            ResolveInfo resolveInfo = null;
+            if (mComponents.containsKey(intent.getComponent())) {
+                ComponentInfo componentInfo = mComponents.get(intent.getComponent());
+                if (componentInfo instanceof ServiceInfo) {
+                    resolveInfo = new ResolveInfo();
+                    resolveInfo.serviceInfo = (ServiceInfo) componentInfo;
+                }
             }
             return resolveInfo;
         }
 
+        @Override
         public int checkPermission(String permissionName, int pid) throws RemoteException {
             String process = Process.getName(pid);
             if (process != null) {
-                HashSet permissions = (HashSet) mPermissions.get(process);
+                Set<String> permissions = mPermissions.get(process);
                 if (permissions != null && permissions.contains(permissionName)) {
                     return PackageManager.PERMISSION_GRANTED;
                 }
@@ -159,10 +153,11 @@ public class PackageManagerService extends Service {
             return PackageManager.PERMISSION_DENIED;
         }
 
+        @Override
         public String[] getPermissions(int pid) throws RemoteException {
             String process = Process.getName(pid);
             if (process != null) {
-                HashSet permissions = (HashSet) mPermissions.get(process);
+                Set<String> permissions = mPermissions.get(process);
                 if (permissions != null) {
                     return (String[]) permissions.toArray(new String[permissions.size()]);
                 }
@@ -170,6 +165,7 @@ public class PackageManagerService extends Service {
             return new String[] {};
         }
 
+        @Override
         public void addListener(IPackageManagerListener listener) {
             if (!mListeners.contains(listener)) {
                 mListeners.add(listener);
@@ -184,12 +180,40 @@ public class PackageManagerService extends Service {
             }
         }
 
+        @Override
         public void removeListener(IPackageManagerListener listener) {
             mListeners.remove(listener);
         }
     };
 
+    private final IPackageInstaller.Stub mInstaller = new IPackageInstaller.Stub() {
+        @Override
+        public void install(File app) throws RemoteException {
+            if (app.exists()) {
+                PackageInfo packageInfo = loadPackage(app);
+                if (packageInfo != null) {
+                    boolean isNewPackage = true;
+                    for (ServiceInfo si : packageInfo.services) {
+                        if (mComponents.containsKey(new ComponentName(si.packageName, si.name))) {
+                            isNewPackage = false;
+                            break;
+                        }
+                    }
+                    if (isNewPackage) {
+                        addPackage(packageInfo);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void uninstall(String packageName) throws RemoteException {
+            removePackage(packageName);
+        }
+    };
+
     private Handler mHandler = new Handler() {
+        @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
             case MSG_ADD_PACKAGE:
@@ -213,13 +237,33 @@ public class PackageManagerService extends Service {
             mComponents.put(new ComponentName(si.packageName, si.name), si);
         }
 
-        if (packageInfo.applicationInfo.permissions != null) {
+        if (packageInfo.permissions != null) {
             final String processName = packageInfo.applicationInfo.processName;
             if (!mPermissions.containsKey(processName)) {
-                mPermissions.put(processName, new HashSet());
+                mPermissions.put(processName, new HashSet<>());
             }
-            HashSet permissions = (HashSet) mPermissions.get(processName);
-            permissions.addAll(Arrays.asList(packageInfo.applicationInfo.permissions));
+            Set<String> permissions = mPermissions.get(processName);
+            permissions.addAll(Arrays.asList(packageInfo.permissions));
+        }
+    }
+
+    private void removePackage(final String packageName) {
+        PackageInfo packageInfo = mPackages.get(packageName);
+        if (packageInfo != null) {
+            mPackages.remove(packageName);
+
+            for (int i = 0; i < packageInfo.services.length; i++) {
+                ServiceInfo si = (ServiceInfo) packageInfo.services[i];
+                mComponents.remove(new ComponentName(si.packageName, si.name));
+            }
+
+            if (packageInfo.permissions != null) {
+                final String processName = packageInfo.applicationInfo.processName;
+                if (mPermissions.containsKey(processName)) {
+                    Set<String> permissions = mPermissions.get(processName);
+                    permissions.removeAll(Arrays.asList(packageInfo.permissions));
+                }
+            }
         }
     }
 
@@ -231,8 +275,8 @@ public class PackageManagerService extends Service {
     private void onBootCompleted() {
         mBootCompleted = true;
 
-        for (Iterator itr = mListeners.iterator(); itr.hasNext();) {
-            IPackageManagerListener listener = (IPackageManagerListener) itr.next();
+        for (Iterator<IPackageManagerListener> itr = mListeners.iterator(); itr.hasNext();) {
+            IPackageManagerListener listener = itr.next();
             try {
                 listener.onBootCompleted();
             } catch (RemoteException e) {
@@ -242,6 +286,7 @@ public class PackageManagerService extends Service {
     }
 
     private Runnable mScanner = new Runnable() {
+        @Override
         public void run() {
             File[] apps = Environment.getAppsDirectory().listFiles(new FilenameFilter() {
                 public boolean accept(File dir, String name) {
@@ -273,19 +318,7 @@ public class PackageManagerService extends Service {
             while (entry != null) {
                 String fileName = entry.getName();
                 if (fileName.equals("MindroidManifest.xml")) {
-                    ApplicationInfo ai = new ApplicationInfo();
-                    ai.fileName = app.getAbsolutePath();
-                    List services = parseManifest(inputStream, ai);
-
-                    if (services != null && !services.isEmpty()) {
-                        PackageInfo packageInfo = new PackageInfo();
-                        packageInfo.packageName = ai.packageName;
-                        packageInfo.applicationInfo = ai;
-                        packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
-                        return packageInfo;
-                    } else {
-                        return null;
-                    }
+                    return parseManifest(app, inputStream);
                 } else {
                     entry = inputStream.getNextEntry();
                 }
@@ -306,7 +339,7 @@ public class PackageManagerService extends Service {
         return null;
     }
 
-    private static List parseManifest(InputStream input, ApplicationInfo ai) throws XmlPullParserException, IOException {
+    private static PackageInfo parseManifest(File app, InputStream input) throws XmlPullParserException, IOException {
         KXmlParser parser;
         parser = new KXmlParser();
         parser.setInput((InputStream) input, UTF_8);
@@ -314,6 +347,11 @@ public class PackageManagerService extends Service {
         parser.require(XmlPullParser.START_DOCUMENT, null, null);
         parser.nextTag();
         parser.require(XmlPullParser.START_TAG, null, MANIFEST_TAG);
+
+        PackageInfo pi = new PackageInfo();
+        ApplicationInfo ai = new ApplicationInfo();
+        pi.applicationInfo = ai;
+        ai.fileName = app.getAbsolutePath();
 
         String packageName = null;
         for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -326,16 +364,18 @@ public class PackageManagerService extends Service {
         if (packageName == null || packageName.length() == 0) {
             throw new XmlPullParserException("Manifest is missing a package name");
         }
-        ai.packageName = packageName;
+        pi.packageName = packageName;
+        ai.packageName = pi.packageName;
 
-        List services = new ArrayList();
+        List<ServiceInfo> services = new ArrayList<>();
         boolean applicationTagDone = false;
         for (int eventType = parser.nextTag(); !parser.getName().equals(MANIFEST_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(APPLICATION_TAG)) {
                 if (applicationTagDone) {
                     throw new XmlPullParserException("Only one application is allowed per manifest");
                 }
-                services = parseApplication(parser, ai);
+                services = parseApplication(parser, pi);
+                pi.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
                 applicationTagDone = true;
             } else {
                 String tag = parser.getName();
@@ -348,13 +388,15 @@ public class PackageManagerService extends Service {
         parser.next();
         parser.require(XmlPullParser.END_DOCUMENT, null, null);
 
-        return services;
+        return pi;
     }
 
-    private static List parseApplication(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
+    private static List<ServiceInfo> parseApplication(KXmlParser parser, PackageInfo pi) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, APPLICATION_TAG);
 
+        ApplicationInfo ai = pi.applicationInfo;
         String processName = ai.packageName;
+
         boolean enabled = true;
         for (int i = 0; i < parser.getAttributeCount(); i++) {
             String attributeName = parser.getAttributeName(i);
@@ -374,9 +416,9 @@ public class PackageManagerService extends Service {
         ai.processName = processName;
         ai.enabled = enabled;
 
-        List libraries = new ArrayList();
-        List permissions = new ArrayList();
-        List services = new ArrayList();
+        List<String> libraries = new ArrayList<>();
+        List<String> permissions = new ArrayList<>();
+        List<ServiceInfo> services = new ArrayList<>();
         for (int eventType = parser.nextTag(); !parser.getName().equals(APPLICATION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(USES_LIBRARY_TAG)) {
                 String library = parseLibrary(parser);
@@ -408,7 +450,7 @@ public class PackageManagerService extends Service {
             ai.libraries = (String[]) libraries.toArray(new String[libraries.size()]);
         }
         if (!permissions.isEmpty()) {
-            ai.permissions = (String[]) permissions.toArray(new String[permissions.size()]);
+            pi.permissions = (String[]) permissions.toArray(new String[permissions.size()]);
         }
 
         parser.require(XmlPullParser.END_TAG, null, APPLICATION_TAG);

@@ -18,6 +18,7 @@
 package mindroid.os;
 
 import mindroid.util.Log;
+import java.util.concurrent.Executor;
 
 /**
  * A Handler allows you to send and process {@link Message} and Runnable objects associated with a
@@ -65,6 +66,7 @@ public class Handler {
     final MessageQueue mMessageQueue;
     final Looper mLooper;
     final Callback mCallback;
+    Executor mExecutor;
 
     /**
      * Callback interface you can use when instantiating a Handler to avoid having to implement your
@@ -443,6 +445,22 @@ public class Handler {
     // we could instead export a getMessageQueue() method...
     public final Looper getLooper() {
         return mLooper;
+    }
+
+    /**
+     * Enables a handler to act as Java executor target, e.g. when using a future of class java.util.concurrent.CompletableFuture.
+     */
+    public final Executor asExecutor() {
+        if (mExecutor != null) {
+            return mExecutor;
+        }
+
+        return (mExecutor = new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                post(command);
+            }
+        });
     }
 
     public String toString() {

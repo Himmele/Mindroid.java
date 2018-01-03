@@ -40,20 +40,20 @@ public final class ServiceManager {
     private static final String SYSTEM_SERVICE = "systemService";
     private static IServiceManager sServiceManager;
     private static IServiceManager.Stub sStub;
-    private static HashMap sSystemServices = new HashMap();
+    private static HashMap<String, IBinder> sSystemServices = new HashMap<>();
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private final ProcessManager mProcessManager;
     private final HandlerThread mMainThread;
     private Handler mMainHandler;
-    private HashMap mProcesses = new HashMap();
-    private HashMap mServices = new HashMap();
+    private HashMap<String, ProcessRecord> mProcesses = new HashMap<>();
+    private HashMap<ComponentName, ServiceRecord> mServices = new HashMap<>();
     private int mStartId = 0;
     private IPackageManager mPackageManager;
 
     static class ProcessManager {
         private final HandlerThread mThread;
         private Handler mHandler;
-        private HashMap mProcesses = new HashMap();
+        private HashMap<String, Pair> mProcesses = new HashMap<>();
 
         public ProcessManager() {
             mThread = new HandlerThread("ProcessManager");
@@ -99,20 +99,20 @@ public final class ServiceManager {
             }
         }
 
-        public synchronized Future stopProcess(String name, final long timeout) {
-            final Promise promise = new Promise();
+        public synchronized Future<Boolean> stopProcess(String name, final long timeout) {
+            final Promise<Boolean> promise = new Promise<>();
             Pair pair = (Pair) mProcesses.remove(name);
             if (pair != null) {
                 final Process process = (Process) pair.first;
                 mHandler.post(new Runnable() {
                     public void run() {
                         process.stop(timeout);
-                        promise.set(new Boolean(true));
+                        promise.set(true);
                     }
                 });
                 return promise;
             } else {
-                promise.set(new Boolean(false));
+                promise.set(false);
                 return promise;
             }
         }
@@ -121,7 +121,7 @@ public final class ServiceManager {
     static class ProcessRecord {
         final String name;
         final IProcess process;
-        private final HashMap services = new HashMap();
+        private final HashMap<ComponentName, ServiceRecord> services = new HashMap<>();
 
         public ProcessRecord(String name, IProcess process) {
             this.name = name;
@@ -155,7 +155,7 @@ public final class ServiceManager {
         final boolean systemService;
         boolean alive;
         boolean running;
-        private final List serviceConnections = new ArrayList();
+        private final List<ServiceConnection> serviceConnections = new ArrayList<>();
 
         ServiceRecord(String name, ProcessRecord processRecord, boolean systemService) {
             this.name = name;
@@ -192,14 +192,14 @@ public final class ServiceManager {
 
         mMainThread.start();
         mMainHandler = new Handler(mMainThread.getLooper());
-        final Promise promise = new Promise();
+        final Promise<IServiceManager.Stub> promise = new Promise<>();
         mMainHandler.post(new Runnable() {
             public void run() {
                 promise.set(new ServiceManagerImpl());
             }
         });
         try {
-            sStub = (IServiceManager.Stub) promise.get();
+            sStub = promise.get();
         } catch (CancellationException e) {
             throw new RuntimeException("System failure");
         } catch (ExecutionException e) {
@@ -214,13 +214,13 @@ public final class ServiceManager {
     public void shutdown() {
         ProcessRecord processRecords[];
         synchronized (mProcesses) {
-            Collection prs = mProcesses.values();
+            Collection<ProcessRecord> prs = mProcesses.values();
             processRecords = new ProcessRecord[prs.size()];
             prs.toArray(processRecords);
         }
         for (int i = 0; i < processRecords.length; i++) {
             ProcessRecord processRecord = processRecords[i];
-            Future future = mProcessManager.stopProcess(processRecord.name, SHUTDOWN_TIMEOUT);
+            Future<Boolean> future = mProcessManager.stopProcess(processRecord.name, SHUTDOWN_TIMEOUT);
             try {
                 future.get();
             } catch (CancellationException e) {
@@ -243,11 +243,13 @@ public final class ServiceManager {
     }
 
     class ServiceManagerImpl extends IServiceManager.Stub {
+        @Override
         public ComponentName startService(Intent intent) {
             intent.putExtra(SYSTEM_SERVICE, false);
             return ServiceManager.this.startService(intent);
         }
 
+        @Override
         public boolean stopService(Intent service) {
             if (mServices.containsKey(service.getComponent())) {
                 final ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
@@ -305,6 +307,7 @@ public final class ServiceManager {
             }
         }
 
+        @Override
         public boolean bindService(final Intent intent, final ServiceConnection conn, int flags, IRemoteCallback callback) {
             intent.putExtra(SYSTEM_SERVICE, false);
 
@@ -333,10 +336,12 @@ public final class ServiceManager {
             }
         }
 
+        @Override
         public void unbindService(Intent service, ServiceConnection conn) {
             unbindService(service, conn, null);
         }
 
+        @Override
         public void unbindService(Intent service, ServiceConnection conn, IRemoteCallback callback) {
             ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
             if (serviceRecord != null) {
@@ -363,6 +368,7 @@ public final class ServiceManager {
             }
         }
 
+        @Override
         public ComponentName startSystemService(Intent service) {
             if (!service.hasExtra("name")) {
                 service.putExtra("name", service.getComponent().getClassName());
@@ -374,6 +380,7 @@ public final class ServiceManager {
             return ServiceManager.this.startService(service);
         }
 
+        @Override
         public boolean stopSystemService(Intent service) {
             service.putExtra(SYSTEM_SERVICE, true);
             return stopService(service);

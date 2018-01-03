@@ -18,6 +18,7 @@ package mindroid.os;
 
 import mindroid.content.Intent;
 import mindroid.content.ServiceConnection;
+import mindroid.util.concurrent.Promise;
 
 public interface IProcess extends IInterface {
     public static abstract class Stub extends Binder implements IProcess {
@@ -34,17 +35,18 @@ public interface IProcess extends IInterface {
             return new IProcess.Stub.SmartProxy(binder);
         }
 
+        @Override
         public IBinder asBinder() {
             return this;
         }
 
-        protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_CREATE_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
                 IBinder binder = data.getBinder("binder");
                 createService(intent, IRemoteCallback.Stub.asInterface(binder));
-                return null;
+                break;
             }
             case MSG_START_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
@@ -52,7 +54,7 @@ public interface IProcess extends IInterface {
                 int startId = arg2;
                 IBinder binder = data.getBinder("binder");
                 startService(intent, flags, startId, IRemoteCallback.Stub.asInterface(binder));
-                return null;
+                break;
             }
             case MSG_STOP_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
@@ -62,7 +64,7 @@ public interface IProcess extends IInterface {
                 } else {
                     stopService(intent, IRemoteCallback.Stub.asInterface(binder));
                 }
-                return null;
+                break;
             }
             case MSG_BIND_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
@@ -70,7 +72,7 @@ public interface IProcess extends IInterface {
                 int flags = data.getInt("flags");
                 IBinder binder = data.getBinder("binder");
                 bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(binder));
-                return null;
+                break;
             }
             case MSG_UNBIND_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
@@ -80,10 +82,11 @@ public interface IProcess extends IInterface {
                 } else {
                     unbindService(intent, IRemoteCallback.Stub.asInterface(binder));
                 }
-                return null;
+                break;
             }
             default:
-                return super.onTransact(what, arg1, arg2, obj, data);
+                super.onTransact(what, arg1, arg2, obj, data, result);
+                break;
             }
         }
 
@@ -94,10 +97,12 @@ public interface IProcess extends IInterface {
                 mRemote = remote;
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -108,57 +113,65 @@ public interface IProcess extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public void createService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_CREATE_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_CREATE_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void startService(Intent intent, int flags, int startId, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_START_SERVICE, flags, startId, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_START_SERVICE, flags, startId, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void stopService(Intent intent) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
-                mRemote.transact(MSG_STOP_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_STOP_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void stopService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_STOP_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_STOP_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
                 data.putInt("flags", flags);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_BIND_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_BIND_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void unbindService(Intent intent) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
-                mRemote.transact(MSG_UNBIND_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void unbindService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_UNBIND_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
             }
         }
 
@@ -173,10 +186,12 @@ public interface IProcess extends IInterface {
                 mProxy = new IProcess.Stub.Proxy(remote);
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -187,10 +202,12 @@ public interface IProcess extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public void createService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.createService(intent, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -199,6 +216,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void startService(Intent intent, int flags, int startId, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.startService(intent, flags, startId, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -207,6 +225,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void stopService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.stopService(intent);
@@ -215,6 +234,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void stopService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.stopService(intent, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -223,6 +243,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -231,6 +252,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void unbindService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.unbindService(intent);
@@ -239,6 +261,7 @@ public interface IProcess extends IInterface {
                 }
             }
 
+            @Override
             public void unbindService(Intent intent, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.unbindService(intent, IRemoteCallback.Stub.asInterface(callback.asBinder()));

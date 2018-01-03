@@ -50,6 +50,7 @@ public final class RemoteCallback {
     private void sendResult(final Bundle result) {
         if (mHandler != null) {
             mHandler.post(new Runnable() {
+                @Override
                 public void run() {
                     mListener.onResult(result);
                 }
@@ -59,6 +60,7 @@ public final class RemoteCallback {
         }
     }
 
+    @Override
     public boolean equals(Object other) {
         if (other == null) {
             return false;
@@ -70,6 +72,7 @@ public final class RemoteCallback {
         return false;
     }
 
+    @Override
     public int hashCode() {
         return mCallback.asBinder().hashCode();
     }

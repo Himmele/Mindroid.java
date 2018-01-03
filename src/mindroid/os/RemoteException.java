@@ -21,6 +21,8 @@ package mindroid.os;
  * Parent exception for all Binder remote-invocation errors
  */
 public class RemoteException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     public RemoteException() {
         super();
     }

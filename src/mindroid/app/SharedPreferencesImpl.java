@@ -27,6 +27,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,13 +61,11 @@ public final class SharedPreferencesImpl implements SharedPreferences {
     private final File mFile;
     private final File mBackupFile;
     private final Object mLock = new Object();
-    private Map mMap;
-    private int mMode;
-    private Map mListeners = new HashMap();
+    private Map<String, Object> mMap;
+    private Map<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener> mListeners = new HashMap<>();
 
     public SharedPreferencesImpl(File file, int mode) {
         mFile = file;
-        mMode = mode;
         mBackupFile = makeBackupFile(file);
         synchronized (mLock) {
             mMap = null;
@@ -73,12 +73,14 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    public Map getAll() {
+    @Override
+    public Map<String, ?> getAll() {
         synchronized (mLock) {
-            return new HashMap(mMap);
+            return new HashMap<>(mMap);
         }
     }
 
+    @Override
     public String getString(String key, String defValue) {
         synchronized (mLock) {
             String v = (String) mMap.get(key);
@@ -86,13 +88,15 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    public Set getStringSet(String key, Set defValues) {
+    @Override
+    public Set<String> getStringSet(String key, Set<String> defValues) {
         synchronized (mLock) {
-            Set v = (Set) mMap.get(key);
-            return v != null ? new HashSet(v) : defValues;
+            Set<String> v = (Set<String>) mMap.get(key);
+            return v != null ? new HashSet<>(v) : defValues;
         }
     }
 
+    @Override
     public int getInt(String key, int defValue) {
         synchronized (mLock) {
             Integer v = (Integer) mMap.get(key);
@@ -100,6 +104,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
+    @Override
     public long getLong(String key, long defValue) {
         synchronized (mLock) {
             Long v = (Long) mMap.get(key);
@@ -107,6 +112,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
+    @Override
     public float getFloat(String key, float defValue) {
         synchronized (mLock) {
             Float v = (Float) mMap.get(key);
@@ -114,6 +120,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
+    @Override
     public boolean getBoolean(String key, boolean defValue) {
         synchronized (mLock) {
             Boolean v = (Boolean) mMap.get(key);
@@ -121,20 +128,23 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
+    @Override
     public boolean contains(String key) {
         synchronized (mLock) {
             return mMap.containsKey(key);
         }
     }
 
+    @Override
     public Editor edit() {
         return new EditorImpl();
     }
 
     public final class EditorImpl implements Editor {
-        private final Map mModifications = new HashMap();
+        private final Map<String, Object> mModifications = new HashMap<>();
         private boolean mClearMap = false;
 
+        @Override
         public Editor putString(String key, String value) {
             synchronized (mLock) {
                 mModifications.put(key, value);
@@ -142,13 +152,15 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
-        public Editor putStringSet(String key, Set values) {
+        @Override
+        public Editor putStringSet(String key, Set<String> values) {
             synchronized (mLock) {
-                mModifications.put(key, (values == null) ? null : new HashSet(values));
+                mModifications.put(key, (values == null) ? null : new HashSet<>(values));
                 return this;
             }
         }
 
+        @Override
         public Editor putInt(String key, int value) {
             synchronized (mLock) {
                 mModifications.put(key, new Integer(value));
@@ -156,6 +168,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public Editor putLong(String key, long value) {
             synchronized (mLock) {
                 mModifications.put(key, new Long(value));
@@ -163,6 +176,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public Editor putFloat(String key, float value) {
             synchronized (mLock) {
                 mModifications.put(key, new Float(value));
@@ -170,6 +184,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public Editor putBoolean(String key, boolean value) {
             synchronized (mLock) {
                 mModifications.put(key, new Boolean(value));
@@ -177,6 +192,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public Editor remove(String key) {
             synchronized (mLock) {
                 mModifications.put(key, this);
@@ -184,6 +200,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public Editor clear() {
             synchronized (mLock) {
                 mClearMap = true;
@@ -191,18 +208,20 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        @Override
         public void apply() {
             commit();
         }
 
+        @Override
         public boolean commit() {
             synchronized (mLock) {
                 boolean modifications = false;
 
                 boolean hasListeners = !mListeners.isEmpty();
-                List modifiedKeys = null;
+                List<String> modifiedKeys = null;
                 if (hasListeners) {
-                    modifiedKeys = new ArrayList();
+                    modifiedKeys = new ArrayList<>();
                 }
 
                 if (mClearMap) {
@@ -213,11 +232,11 @@ public final class SharedPreferencesImpl implements SharedPreferences {
                     mClearMap = false;
                 }
 
-                Iterator itr = mModifications.entrySet().iterator();
+                Iterator<Map.Entry<String, Object>> itr = mModifications.entrySet().iterator();
                 while (itr.hasNext()) {
-                    Map.Entry pair = (Map.Entry) itr.next();
-                    String k = (String) pair.getKey();
-                    Object v = pair.getValue();
+                    Map.Entry<String, Object> entry = itr.next();
+                    String k = entry.getKey();
+                    Object v = entry.getValue();
                     // "this" is the magic value for entry removal.
                     // Setting a value to "null" is equivalent to removing the entry.
                     if (v == this || v == null) {
@@ -270,7 +289,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
-        Map map = null;
+        Map<String, Object> map = null;
         try {
             if (mFile.canRead()) {
                 BufferedInputStream is = null;
@@ -295,7 +314,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         if (map != null) {
             mMap = map;
         } else {
-            mMap = new HashMap();
+            mMap = new HashMap<>();
         }
     }
 
@@ -315,11 +334,13 @@ public final class SharedPreferencesImpl implements SharedPreferences {
 
         try {
             writeMap(mFile, mMap);
+            fsync(mFile);
             if (mBackupFile.exists()) {
                 if (!mBackupFile.delete()) {
                     Log.e(LOG_TAG, "Cannot clean up backup file " + mBackupFile);
                 }
             }
+            fsync(mFile.getParentFile());
             return true;
         } catch (XmlPullParserException e) {
             Log.w(LOG_TAG, "Cannot write file: " + mFile.getName(), e);
@@ -334,6 +355,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
+        fsync(mFile.getParentFile());
         return false;
     }
 
@@ -344,15 +366,18 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             mListener = listener;
         }
 
+        @Override
         public void onSharedPreferenceChanged(String key) throws RemoteException {
             mListener.onSharedPreferenceChanged(SharedPreferencesImpl.this, key);
         }
 
+        @Override
         public void onSharedPreferenceChanged() throws RemoteException {
             mListener.onSharedPreferenceChanged(SharedPreferencesImpl.this);
         }
     }
 
+    @Override
     public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
         if (listener != null) {
             synchronized (mLock) {
@@ -364,6 +389,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
+    @Override
     public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
         if (listener != null) {
             synchronized (mLock) {
@@ -376,13 +402,13 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         return new File(prefsFile.getPath() + ".bak");
     }
 
-    private void notifySharedPreferenceChangeListeners(final List keys) {
+    private void notifySharedPreferenceChangeListeners(final List<String> keys) {
         for (int i = 0; i < keys.size(); i++) {
             String key = (String) keys.get(i);
-            Iterator itr = mListeners.entrySet().iterator();
+            Iterator<Map.Entry<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener>> itr = mListeners.entrySet().iterator();
             while (itr.hasNext()) {
-                Map.Entry entry = (Map.Entry) itr.next();
-                IOnSharedPreferenceChangeListener listener = (IOnSharedPreferenceChangeListener) entry.getValue();
+                Map.Entry<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener> entry = itr.next();
+                IOnSharedPreferenceChangeListener listener = entry.getValue();
                 try {
                     listener.onSharedPreferenceChanged(key);
                 } catch (RemoteException e) {
@@ -391,9 +417,9 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
-        Iterator itr = mListeners.entrySet().iterator();
+        Iterator<Map.Entry<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener>> itr = mListeners.entrySet().iterator();
         while (itr.hasNext()) {
-            Map.Entry entry = (Map.Entry) itr.next();
+            Map.Entry<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener> entry = itr.next();
             IOnSharedPreferenceChangeListener listener = (IOnSharedPreferenceChangeListener) entry.getValue();
             try {
                 listener.onSharedPreferenceChanged();
@@ -403,7 +429,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private Map readMap(InputStream is) throws XmlPullParserException, IOException {
+    private Map<String, Object> readMap(InputStream is) throws XmlPullParserException, IOException {
         KXmlParser parser;
         parser = new KXmlParser();
         parser.setInput(is, UTF_8);
@@ -411,7 +437,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         parser.nextTag();
         parser.require(XmlPullParser.START_TAG, null, MAP_TAG);
 
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         for (int eventType = parser.nextTag(); !parser.getName().equals(MAP_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(BOOLEAN_TAG)) {
                 parseBoolean(parser, map);
@@ -439,7 +465,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         return map;
     }
 
-    private static void parseBoolean(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseBoolean(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, BOOLEAN_TAG);
 
         String name = null;
@@ -466,7 +492,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseInt(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseInt(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, INT_TAG);
 
         String name = null;
@@ -492,7 +518,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseLong(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseLong(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, LONG_TAG);
 
         String name = null;
@@ -518,7 +544,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseFloat(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseFloat(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, FLOAT_TAG);
 
         String name = null;
@@ -544,7 +570,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseString(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseString(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, STRING_TAG);
 
         String name = null;
@@ -565,11 +591,11 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseStringSet(KXmlParser parser, Map map) throws XmlPullParserException, IOException {
+    private static void parseStringSet(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, STRING_SET_TAG);
 
         String name = null;
-        Set value = null;
+        Set<String> value = null;
         for (int i = 0; i < parser.getAttributeCount(); i++) {
             String attributeName = parser.getAttributeName(i);
             String attributeValue = parser.getAttributeValue(i);
@@ -578,7 +604,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             }
         }
 
-        value = new HashSet();
+        value = new HashSet<>();
         for (int eventType = parser.nextTag(); !parser.getName().equals(STRING_SET_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(STRING_TAG)) {
                 parser.require(XmlPullParser.START_TAG, null, STRING_TAG);
@@ -598,7 +624,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private void writeMap(File file, Map map) throws XmlPullParserException, IOException {
+    private void writeMap(File file, Map<String, Object> map) throws XmlPullParserException, IOException {
         FileOutputStream os = null;
         try {
             os = new FileOutputStream(file);
@@ -606,10 +632,10 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             Element rootTag = new Element();
             rootTag.setName(MAP_TAG);
 
-            Iterator itr = map.entrySet().iterator();
+            Iterator<Map.Entry<String, Object>> itr = map.entrySet().iterator();
             while (itr.hasNext()) {
-                Map.Entry entry = (Map.Entry) itr.next();
-                Element e = writeValue((String) entry.getKey(), entry.getValue());
+                Map.Entry<String, Object> entry = itr.next();
+                Element e = writeValue(entry.getKey(), entry.getValue());
                 if (e != null) {
                     rootTag.addChild(Node.ELEMENT, e);
                 }
@@ -678,7 +704,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             Element element = new Element();
             element.setName(STRING_SET_TAG);
             element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            Iterator itr = ((Set) value).iterator();
+            Iterator<String> itr = ((Set<String>) value).iterator();
             while (itr.hasNext()) {
                 Element childElement = new Element();
                 childElement.setName(STRING_TAG);
@@ -688,6 +714,19 @@ public final class SharedPreferencesImpl implements SharedPreferences {
             return element;
         } else {
             throw new RuntimeException("SharedPreferences.writeValue: Unable to write value " + value);
+        }
+    }
+
+    private static boolean fsync(File file) {
+        if (file == null) {
+            return false;
+        }
+        try (final FileChannel fc = FileChannel.open(file.toPath(), file.isDirectory() ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
+            fc.force(true);
+            return true;
+        } catch (IOException e) {
+            Log.w(LOG_TAG, "Cannot sync " + (file.isDirectory() ? "directory " : "file ") + file, e);
+            return false;
         }
     }
 }

@@ -55,11 +55,9 @@ public class ApplicationInfo {
     /**
      * Paths to all shared libraries this application is linked against.
      */
-    public String[] libraries = null;
+    public String[] libraries;
 
-    public String[] permissions = null;
-
-    public String fileName = null;
+    public String fileName;
 
     public ApplicationInfo() {
     }

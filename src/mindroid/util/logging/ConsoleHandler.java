@@ -37,9 +37,11 @@ public class ConsoleHandler extends Handler {
     /**
      * Flushes and closes all opened files.
      */
+    @Override
     public void close() {
     }
 
+    @Override
     public void flush() {
     }
 
@@ -48,6 +50,7 @@ public class ConsoleHandler extends Handler {
      * 
      * @param record The log record.
      */
+    @Override
     public void publish(LogRecord record) {
         String output;
         if ((mFlags & FLAG_TIMESTAMP) == FLAG_TIMESTAMP) {

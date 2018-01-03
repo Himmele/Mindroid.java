@@ -21,6 +21,8 @@ package mindroid.util.concurrent;
  * cancelled.
  */
 public class CancellationException extends IllegalStateException {
+    private static final long serialVersionUID = 1L;
+
     public CancellationException() {
     }
 

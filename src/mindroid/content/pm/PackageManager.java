@@ -71,7 +71,7 @@ public class PackageManager {
      * 
      * @see #GET_SERVICES
      */
-    public List getInstalledPackages(int flags) {
+    public List<PackageInfo> getInstalledPackages(int flags) {
         try {
             return mService.getInstalledPackages(flags);
         } catch (RemoteException e) {
@@ -80,20 +80,46 @@ public class PackageManager {
     }
 
     /**
-     * Retrieve all services that can match the given intent.
+     * Retrieve overall information about an application package that is
+     * installed on the system.
+     * <p>
+     * Throws {@link NameNotFoundException} if a package with the given name can
+     * not be found on the system.
      *
-     * @param intent The desired intent as per resolveService().
-     * @param flags Additional option flags.
+     * @param packageName The full name (i.e. com.google.apps.contacts) of the
+     *            desired package.
+     * @param flags Additional option flags. Use any combination of
+     *            {@link #GET_SERVICES}, to modify the data returned.
+     * @return Returns a PackageInfo object containing information about the
+     *         package.
      *
-     * @return A List&lt;ResolveInfo&gt; containing one entry for each matching
-     *         ServiceInfo. These are ordered from best to worst match -- that
-     *         is, the first item in the list is what is returned by
-     *         resolveService().  If there are no matching services, an empty
-     *         list or {@code null} is returned.
+     * @see #GET_SERVICES
      */
-    public List queryIntentServices(Intent intent, int flags) {
+    public PackageInfo getPackageInfo(String packageName, int flags) {
         try {
-            return mService.queryIntentServices(intent, flags);
+            return mService.getPackageInfo(packageName, flags);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
+
+    /**
+     * Retrieve overall information about an application package defined
+     * in a package archive file
+     *
+     * @param archiveFilePath The path to the archive file
+     * @param flags Additional option flags. Use any combination of
+     * {@link #GET_SERVICES}, to modify the data returned.
+     *
+     * @return Returns the information about the package. Returns
+     * null if the package could not be successfully parsed.
+     *
+     * @see #GET_SERVICES
+     *
+     */
+    public PackageInfo getPackageArchiveInfo(String archiveFilePath, int flags) {
+        try {
+            return mService.getPackageArchiveInfo(archiveFilePath, flags);
         } catch (RemoteException e) {
             throw new RuntimeException("System failure");
         }

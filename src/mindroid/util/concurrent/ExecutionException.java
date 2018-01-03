@@ -21,6 +21,8 @@ package mindroid.util.concurrent;
  * stopped.
  */
 public class ExecutionException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     /**
      * Constructs an {@code ExecutionException} with no detail message.
      * The cause is not initialized, and may subsequently be

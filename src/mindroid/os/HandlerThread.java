@@ -43,6 +43,7 @@ public class HandlerThread extends Thread {
     protected void onLooperPrepared() {
     }
 
+    @Override
     public void run() {
         Looper.prepare();
         synchronized (this) {

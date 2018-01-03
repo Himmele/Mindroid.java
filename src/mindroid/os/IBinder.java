@@ -17,6 +17,8 @@
 
 package mindroid.os;
 
+import mindroid.util.concurrent.Promise;
+
 /**
  * Base interface for a remotable object, the core part of a lightweight remote procedure call
  * mechanism designed for high performance when performing in-process and cross-process calls. This
@@ -52,20 +54,18 @@ public interface IBinder {
      * @param data data to send to the target. Must not be null.
      * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}
      * for a one-way RPC.
-     * @return data to be received from the target. May be null if you are not interested in the
-     * return value.
      */
-    public Object transact(int what, int flags) throws RemoteException;
+    public void transact(int what, Promise<?> promise, int flags) throws RemoteException;
 
-    public Object transact(int what, Object obj, int flags) throws RemoteException;
+    public void transact(int what, Object obj, Promise<?> promise, int flags) throws RemoteException;
 
-    public Object transact(int what, int arg1, int arg2, int flags) throws RemoteException;
+    public void transact(int what, int arg1, int arg2, Promise<?> promise, int flags) throws RemoteException;
 
-    public Object transact(int what, int arg1, int arg2, Object obj, int flags) throws RemoteException;
+    public void transact(int what, int arg1, int arg2, Object obj, Promise<?> promise, int flags) throws RemoteException;
 
-    public Object transact(int what, Bundle data, int flags) throws RemoteException;
+    public void transact(int what, Bundle data, Promise<?> promise, int flags) throws RemoteException;
 
-    public Object transact(int what, int arg1, int arg2, Bundle data, int flags) throws RemoteException;
+    public void transact(int what, int arg1, int arg2, Bundle data, Promise<?> promise, int flags) throws RemoteException;
 
     public boolean runsOnSameThread();
 }

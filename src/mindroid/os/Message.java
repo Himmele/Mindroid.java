@@ -17,7 +17,7 @@
 
 package mindroid.os;
 
-import mindroid.util.concurrent.Future;
+import mindroid.util.concurrent.Promise;
 
 /**
  * Defines a message containing a description and arbitrary data object that can be sent to a
@@ -363,7 +363,7 @@ public final class Message {
      *
      * @hide
      */
-    public Future result;
+    public Promise<?> result;
 
     /**
      * Optional field indicating the sender pid of the message.

@@ -40,7 +40,7 @@ public class Logger extends Service {
     public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
     public static final String ACTION_CLEAR_LOG = "mindroid.util.logging.CLEAR_LOG";
 
-    private Map mLogWorkers = new HashMap();
+    private Map<Integer, LogWorker> mLogWorkers = new HashMap<>();
 
     class LogWorker extends Thread {
         private static final int JOIN_TIMEOUT = 10000; //ms
@@ -89,7 +89,7 @@ public class Logger extends Service {
             final String customHandler = arguments.getString("customLogging", null);
             if (customHandler != null && customHandler.length() > 0) {
                 try {
-                    Class clazz = Class.forName(customHandler);
+                    Class<?> clazz = Class.forName(customHandler);
                     mCustomHandler = (Handler) clazz.newInstance();
                 } catch (Exception e) {
                     System.out.println("E/" + LOG_TAG + ": Cannot create custom handler \'" + customHandler + "\': " + e.getMessage());
@@ -206,10 +206,10 @@ public class Logger extends Service {
 
     public void onDestroy() {
         System.out.println("D/" + LOG_TAG + ": Flushing logs");
-        Iterator itr = mLogWorkers.entrySet().iterator();
+        Iterator<Map.Entry<Integer, LogWorker>> itr = mLogWorkers.entrySet().iterator();
         while (itr.hasNext()) {
-            Map.Entry entry = (Map.Entry) itr.next();
-            LogWorker logWorker = (LogWorker) entry.getValue();
+            Map.Entry<Integer, LogWorker> entry = itr.next();
+            LogWorker logWorker = entry.getValue();
             logWorker.flush();
             logWorker.quit();
             itr.remove();
@@ -223,11 +223,11 @@ public class Logger extends Service {
     private void startLogging(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         final int threadPriority = arguments.getInt("threadPriority", Thread.MIN_PRIORITY);
-        if (!mLogWorkers.containsKey(new Integer(logBuffer))) {
+        if (!mLogWorkers.containsKey(logBuffer)) {
             System.out.println("D/" + LOG_TAG + ": Starting logging {" + logBuffer + "}");
             try {
                 LogWorker logWorker = new LogWorker(arguments);
-                mLogWorkers.put(new Integer(logBuffer), logWorker);
+                mLogWorkers.put(logBuffer, logWorker);
                 logWorker.setPriority(threadPriority);
                 logWorker.start();
                 System.out.println("D/" + LOG_TAG + ": Logging has been started {" + logBuffer + "}");
@@ -242,11 +242,11 @@ public class Logger extends Service {
 
     private void stopLogging(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
-        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+        if (mLogWorkers.containsKey(logBuffer)) {
             System.out.println("D/" + LOG_TAG + ": Stopping logging {" + logBuffer + "}");
-            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.quit();
-            mLogWorkers.remove(new Integer(logBuffer));
+            mLogWorkers.remove(logBuffer);
             System.out.println("D/" + LOG_TAG + ": Logging has been stopped {" + logBuffer + "}");
         }
     }
@@ -255,9 +255,9 @@ public class Logger extends Service {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         final String fileName = arguments.getString("fileName");
         IRemoteCallback callback = IRemoteCallback.Stub.asInterface(arguments.getBinder("binder"));
-        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+        if (mLogWorkers.containsKey(logBuffer)) {
             System.out.println("D/" + LOG_TAG + ": Dumping log to file " + fileName + " {" + logBuffer + "}");
-            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            LogWorker logWorker = mLogWorkers.get(logBuffer);
             Bundle result = new Bundle();
             if (logWorker.dumpLog(fileName)) {
                 System.out.println("D/" + LOG_TAG + ": Log has been dumped to file " + fileName + " {" + logBuffer + "}");
@@ -277,18 +277,18 @@ public class Logger extends Service {
 
     private void flushLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
-        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+        if (mLogWorkers.containsKey(logBuffer)) {
             System.out.println("D/" + LOG_TAG + ": Flushing log {" + logBuffer + "}");
-            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.flush();
         }
     }
 
     private void clearLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
-        if (mLogWorkers.containsKey(new Integer(logBuffer))) {
+        if (mLogWorkers.containsKey(logBuffer)) {
             System.out.println("D/" + LOG_TAG + ": Clearing log {" + logBuffer + "}");
-            LogWorker logWorker = (LogWorker) mLogWorkers.get(new Integer(logBuffer));
+            LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.clear();
         }
     }

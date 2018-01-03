@@ -52,7 +52,7 @@ public class ContextImpl extends Context {
     private final HandlerThread mMainThread;
     private final Handler mHandler;
     private ComponentName mComponent;
-    private HashMap mServiceConnections = new HashMap();
+    private HashMap<ServiceConnection, Intent> mServiceConnections = new HashMap<>();
     private PackageManager mPackageManager;
 
     public ContextImpl(HandlerThread mainThread, ComponentName component) {
@@ -62,6 +62,7 @@ public class ContextImpl extends Context {
         mComponent = component;
     }
 
+    @Override
     public PackageManager getPackageManager() {
         if (mPackageManager != null) {
             return mPackageManager;
@@ -70,10 +71,12 @@ public class ContextImpl extends Context {
         return (mPackageManager = new PackageManager(this));
     }
 
+    @Override
     public Looper getMainLooper() {
         return mMainThread.getLooper();
     }
 
+    @Override
     public String getPackageName() {
         if (mComponent != null) {
             return mComponent.getPackageName();
@@ -81,19 +84,23 @@ public class ContextImpl extends Context {
         return "mindroid";
     }
 
+    @Override
     public File getSharedPrefsFile(String name) {
         return makeFilename(getPreferencesDir(), name + ".xml");
     }
 
+    @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
         return Environment.getSharedPreferences(getSharedPrefsFile(name), mode);
     }
 
+    @Override
     public FileInputStream openFileInput(String name) throws FileNotFoundException {
         File file = makeFilename(Environment.getDataDirectory(), name);
         return new FileInputStream(file);
     }
 
+    @Override
     public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
         final boolean append = (mode & MODE_APPEND) != 0;
         File file = makeFilename(Environment.getDataDirectory(), name);
@@ -106,15 +113,18 @@ public class ContextImpl extends Context {
         return null;
     }
 
+    @Override
     public boolean deleteFile(String name) {
         File file = makeFilename(getFilesDir(), name);
         return file.delete();
     }
 
+    @Override
     public File getFilesDir() {
         return Environment.getDataDirectory();
     }
 
+    @Override
     public IBinder getSystemService(String name) {
         if (name != null) {
             return ServiceManager.getSystemService(name);
@@ -123,6 +133,7 @@ public class ContextImpl extends Context {
         }
     }
 
+    @Override
     public ComponentName startService(Intent service) {
         if (service != null) {
             try {
@@ -135,6 +146,7 @@ public class ContextImpl extends Context {
         }
     }
 
+    @Override
     public boolean stopService(Intent service) {
         if (service != null) {
             try {
@@ -147,6 +159,7 @@ public class ContextImpl extends Context {
         }
     }
 
+    @Override
     public boolean bindService(final Intent service, final ServiceConnection conn, int flags) {
         if (service != null && conn != null) {
             if (mServiceConnections.containsKey(conn)) {
@@ -174,10 +187,11 @@ public class ContextImpl extends Context {
         }
     }
 
+    @Override
     public void unbindService(ServiceConnection conn) {
         if (conn != null) {
             if (mServiceConnections.containsKey(conn)) {
-                Intent service = (Intent) mServiceConnections.get(conn);
+                Intent service = mServiceConnections.get(conn);
                 mServiceConnections.remove(conn);
                 RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
                     public void onResult(Bundle data) {
@@ -206,11 +220,11 @@ public class ContextImpl extends Context {
     }
 
     public void cleanup() {
-        Iterator itr = mServiceConnections.entrySet().iterator();
+        Iterator<Map.Entry<ServiceConnection, Intent>>  itr = mServiceConnections.entrySet().iterator();
         while (itr.hasNext()) {
-            Map.Entry pair = (Map.Entry) itr.next();
-            ServiceConnection conn = (ServiceConnection) pair.getKey();
-            Intent service = (Intent) pair.getValue();
+            Map.Entry<ServiceConnection, Intent> entry = itr.next();
+            ServiceConnection conn = entry.getKey();
+            Intent service = entry.getValue();
             itr.remove();
             try {
                 mServiceManager.unbindService(service, conn);

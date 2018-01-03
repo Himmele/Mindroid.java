@@ -17,6 +17,8 @@
 package mindroid.util.logging;
 
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
 
 public class LogBuffer {
     private static final int TIMESTAMP_SIZE = 8;
@@ -31,7 +33,9 @@ public class LogBuffer {
     private int mReadIndex;
     private int mWriteIndex;
     private byte[] mData;
-    private GregorianCalendar mCalendar = new GregorianCalendar();
+    private final GregorianCalendar mCalendar = new GregorianCalendar();
+    private final SimpleDateFormat mFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
     private boolean mQuitting = false;
 
     public class LogRecord {
@@ -57,7 +61,7 @@ public class LogBuffer {
 
         public String toString() {
             mCalendar.setTimeInMillis(mTimestamp);
-            return mCalendar.toString() + "  " + toHexString(mThreadId) + "  " + sLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
+            return mFormatter.format(mCalendar.getTime()) + "  " + toHexString(mThreadId) + "  " + sLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
         }
 
         public int getLogId() {
@@ -302,17 +306,6 @@ public class LogBuffer {
         dest[7] = (byte) (l);
     }
 
-    private static void longToByteArray(final long l, final byte[] dest, final int destPos) {
-        dest[destPos + 0] = (byte) (l >> 56);
-        dest[destPos + 1] = (byte) (l >> 48);
-        dest[destPos + 2] = (byte) (l >> 40);
-        dest[destPos + 3] = (byte) (l >> 32);
-        dest[destPos + 4] = (byte) (l >> 24);
-        dest[destPos + 5] = (byte) (l >> 16);
-        dest[destPos + 6] = (byte) (l >> 8);
-        dest[destPos + 7] = (byte) (l);
-    }
-
     private static int intFromByteArray(final byte[] src) {
         return src[0] << 24 | (src[1] & 0xFF) << 16 | (src[2] & 0xFF) << 8 | (src[3] & 0xFF);
     }
@@ -324,11 +317,5 @@ public class LogBuffer {
     private static long longFromByteArray(final byte[] src) {
         return ((long) src[0]) << 56 | ((long) (src[1] & 0xFF)) << 48 | ((long) (src[2] & 0xFF)) << 40 | ((long) (src[3] & 0xFF)) << 32
                 | ((long) (src[4] & 0xFF)) << 24 | ((long) (src[5] & 0xFF)) << 16 | ((long) (src[6] & 0xFF)) << 8 | ((long) (src[7] & 0xFF));
-    }
-
-    private static long longFromByteArray(final byte[] src, final int srcPos) {
-        return ((long) src[srcPos + 0]) << 56 | ((long) (src[srcPos + 1] & 0xFF)) << 48 | ((long) (src[srcPos + 2] & 0xFF)) << 40
-                | ((long) (src[srcPos + 3] & 0xFF)) << 32 | ((long) (src[srcPos + 4] & 0xFF)) << 24 | ((long) (src[srcPos + 5] & 0xFF)) << 16
-                | ((long) (src[srcPos + 6] & 0xFF)) << 8 | ((long) (src[srcPos + 7] & 0xFF));
     }
 }

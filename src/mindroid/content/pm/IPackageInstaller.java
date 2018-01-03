@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Daniel Himmelein
+ * Copyright (C) 2017 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package mindroid.app;
+package mindroid.content.pm;
 
-import mindroid.os.Bundle;
-import mindroid.os.IInterface;
-import mindroid.os.IBinder;
+import java.io.File;
 import mindroid.os.Binder;
+import mindroid.os.Bundle;
+import mindroid.os.IBinder;
+import mindroid.os.IInterface;
 import mindroid.os.RemoteException;
 import mindroid.util.concurrent.Promise;
 
-public interface IOnSharedPreferenceChangeListener extends IInterface {
-    public static abstract class Stub extends Binder implements IOnSharedPreferenceChangeListener {
-        private static final java.lang.String DESCRIPTOR = "mindroid.app.IOnSharedPreferenceChangeListener";
+public interface IPackageInstaller extends IInterface {
+    public static abstract class Stub extends Binder implements IPackageInstaller {
+        private static final java.lang.String DESCRIPTOR = "mindroid.content.pm.IPackageInstaller";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
         }
 
-        public static mindroid.app.IOnSharedPreferenceChangeListener asInterface(IBinder binder) {
+        public static IPackageInstaller asInterface(IBinder binder) {
             if (binder == null) {
                 return null;
             }
-            return new IOnSharedPreferenceChangeListener.Stub.SmartProxy(binder);
+            return new IPackageInstaller.Stub.SmartProxy(binder);
         }
 
         @Override
@@ -45,13 +46,13 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
 
         protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
-            case MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY: {
-                String key = (String) obj;
-                onSharedPreferenceChanged(key);
+            case MSG_INSTALL: {
+                install((File) obj);
+                ((Promise<Void>) result).set(null);
                 break;
             }
-            case MSG_ON_SHARED_PREFERENCE_CHANGED: {
-                onSharedPreferenceChanged();
+            case MSG_UNINSTALL: {
+                uninstall((String) obj);
                 break;
             }
             default:
@@ -60,7 +61,7 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
             }
         }
 
-        private static class Proxy implements IOnSharedPreferenceChangeListener {
+        private static class Proxy implements IPackageInstaller {
             private final IBinder mRemote;
 
             Proxy(IBinder remote) {
@@ -89,25 +90,27 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
             }
 
             @Override
-            public void onSharedPreferenceChanged(String key) throws RemoteException {
-                mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY, key, null, FLAG_ONEWAY);
+            public void install(File app) throws RemoteException {
+                Promise<Void> promise = new Promise<>();
+                mRemote.transact(MSG_INSTALL, app, promise, 0);
+                Binder.get(promise);
             }
 
             @Override
-            public void onSharedPreferenceChanged() throws RemoteException {
-                mRemote.transact(MSG_ON_SHARED_PREFERENCE_CHANGED, null, FLAG_ONEWAY);
+            public void uninstall(String packageName) throws RemoteException {
+                mRemote.transact(MSG_UNINSTALL, packageName, null, FLAG_ONEWAY);
             }
         }
 
-        private static class SmartProxy implements IOnSharedPreferenceChangeListener {
+        private static class SmartProxy implements IPackageInstaller {
             private final IBinder mRemote;
-            private final IOnSharedPreferenceChangeListener mStub;
-            private final IOnSharedPreferenceChangeListener mProxy;
+            private final IPackageInstaller mStub;
+            private final IPackageInstaller mProxy;
 
             SmartProxy(IBinder remote) {
                 mRemote = remote;
-                mStub = (mindroid.app.IOnSharedPreferenceChangeListener) remote.queryLocalInterface(DESCRIPTOR);
-                mProxy = new mindroid.app.IOnSharedPreferenceChangeListener.Stub.Proxy(remote);
+                mStub = (IPackageInstaller) remote.queryLocalInterface(DESCRIPTOR);
+                mProxy = new IPackageInstaller.Stub.Proxy(remote);
             }
 
             @Override
@@ -132,28 +135,28 @@ public interface IOnSharedPreferenceChangeListener extends IInterface {
             }
 
             @Override
-            public void onSharedPreferenceChanged(String key) throws RemoteException {
+            public void install(File app) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
-                    mStub.onSharedPreferenceChanged(key);
+                    mStub.install(app);
                 } else {
-                    mProxy.onSharedPreferenceChanged(key);
+                    mProxy.install(app);
                 }
             }
 
             @Override
-            public void onSharedPreferenceChanged() throws RemoteException {
+            public void uninstall(String packageName) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
-                    mStub.onSharedPreferenceChanged();
+                    mStub.uninstall(packageName);
                 } else {
-                    mProxy.onSharedPreferenceChanged();
+                    mProxy.uninstall(packageName);
                 }
             }
         }
 
-        static final int MSG_ON_SHARED_PREFERENCE_CHANGED_WITH_KEY = 1;
-        static final int MSG_ON_SHARED_PREFERENCE_CHANGED = 2;
+        static final int MSG_INSTALL = 1;
+        static final int MSG_UNINSTALL = 2;
     }
 
-    public void onSharedPreferenceChanged(String key) throws RemoteException;
-    public void onSharedPreferenceChanged() throws RemoteException;
+    public void install(File app) throws RemoteException;
+    public void uninstall(String packageName) throws RemoteException;
 }

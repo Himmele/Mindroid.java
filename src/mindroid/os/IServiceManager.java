@@ -22,6 +22,7 @@ import mindroid.content.ServiceConnection;
 import mindroid.os.Binder;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
+import mindroid.util.concurrent.Promise;
 
 public interface IServiceManager extends IInterface {
     public static abstract class Stub extends Binder implements IServiceManager {
@@ -38,29 +39,31 @@ public interface IServiceManager extends IInterface {
             return new IServiceManager.Stub.SmartProxy(binder);
         }
 
+        @Override
         public IBinder asBinder() {
             return this;
         }
 
-        protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_START_SERVICE: {
                 Intent intent = (Intent) obj;
                 ComponentName component = startService(intent);
-                return component;
+                ((Promise<ComponentName>) result).set(component);
+                break;
             }
             case MSG_STOP_SERVICE: {
                 Intent intent = (Intent) obj;
-                boolean result = stopService(intent);
-                return Boolean.valueOf(result);
+                ((Promise<Boolean>) result).set(stopService(intent));
+                break;
             }
             case MSG_BIND_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
                 ServiceConnection conn = (ServiceConnection) data.getObject("conn");
                 int flags = data.getInt("flags");
                 IBinder binder = data.getBinder("binder");
-                boolean result = bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(binder));
-                return Boolean.valueOf(result);
+                ((Promise<Boolean>) result).set(bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(binder)));
+                break;
             }
             case MSG_UNBIND_SERVICE: {
                 Intent intent = (Intent) data.getObject("intent");
@@ -71,20 +74,22 @@ public interface IServiceManager extends IInterface {
                 } else {
                     unbindService(intent, conn, IRemoteCallback.Stub.asInterface(binder));
                 }
-                return null;
+                break;
             }
             case MSG_START_SYSTEM_SERVICE: {
                 Intent intent = (Intent) obj;
                 ComponentName component = startSystemService(intent);
-                return component;
+                ((Promise<ComponentName>) result).set(component);
+                break;
             }
             case MSG_STOP_SYSTEM_SERVICE: {
                 Intent intent = (Intent) obj;
-                boolean result = stopSystemService(intent);
-                return Boolean.valueOf(result);
+                ((Promise<Boolean>) result).set(stopSystemService(intent));
+                break;
             }
             default:
-                return super.onTransact(what, arg1, arg2, obj, data);
+                super.onTransact(what, arg1, arg2, obj, data, result);
+                break;
             }
         }
 
@@ -95,10 +100,12 @@ public interface IServiceManager extends IInterface {
                 mRemote = remote;
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -109,52 +116,66 @@ public interface IServiceManager extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public ComponentName startService(Intent intent) throws RemoteException {
-                return (ComponentName) mRemote.transact(MSG_START_SERVICE, intent, 0);
+                Promise<ComponentName> promise = new Promise<>();
+                mRemote.transact(MSG_START_SERVICE, intent, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public boolean stopService(Intent intent) throws RemoteException {
-                Boolean result = (Boolean) mRemote.transact(MSG_STOP_SERVICE, intent, 0);
-                return result.booleanValue();
+                Promise<Boolean> promise = new Promise<>();
+                mRemote.transact(MSG_STOP_SERVICE, intent, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public boolean bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
                 data.putInt("flags", flags);
                 data.putBinder("binder", callback.asBinder());
-                Boolean result = (Boolean) mRemote.transact(MSG_BIND_SERVICE, data, 0);
-                return result.booleanValue();
+                Promise<Boolean> promise = new Promise<>();
+                mRemote.transact(MSG_BIND_SERVICE, data, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public void unbindService(Intent intent, ServiceConnection conn) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
-                mRemote.transact(MSG_UNBIND_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public void unbindService(Intent intent, ServiceConnection conn, IRemoteCallback callback) throws RemoteException {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_UNBIND_SERVICE, data, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
             }
 
+            @Override
             public ComponentName startSystemService(Intent intent) throws RemoteException {
-                ComponentName component = (ComponentName) mRemote.transact(MSG_START_SYSTEM_SERVICE, intent, 0);
-                return component;
+                Promise<ComponentName> promise = new Promise<>();
+                mRemote.transact(MSG_START_SYSTEM_SERVICE, intent, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public boolean stopSystemService(Intent intent) throws RemoteException {
-                Boolean result = (Boolean) mRemote.transact(MSG_STOP_SYSTEM_SERVICE, intent, 0);
-                return result.booleanValue();
+                Promise<Boolean> promise = new Promise<>();
+                mRemote.transact(MSG_STOP_SYSTEM_SERVICE, intent, promise, 0);
+                return Binder.get(promise);
             }
         }
 
@@ -169,10 +190,12 @@ public interface IServiceManager extends IInterface {
                 mProxy = new IServiceManager.Stub.Proxy(remote);
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -183,10 +206,12 @@ public interface IServiceManager extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public ComponentName startService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.startService(intent);
@@ -195,6 +220,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public boolean stopService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.stopService(intent);
@@ -203,6 +229,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public boolean bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -211,6 +238,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public void unbindService(Intent intent, ServiceConnection conn) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.unbindService(intent, conn);
@@ -219,6 +247,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public void unbindService(Intent intent, ServiceConnection conn, IRemoteCallback callback) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.unbindService(intent, conn, IRemoteCallback.Stub.asInterface(callback.asBinder()));
@@ -227,6 +256,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public ComponentName startSystemService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.startSystemService(intent);
@@ -235,6 +265,7 @@ public interface IServiceManager extends IInterface {
                 }
             }
 
+            @Override
             public boolean stopSystemService(Intent intent) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.stopSystemService(intent);

@@ -40,14 +40,14 @@ import mindroid.util.concurrent.Promise;
 
 public class Process {
     private static final String LOG_TAG = "Process";
-    private static HashMap sPids = new HashMap();
+    private static HashMap<Integer, String> sPids = new HashMap<>();
     private final String mName;
     private final ThreadGroup mThreadGroup;
     private final HandlerThread mMainThread;
     private Handler mMainHandler;
     private IProcess.Stub mStub;
     private IPackageManager mPackageManager;
-    private final HashMap mServices;
+    private final HashMap<ComponentName, Service> mServices;
     private final Debug mDebug;
     private boolean mUncaughtException = false;
 
@@ -67,7 +67,7 @@ public class Process {
                 super.uncaughtException(thread, e);
             }
         };
-        mServices = new HashMap();
+        mServices = new HashMap<>();
         mMainThread = new HandlerThread(mThreadGroup, "Process {" + name + "}");
         mDebug = Debug.Creator.createInstance();
     }
@@ -76,12 +76,12 @@ public class Process {
         Log.d(LOG_TAG, "Starting process " + mName);
 
         synchronized (sPids) {
-            sPids.put(new Integer(getId()), mName);
+            sPids.put(getId(), mName);
         }
 
         mMainThread.start();
         mMainHandler = new Handler(mMainThread.getLooper());
-        final Promise promise = new Promise();
+        final Promise<IProcess.Stub> promise = new Promise<>();
         mMainHandler.post(new Runnable() {
             public void run() {
                 promise.set(new ProcessImpl());
@@ -90,7 +90,7 @@ public class Process {
         mDebug.start(this);
 
         try {
-            mStub = (IProcess.Stub) promise.get();
+            mStub = promise.get();
         } catch (CancellationException e) {
             throw new RuntimeException("System failure");
         } catch (ExecutionException e) {
@@ -111,10 +111,10 @@ public class Process {
             if (!mServices.isEmpty()) {
                 IProcess process = IProcess.Stub.asInterface(mStub);
 
-                Iterator itr = mServices.entrySet().iterator();
+                Iterator<Map.Entry<ComponentName, Service>> itr = mServices.entrySet().iterator();
                 while (itr.hasNext()) {
-                    Map.Entry pair = (Map.Entry) itr.next();
-                    ComponentName component = (ComponentName) pair.getKey();
+                    Map.Entry<ComponentName, Service> entry = itr.next();
+                    ComponentName component = entry.getKey();
                     Intent intent = new Intent();
                     intent.setComponent(component);
 
@@ -143,7 +143,7 @@ public class Process {
         }
 
         synchronized (sPids) {
-            sPids.remove(new Integer(getId()));
+            sPids.remove(getId());
         }
 
         Log.d(LOG_TAG, "Process " + mName + " has been stopped");
@@ -173,6 +173,7 @@ public class Process {
     }
 
     private class ProcessImpl extends IProcess.Stub {
+        @Override
         public void createService(Intent intent, IRemoteCallback callback) throws RemoteException {
             Service service = null;
             Bundle result = new Bundle();
@@ -181,7 +182,7 @@ public class Process {
             try {
                 if (intent.getBooleanExtra("systemService", false)) {
                     try {
-                        Class clazz = Class.forName(componentName);
+                        Class<?> clazz = Class.forName(componentName);
                         service = (Service) clazz.newInstance();
                     } catch (Exception e) {
                         Log.e(LOG_TAG, "Cannot find class \'" + componentName + "\': " + e.getMessage(), e);
@@ -213,7 +214,7 @@ public class Process {
                         throw new Exception("Service not enabled " + intent.getComponent().toShortString());
                     }
 
-                    List urls = new ArrayList();
+                    List<URL> urls = new ArrayList<>();
                     if (serviceInfo.applicationInfo.libraries != null) {
                         for (int i = 0; i < serviceInfo.applicationInfo.libraries.length; i++) {
                             urls.add(new File(serviceInfo.applicationInfo.libraries[i]).toURI().toURL());
@@ -222,7 +223,7 @@ public class Process {
                     urls.add(new File(serviceInfo.applicationInfo.fileName).toURI().toURL());
                     URLClassLoader classLoader = new URLClassLoader((URL[]) urls.toArray(new URL[urls.size()]), getClass().getClassLoader());
                     try {
-                        Class clazz = Class.forName(componentName, true, classLoader);
+                        Class<?> clazz = Class.forName(componentName, true, classLoader);
                         service = (Service) clazz.newInstance();
                     } catch (Exception e) {
                         Log.e(LOG_TAG, "Cannot find class \'" + componentName + "\': " + e.getMessage(), e);
@@ -254,12 +255,13 @@ public class Process {
             callback.sendResult(result);
         }
 
+        @Override
         public void startService(Intent intent, int flags, int startId, IRemoteCallback callback) throws RemoteException {
             Service service;
             Bundle result = new Bundle();
 
             synchronized (mServices) {
-                service = (Service) mServices.get(intent.getComponent());
+                service = mServices.get(intent.getComponent());
             }
             if (service != null) {
                 final String componentName = intent.getComponent().getPackageName() + "." + intent.getComponent().getClassName();
@@ -283,16 +285,18 @@ public class Process {
             callback.sendResult(result);
         }
 
+        @Override
         public void stopService(Intent intent) throws RemoteException {
             stopService(intent, null);
         }
 
+        @Override
         public void stopService(Intent intent, IRemoteCallback callback) throws RemoteException {
             Service service;
             Bundle result = new Bundle();
 
             synchronized (mServices) {
-                service = (Service) mServices.get(intent.getComponent());
+                service = mServices.get(intent.getComponent());
             }
             if (service != null) {
                 final String componentName = intent.getComponent().getPackageName() + "." + intent.getComponent().getClassName();
@@ -327,12 +331,13 @@ public class Process {
             }
         }
 
+        @Override
         public void bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
             Service service;
             Bundle result = new Bundle();
 
             synchronized (mServices) {
-                service = (Service) mServices.get(intent.getComponent());
+                service = mServices.get(intent.getComponent());
             }
             if (service != null) {
                 final String componentName = intent.getComponent().getPackageName() + "." + intent.getComponent().getClassName();
@@ -357,16 +362,18 @@ public class Process {
             callback.sendResult(result);
         }
 
+        @Override
         public void unbindService(Intent intent) throws RemoteException {
             unbindService(intent, null);
         }
 
+        @Override
         public void unbindService(Intent intent, IRemoteCallback callback) throws RemoteException {
             Service service;
             Bundle result = new Bundle();
 
             synchronized (mServices) {
-                service = (Service) mServices.get(intent.getComponent());
+                service = mServices.get(intent.getComponent());
             }
             if (service != null) {
                 final String componentName = intent.getComponent().getPackageName() + "." + intent.getComponent().getClassName();
@@ -406,7 +413,7 @@ public class Process {
 
     public static final String getName(int pid) {
         synchronized (sPids) {
-            return (String) sPids.get(new Integer(pid));
+            return sPids.get(pid);
         }
     }
 }

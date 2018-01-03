@@ -99,7 +99,7 @@ public interface SharedPreferences {
          * @return Returns a reference to the same Editor object, so you can chain put calls
          * together.
          */
-        Editor putStringSet(String key, Set values);
+        Editor putStringSet(String key, Set<String> values);
 
         /**
          * Set an int value in the preferences editor, to be written back once {@link #commit} or
@@ -241,7 +241,7 @@ public interface SharedPreferences {
      * 
      * @throws NullPointerException
      */
-    Map getAll();
+    Map<String, ?> getAll();
 
     /**
      * Retrieve a String value from the preferences.
@@ -272,7 +272,7 @@ public interface SharedPreferences {
      * 
      * @throws ClassCastException
      */
-    Set getStringSet(String key, Set defValues);
+    Set<String> getStringSet(String key, Set<String> defValues);
 
     /**
      * Retrieve an int value from the preferences.

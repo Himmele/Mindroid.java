@@ -314,6 +314,7 @@ public class FileHandler extends Handler {
     /**
      * Flushes and closes all opened files.
      */
+    @Override
     public void close() {
         flush();
 
@@ -326,6 +327,7 @@ public class FileHandler extends Handler {
         }
     }
 
+    @Override
     public void flush() {
         if (mWriter != null) {
             if (mDataVolumeLimit > 0) {
@@ -359,6 +361,7 @@ public class FileHandler extends Handler {
      * 
      * @param record The log record.
      */
+    @Override
     public synchronized void publish(LogRecord record) {
         String logMessage = record.toString();
         final int logMessageSize = logMessage.length() + CRLF.length();

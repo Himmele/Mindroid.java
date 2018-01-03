@@ -51,6 +51,15 @@ public class PackageInfo {
      */
     public ServiceInfo[] services;
 
+    /**
+     * Array of all {@link MindroidManifestService &lt;uses-permission&gt;} tags included
+     * under &lt;manifest&gt;, or null if there were none.
+     * This is only filled in if the flag {@link PackageManager#GET_PERMISSIONS} was set.
+     * This list includes all permissions requested, even those that were not granted
+     * or known by the system at install time.
+     */
+    public String[] permissions;
+
     public PackageInfo() {
     }
 }

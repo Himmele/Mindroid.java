@@ -33,7 +33,7 @@ public class Environment {
     private static File CACHE_DIRECTORY = new File(ROOT_DIRECTORY, "cache");
     private static File CERTIFICATE_DIRECTORY = new File(ROOT_DIRECTORY, "certs");
     private static File LOG_DIRECTORY = new File(ROOT_DIRECTORY, "logs");
-    private static final HashMap sSharedPrefs = new HashMap();
+    private static final HashMap<String, SharedPreferences> sSharedPrefs = new HashMap<>();
 
     /**
      * Sets the Mindroid root directory.
@@ -178,7 +178,7 @@ public class Environment {
     public static SharedPreferences getSharedPreferences(File sharedPrefsFile, int mode) {
         SharedPreferences sp;
         synchronized (sSharedPrefs) {
-            sp = (SharedPreferences) sSharedPrefs.get(sharedPrefsFile.getAbsolutePath());
+            sp = sSharedPrefs.get(sharedPrefsFile.getAbsolutePath());
             if (sp == null) {
                 sp = new SharedPreferencesImpl(sharedPrefsFile, mode);
                 sSharedPrefs.put(sharedPrefsFile.getAbsolutePath(), sp);

@@ -35,6 +35,7 @@ import mindroid.content.pm.PackageManager;
 public abstract class Context {
     public static final String SERVICE_MANAGER = "serviceManager";
     public static final String PACKAGE_MANAGER = "packageManager";
+    public static final String PACKAGE_INSTALLER = "packageInstaller";
     public static final String LOGGER_SERVICE = "logger";
     public static final String CLOCK_SERVICE = "clockService";
     public static final String ALARM_MANAGER = "alarmManager";
@@ -44,6 +45,7 @@ public abstract class Context {
     public static final String LOCATION_SERVICE = "locationService";
     public static final String MEDIA_PLAYER_SERVICE = "mediaPlayerService";
     public static final String MESSAGE_BROKER = "messageBroker";
+    public static final String SUPERVISION_SERVICE = "supervisionService";
 
     /**
      * File creation mode: the default mode.

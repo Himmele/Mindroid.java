@@ -62,7 +62,7 @@ public final class ComponentName {
      * @param cls The Class object of the desired component, from which the actual class name will
      * be retrieved.
      */
-    public ComponentName(Context pkg, Class cls) {
+    public ComponentName(Context pkg, Class<?> cls) {
         mPackage = pkg.getPackageName();
         mClass = cls.getName();
     }

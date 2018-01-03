@@ -23,6 +23,7 @@ import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.RemoteException;
+import mindroid.util.concurrent.Promise;
 
 public interface IPackageManager extends IInterface {
     public static abstract class Stub extends Binder implements IPackageManager {
@@ -39,44 +40,59 @@ public interface IPackageManager extends IInterface {
             return new IPackageManager.Stub.SmartProxy(binder);
         }
 
+        @Override
         public IBinder asBinder() {
             return this;
         }
 
-        protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_GET_INSTALLED_PACKAGES: {
-                List packages = getInstalledPackages(arg1);
-                return packages;
+                List<PackageInfo> packages = getInstalledPackages(arg1);
+                ((Promise<List<PackageInfo>>) result).set(packages);
+                break;
             }
-            case MSG_QUERY_INTENT_SERVICES: {
-                Intent intent = (Intent) obj;
-                List services = queryIntentServices(intent, arg1);
-                return services;
+            case MSG_GET_PACKAGE_INFO: {
+                String packageName = (String) obj;
+                int flags = arg1;
+                PackageInfo packageInfo = getPackageInfo(packageName, flags);
+                ((Promise<PackageInfo>) result).set(packageInfo);
+                break;
+            }
+            case MSG_GET_PACKAGE_ARCHIVE_INFO: {
+                String archiveFilePath = (String) obj;
+                int flags = arg1;
+                PackageInfo packageInfo = getPackageArchiveInfo(archiveFilePath, flags);
+                ((Promise<PackageInfo>) result).set(packageInfo);
+                break;
             }
             case MSG_RESOLVE_SERVICE: {
                 Intent intent = (Intent) obj;
                 ResolveInfo resolveInfo = resolveService(intent, arg1);
-                return resolveInfo;
+                ((Promise<ResolveInfo>) result).set(resolveInfo);
+                break;
             }
             case MSG_CHECK_PERMISSION: {
                 int permission = checkPermission((String) obj, arg1);
-                return new Integer(permission);
+                ((Promise<Integer>) result).set(new Integer(permission));
+                break;
             }
             case MSG_GET_PERMISSIONS: {
                 String[] permissions = getPermissions(arg1);
-                return permissions;
+                ((Promise<String[]>) result).set(permissions);
+                break;
             }
             case MSG_ADD_LISTENER: {
                 addListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
-                return null;
+                break;
             }
             case MSG_REMOVE_LISTENER: {
                 removeListener(IPackageManagerListener.Stub.asInterface((IBinder) obj));
-                return null;
+                break;
             }
             default:
-                return super.onTransact(what, arg1, arg2, obj, data);
+                super.onTransact(what, arg1, arg2, obj, data, result);
+                break;
             }
         }
 
@@ -87,10 +103,12 @@ public interface IPackageManager extends IInterface {
                 mRemote = remote;
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -101,41 +119,61 @@ public interface IPackageManager extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
-            public List getInstalledPackages(int flags) throws RemoteException {
-                List packages = (List) mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, 0);
-                return packages;
+            @Override
+            public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException {
+                Promise<List<PackageInfo>> promise = new Promise<>();
+                mRemote.transact(MSG_GET_INSTALLED_PACKAGES, flags, 0, promise, 0);
+                return Binder.get(promise);
             }
 
-            public List queryIntentServices(Intent intent, int flags) throws RemoteException {
-                List services = (List) mRemote.transact(MSG_QUERY_INTENT_SERVICES, flags, 0, intent, 0);
-                return services;
+            @Override
+            public PackageInfo getPackageInfo(String packageName, int flags) throws RemoteException {
+                Promise<PackageInfo> promise = new Promise<>();
+                mRemote.transact(MSG_GET_PACKAGE_INFO, flags, 0, packageName, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
+            public PackageInfo getPackageArchiveInfo(String archiveFilePath, int flags) throws RemoteException {
+                Promise<PackageInfo> promise = new Promise<>();
+                mRemote.transact(MSG_GET_PACKAGE_ARCHIVE_INFO, flags, 0, archiveFilePath, promise, 0);
+                return Binder.get(promise);
+            }
+
+            @Override
             public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
-                ResolveInfo resolveInfo = (ResolveInfo) mRemote.transact(MSG_RESOLVE_SERVICE, flags, 0, intent, 0);
-                return resolveInfo;
+                Promise<ResolveInfo> promise = new Promise<>();
+                mRemote.transact(MSG_RESOLVE_SERVICE, flags, 0, intent, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public int checkPermission(String permissionName, int pid) throws RemoteException {
-                Integer permission = (Integer) mRemote.transact(MSG_CHECK_PERMISSION, pid, 0, permissionName, 0);
-                return permission.intValue();
+                Promise<Integer> promise = new Promise<>();
+                mRemote.transact(MSG_CHECK_PERMISSION, pid, 0, permissionName, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public String[] getPermissions(int pid) throws RemoteException {
-                String[] permissions = (String[]) mRemote.transact(MSG_GET_PERMISSIONS, pid, 0, 0);
-                return permissions;
+                Promise<String[]> promise = new Promise<>();
+                mRemote.transact(MSG_GET_PERMISSIONS, pid, 0, promise, 0);
+                return Binder.get(promise);
             }
 
+            @Override
             public void addListener(IPackageManagerListener listener) throws RemoteException {
-                mRemote.transact(MSG_ADD_LISTENER, listener.asBinder(), FLAG_ONEWAY);
+                mRemote.transact(MSG_ADD_LISTENER, listener.asBinder(), null, FLAG_ONEWAY);
             }
 
+            @Override
             public void removeListener(IPackageManagerListener listener) throws RemoteException {
-                mRemote.transact(MSG_REMOVE_LISTENER, listener.asBinder(), FLAG_ONEWAY);
+                mRemote.transact(MSG_REMOVE_LISTENER, listener.asBinder(), null, FLAG_ONEWAY);
             }
         }
 
@@ -150,10 +188,12 @@ public interface IPackageManager extends IInterface {
                 mProxy = new IPackageManager.Stub.Proxy(remote);
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -164,11 +204,13 @@ public interface IPackageManager extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
-            public List getInstalledPackages(int flags) throws RemoteException {
+            @Override
+            public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.getInstalledPackages(flags);
                 } else {
@@ -176,14 +218,25 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
-            public List queryIntentServices(Intent intent, int flags) throws RemoteException {
+            @Override
+            public PackageInfo getPackageInfo(String packageName, int flags) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
-                    return mStub.queryIntentServices(intent, flags);
+                    return mStub.getPackageInfo(packageName, flags);
                 } else {
-                    return mProxy.queryIntentServices(intent, flags);
+                    return mProxy.getPackageInfo(packageName, flags);
                 }
             }
 
+            @Override
+            public PackageInfo getPackageArchiveInfo(String archiveFilePath, int flags) throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    return mStub.getPackageArchiveInfo(archiveFilePath, flags);
+                } else {
+                    return mProxy.getPackageArchiveInfo(archiveFilePath, flags);
+                }
+            }
+
+            @Override
             public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.resolveService(intent, flags);
@@ -192,6 +245,7 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            @Override
             public int checkPermission(String permissionName, int pid) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.checkPermission(permissionName, pid);
@@ -200,6 +254,7 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            @Override
             public String[] getPermissions(int pid) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     return mStub.getPermissions(pid);
@@ -208,6 +263,7 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            @Override
             public void addListener(IPackageManagerListener listener) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.addListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
@@ -216,6 +272,7 @@ public interface IPackageManager extends IInterface {
                 }
             }
 
+            @Override
             public void removeListener(IPackageManagerListener listener) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.removeListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
@@ -226,17 +283,20 @@ public interface IPackageManager extends IInterface {
         }
 
         static final int MSG_GET_INSTALLED_PACKAGES = 1;
-        static final int MSG_QUERY_INTENT_SERVICES = 2;
-        static final int MSG_RESOLVE_SERVICE = 3;
-        static final int MSG_CHECK_PERMISSION = 4;
-        static final int MSG_GET_PERMISSIONS = 5;
-        static final int MSG_ADD_LISTENER = 6;
-        static final int MSG_REMOVE_LISTENER = 7;
+        static final int MSG_GET_PACKAGE_INFO = 2;
+        static final int MSG_GET_PACKAGE_ARCHIVE_INFO = 3;
+        static final int MSG_RESOLVE_SERVICE = 4;
+        static final int MSG_CHECK_PERMISSION = 5;
+        static final int MSG_GET_PERMISSIONS = 6;
+        static final int MSG_ADD_LISTENER = 7;
+        static final int MSG_REMOVE_LISTENER = 8;
     }
 
-    public List getInstalledPackages(int flags) throws RemoteException;
+    public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException;
 
-    public List queryIntentServices(Intent intent, int flags) throws RemoteException;
+    public PackageInfo getPackageInfo(String packageName, int flags) throws RemoteException;
+
+    public PackageInfo getPackageArchiveInfo(String archiveFilePath, int flags) throws RemoteException;
 
     public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException;
 

@@ -56,58 +56,72 @@ public class ContextWrapper extends Context {
         return mBaseContext;
     }
 
+    @Override
     public PackageManager getPackageManager() {
         return mBaseContext.getPackageManager();
     }
 
+    @Override
     public Looper getMainLooper() {
         return mBaseContext.getMainLooper();
     }
 
+    @Override
     public String getPackageName() {
         return mBaseContext.getPackageName();
     }
 
+    @Override
     public File getSharedPrefsFile(String name) {
         return mBaseContext.getSharedPrefsFile(name);
     }
 
+    @Override
     public SharedPreferences getSharedPreferences(String name, int mode) {
         return mBaseContext.getSharedPreferences(name, mode);
     }
 
+    @Override
     public FileInputStream openFileInput(String name) throws FileNotFoundException {
         return mBaseContext.openFileInput(name);
     }
 
+    @Override
     public FileOutputStream openFileOutput(String name, int mode) throws FileNotFoundException {
         return mBaseContext.openFileOutput(name, mode);
     }
 
+    @Override
     public boolean deleteFile(String name) {
         return mBaseContext.deleteFile(name);
     }
 
+    @Override
     public File getFilesDir() {
         return mBaseContext.getFilesDir();
     }
 
+    @Override
     public IBinder getSystemService(String name) {
         return mBaseContext.getSystemService(name);
     }
 
+    @Override
     public ComponentName startService(Intent service) {
         return mBaseContext.startService(service);
     }
 
+    @Override
     public boolean stopService(Intent service) {
         return mBaseContext.stopService(service);
     }
 
+    @Override
     public boolean bindService(Intent service, ServiceConnection conn, int flags) {
         return mBaseContext.bindService(service, conn, flags);
     }
 
+    @Override
     public void unbindService(ServiceConnection conn) {
         mBaseContext.unbindService(conn);
     }

@@ -17,9 +17,9 @@
 package mindroid.os;
 
 public class Debug {
-    private static Class sDebugCreator = Debug.class;
+    private static Class<?> sDebugCreator = Debug.class;
 
-    public static void setDebugCreator(Class debugCreator) {
+    public static void setDebugCreator(Class<?> debugCreator) {
         if (debugCreator != null) {
             sDebugCreator = debugCreator;
         }

@@ -28,10 +28,10 @@ import java.util.Set;
  *
  */
 public final class Bundle {
-    private HashMap mMap;
+    private HashMap<String, Object> mMap;
 
     public Bundle() {
-        mMap = new HashMap();
+        mMap = new HashMap<>();
     }
 
     /**
@@ -40,11 +40,11 @@ public final class Bundle {
      * @param other a Bundle to be copied.
      */
     public Bundle(Bundle other) {
-        mMap = new HashMap();
-        Iterator itr = other.mMap.entrySet().iterator();
+        mMap = new HashMap<>();
+        Iterator<Map.Entry<String, Object>> itr = other.mMap.entrySet().iterator();
         while (itr.hasNext()) {
-            Map.Entry entry = (Map.Entry) itr.next();
-            Object key = entry.getKey();
+            Map.Entry<String, Object> entry = itr.next();
+            String key = entry.getKey();
             Object value = entry.getValue();
             mMap.put(key, value);
         }
@@ -96,7 +96,7 @@ public final class Bundle {
      *
      * @return a Set of String keys
      */
-    public Set keySet() {
+    public Set<String> keySet() {
         return mMap.keySet();
     }
 
@@ -368,7 +368,7 @@ public final class Bundle {
      * @param key a String, or null
      * @param value an ArrayList<Integer> object, or null
      */
-    public void putIntegerArrayList(String key, ArrayList value) {
+    public void putIntegerArrayList(String key, ArrayList<Integer> value) {
         if (value != null) {
             mMap.put(key, value);
         }
@@ -381,7 +381,7 @@ public final class Bundle {
      * @param key a String, or null
      * @param value an ArrayList<String> object, or null
      */
-    public void putStringArrayList(String key, ArrayList value) {
+    public void putStringArrayList(String key, ArrayList<String> value) {
         if (value != null) {
             mMap.put(key, value);
         }
@@ -914,13 +914,13 @@ public final class Bundle {
      * @param key a String, or null
      * @return an ArrayList<String> value, or null
      */
-    public ArrayList getIntegerArrayList(String key) {
+    public ArrayList<Integer> getIntegerArrayList(String key) {
         Object o = mMap.get(key);
         if (o == null) {
             return null;
         }
         try {
-            return (ArrayList) o;
+            return (ArrayList<Integer>) o;
         } catch (ClassCastException e) {
             return null;
         }
@@ -933,13 +933,13 @@ public final class Bundle {
      * @param key a String, or null
      * @return an ArrayList<String> value, or null
      */
-    public ArrayList getStringArrayList(String key) {
+    public ArrayList<String> getStringArrayList(String key) {
         Object o = mMap.get(key);
         if (o == null) {
             return null;
         }
         try {
-            return (ArrayList) o;
+            return (ArrayList<String>) o;
         } catch (ClassCastException e) {
             return null;
         }
@@ -1004,9 +1004,9 @@ public final class Bundle {
      */
     public void retainBasicTypes() {
         if (mMap != null) {
-            Iterator itr = mMap.entrySet().iterator();
+            Iterator<Map.Entry<String, Object>> itr = mMap.entrySet().iterator();
             while (itr.hasNext()) {
-                Map.Entry entry = (Map.Entry) itr.next();
+                Map.Entry<String, Object> entry = itr.next();
                 Object value = entry.getValue();
 
                 if (isBasicType(value)) {

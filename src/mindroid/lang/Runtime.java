@@ -36,7 +36,7 @@ public class Runtime {
     /**
      * Holds the list of threads to run when the VM terminates
      */
-    private List mShutdownHooks = new ArrayList();
+    private List<Message> mShutdownHooks = new ArrayList<>();
 
     /**
      * Reflects whether we are already shutting down the VM.

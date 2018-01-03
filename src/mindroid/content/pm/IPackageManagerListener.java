@@ -21,6 +21,7 @@ import mindroid.os.IInterface;
 import mindroid.os.IBinder;
 import mindroid.os.Binder;
 import mindroid.os.RemoteException;
+import mindroid.util.concurrent.Promise;
 
 public interface IPackageManagerListener extends IInterface {
     public static abstract class Stub extends Binder implements IPackageManagerListener {
@@ -37,18 +38,20 @@ public interface IPackageManagerListener extends IInterface {
             return new IPackageManagerListener.Stub.SmartProxy(binder);
         }
 
+        @Override
         public IBinder asBinder() {
             return this;
         }
 
-        protected Object onTransact(int what, int arg1, int arg2, Object obj, Bundle data) throws RemoteException {
+        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_NOTIFY_BOOT_COMPLETED: {
                 onBootCompleted();
-                return null;
+                break;
             }
             default:
-                return super.onTransact(what, arg1, arg2, obj, data);
+                super.onTransact(what, arg1, arg2, obj, data, result);
+                break;
             }
         }
 
@@ -59,10 +62,12 @@ public interface IPackageManagerListener extends IInterface {
                 mRemote = remote;
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -73,12 +78,14 @@ public interface IPackageManagerListener extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public void onBootCompleted() throws RemoteException {
-                mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, FLAG_ONEWAY);
+                mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, null, FLAG_ONEWAY);
             }
         }
 
@@ -93,10 +100,12 @@ public interface IPackageManagerListener extends IInterface {
                 mProxy = new mindroid.content.pm.IPackageManagerListener.Stub.Proxy(remote);
             }
 
+            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
+            @Override
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
@@ -107,10 +116,12 @@ public interface IPackageManagerListener extends IInterface {
                 return false;
             }
 
+            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
+            @Override
             public void onBootCompleted() throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.onBootCompleted();

@@ -88,7 +88,7 @@ public class Intent {
      * @see #setClass
      * @see #setComponent
      */
-    public Intent(Context packageContext, Class cls) {
+    public Intent(Context packageContext, Class<?> cls) {
         mComponent = new ComponentName(packageContext, cls);
     }
 
@@ -394,7 +394,7 @@ public class Intent {
      * 
      * @see #putIntegerArrayListExtra(String, ArrayList)
      */
-    public ArrayList getIntegerArrayListExtra(String name) {
+    public ArrayList<Integer> getIntegerArrayListExtra(String name) {
         return mExtras == null ? null : mExtras.getIntegerArrayList(name);
     }
 
@@ -408,7 +408,7 @@ public class Intent {
      * 
      * @see #putStringArrayListExtra(String, ArrayList)
      */
-    public ArrayList getStringArrayListExtra(String name) {
+    public ArrayList<String> getStringArrayListExtra(String name) {
         return mExtras == null ? null : mExtras.getStringArrayList(name);
     }
 
@@ -837,7 +837,7 @@ public class Intent {
      * @see #removeExtra
      * @see #getIntegerArrayListExtra(String)
      */
-    public Intent putIntegerArrayListExtra(String name, ArrayList value) {
+    public Intent putIntegerArrayListExtra(String name, ArrayList<Integer> value) {
         if (mExtras == null) {
             mExtras = new Bundle();
         }
@@ -857,7 +857,7 @@ public class Intent {
      * @see #removeExtra
      * @see #getStringArrayListExtra(String)
      */
-    public Intent putStringArrayListExtra(String name, ArrayList value) {
+    public Intent putStringArrayListExtra(String name, ArrayList<String> value) {
         if (mExtras == null) {
             mExtras = new Bundle();
         }
@@ -994,7 +994,7 @@ public class Intent {
      * 
      * @see #setComponent
      */
-    public Intent setClass(Context packageContext, Class cls) {
+    public Intent setClass(Context packageContext, Class<?> cls) {
         mComponent = new ComponentName(packageContext, cls);
         return this;
     }
