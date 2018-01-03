@@ -3,7 +3,7 @@
 Mindroid is an application framework that lets you create innovative applications using a set of reusable components - just like Android. 
 The name Mindroid has two different meanings. On one hand Mindroid is a minimal set of core Android classes and on the other hand
 these classes also form the mind of Android.
-Mindroid is almost completely Android API-compliant with minor exceptions since Mindroid even runs on Java v1.4 targets.
+Mindroid is almost completely Android API-compliant with only minor exceptions.
 Mindroid also includes an application framework <a href="http://esrlabs.com/Mindroid">documentation</a>.
 
 See also: [Mindroid Developer Guide](http://esrlabs.com/Mindroid)
