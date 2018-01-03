@@ -3,8 +3,8 @@
 <project name="Mindroid" default="all" basedir=".">
 	<property name="version.number" value="1.0.0" />
 	<property name="release.number" value="1" />
-	<property name="compile.source" value="1.4" />
-	<property name="compile.target" value="1.4" />
+	<property name="compile.source" value="1.8" />
+	<property name="compile.target" value="1.8" />
 
 	<!-- Global properties-->
 	<condition property="target" value="pc">
@@ -245,9 +245,11 @@
 					<include name="mindroid/util/EventLog.java"/>
 					<include name="mindroid/util/Log.java"/>
 					<include name="mindroid/util/Pair.java"/>
-					<include name="mindroid/util/concurrent/Executor.java"/>
-					<include name="mindroid/util/concurrent/SerialExecutor.java"/>
-					<include name="mindroid/util/concurrent/ThreadPoolExecutor.java"/>
+					<include name="mindroid/util/concurrent/CancellationException.java"/>
+					<include name="mindroid/util/concurrent/ExecutionException.java"/>
+					<include name="mindroid/util/concurrent/Future.java"/>
+					<include name="mindroid/util/concurrent/Promise.java"/>
+					<include name="mindroid/util/concurrent/TimeoutException.java"/>
 				</fileset>
 			</sourcefiles>
 		</javadoc>

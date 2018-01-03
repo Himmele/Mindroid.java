@@ -1,12 +1,14 @@
--target 1.4
 #-dontoptimize
 -assumenosideeffects class mindroid.util.Log {
     public static *** v(...);
 }
 
+-keepparameternames
+-renamesourcefileattribute SourceFile
+-keepattributes Exceptions,InnerClasses,Signature,Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
+
 -keepclasseswithmembers public class main.* { public static void main(java.lang.String[]); }
 -keep public class * extends mindroid.app.Service
--keepparameternames
 
 
 #### Mindroid ####
