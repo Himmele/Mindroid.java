@@ -128,7 +128,7 @@ public class Binder implements IBinder {
      * transact calls into the binder to do the IPC.
      */
     @Override
-    public void transact(int what, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.result = promise;
@@ -136,7 +136,7 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void transact(int what, Object obj, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, Object obj, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.obj = obj;
@@ -145,7 +145,7 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void transact(int what, int arg1, int arg2, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, int arg1, int arg2, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.arg1 = arg1;
@@ -155,7 +155,7 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void transact(int what, int arg1, int arg2, Object obj, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, int arg1, int arg2, Object obj, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.arg1 = arg1;
@@ -166,7 +166,7 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void transact(int what, Bundle data, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, Bundle data, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.setData(data);
@@ -175,7 +175,7 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void transact(int what, int arg1, int arg2, Bundle data, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, int arg1, int arg2, Bundle data, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
         message.what = what;
         message.arg1 = arg1;
@@ -185,7 +185,7 @@ public class Binder implements IBinder {
         transact(message, flags);
     }
 
-    private void transact(Message message, int flags) throws RemoteException {
+    private final void transact(Message message, int flags) throws RemoteException {
         message.sendingPid = Process.myPid();
         mTarget.send(message);
     }

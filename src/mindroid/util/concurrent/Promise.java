@@ -19,7 +19,7 @@ package mindroid.util.concurrent;
 import mindroid.os.SystemClock;
 
 public class Promise<T> implements Future<T> {
-    private T mObject = null;
+    private T mResult = null;
     private Throwable mThrowable = null;
     private boolean mIsDone = false;
     private boolean mIsCancelled = false;
@@ -56,7 +56,7 @@ public class Promise<T> implements Future<T> {
         if (mThrowable != null) {
             throw new ExecutionException(mThrowable);
         }
-        return mObject;
+        return mResult;
     }
 
     public synchronized T get(long timeout) throws CancellationException, ExecutionException, TimeoutException, InterruptedException {
@@ -79,12 +79,12 @@ public class Promise<T> implements Future<T> {
         if (mThrowable != null) {
             throw new ExecutionException(mThrowable);
         }
-        return mObject;
+        return mResult;
     }
 
-    public synchronized boolean set(T object) {
+    public synchronized boolean set(T result) {
         if (!mIsCancelled) {
-            mObject = object;
+            mResult = result;
             mIsDone = true;
             notify();
             return true;
