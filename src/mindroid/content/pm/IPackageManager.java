@@ -49,37 +49,37 @@ public interface IPackageManager extends IInterface {
             switch (what) {
             case MSG_GET_INSTALLED_PACKAGES: {
                 List<PackageInfo> packages = getInstalledPackages(arg1);
-                ((Promise<List<PackageInfo>>) result).set(packages);
+                ((Promise<List<PackageInfo>>) result).complete(packages);
                 break;
             }
             case MSG_GET_PACKAGE_INFO: {
                 String packageName = (String) obj;
                 int flags = arg1;
                 PackageInfo packageInfo = getPackageInfo(packageName, flags);
-                ((Promise<PackageInfo>) result).set(packageInfo);
+                ((Promise<PackageInfo>) result).complete(packageInfo);
                 break;
             }
             case MSG_GET_PACKAGE_ARCHIVE_INFO: {
                 String archiveFilePath = (String) obj;
                 int flags = arg1;
                 PackageInfo packageInfo = getPackageArchiveInfo(archiveFilePath, flags);
-                ((Promise<PackageInfo>) result).set(packageInfo);
+                ((Promise<PackageInfo>) result).complete(packageInfo);
                 break;
             }
             case MSG_RESOLVE_SERVICE: {
                 Intent intent = (Intent) obj;
                 ResolveInfo resolveInfo = resolveService(intent, arg1);
-                ((Promise<ResolveInfo>) result).set(resolveInfo);
+                ((Promise<ResolveInfo>) result).complete(resolveInfo);
                 break;
             }
             case MSG_CHECK_PERMISSION: {
                 int permission = checkPermission((String) obj, arg1);
-                ((Promise<Integer>) result).set(new Integer(permission));
+                ((Promise<Integer>) result).complete(new Integer(permission));
                 break;
             }
             case MSG_GET_PERMISSIONS: {
                 String[] permissions = getPermissions(arg1);
-                ((Promise<String[]>) result).set(permissions);
+                ((Promise<String[]>) result).complete(permissions);
                 break;
             }
             case MSG_ADD_LISTENER: {

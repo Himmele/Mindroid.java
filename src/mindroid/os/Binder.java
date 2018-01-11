@@ -35,8 +35,8 @@ import java.util.concurrent.Executor;
  * @see IBinder
  */
 public class Binder implements IBinder {
-    public static final String LOG_TAG = "Binder";
-    public static final String EXCEPTION_MESSAGE = "Binder transaction failure";
+    private static final String LOG_TAG = "Binder";
+    private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
     private static final ThreadLocal<Integer> sCallingPid = new ThreadLocal<>();
     private final IMessenger mTarget;
     private IInterface mOwner;
@@ -197,14 +197,14 @@ public class Binder implements IBinder {
         } catch (RemoteException e) {
             Throwable caughtException = checkException(e);
             if (message.result != null) {
-                message.result.setException(caughtException);
+                message.result.completeWith(caughtException);
             } else {
                 Log.w(LOG_TAG, EXCEPTION_MESSAGE, e);
             }
         } catch (RuntimeException e) {
             Throwable caughtException = checkException(e);
             if (message.result != null) {
-                message.result.setException(caughtException);
+                message.result.completeWith(caughtException);
             } else {
                 Log.w(LOG_TAG, EXCEPTION_MESSAGE, e);
             }
@@ -300,7 +300,7 @@ public class Binder implements IBinder {
         try {
             return result.get();
         } catch (CancellationException e) {
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE);
+            throw new RemoteException(EXCEPTION_MESSAGE);
         } catch (ExecutionException e) {
             if (e.getCause() != null) {
                 if (e.getCause() instanceof RemoteException) {
@@ -309,9 +309,9 @@ public class Binder implements IBinder {
                     throw (RuntimeException) e.getCause();
                 }
             }
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE, e.getCause());
+            throw new RemoteException(EXCEPTION_MESSAGE, e.getCause());
         } catch (InterruptedException e) {
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE);
+            throw new RemoteException(EXCEPTION_MESSAGE);
         }
     }
 
@@ -319,7 +319,7 @@ public class Binder implements IBinder {
         try {
             return result.get(timeout);
         } catch (CancellationException | TimeoutException e) {
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE);
+            throw new RemoteException(EXCEPTION_MESSAGE);
         } catch (ExecutionException e) {
             if (e.getCause() != null) {
                 if (e.getCause() instanceof RemoteException) {
@@ -328,9 +328,9 @@ public class Binder implements IBinder {
                     throw (RuntimeException) e.getCause();
                 }
             }
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE, e.getCause());
+            throw new RemoteException(EXCEPTION_MESSAGE, e.getCause());
         } catch (InterruptedException e) {
-            throw new RemoteException(Binder.EXCEPTION_MESSAGE);
+            throw new RemoteException(EXCEPTION_MESSAGE);
         }
     }
 }

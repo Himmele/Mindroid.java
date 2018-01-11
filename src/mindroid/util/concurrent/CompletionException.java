@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Daniel Himmelein
+ * Copyright (C) 2018 Daniel Himmelein
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,23 @@
 package mindroid.util.concurrent;
 
 /**
- * Exception indicating that the result of a future cannot be retrieved because the task was
- * cancelled.
+ * Exception thrown when an error or other exception is encountered in the course of completing a result or task.
  */
-public class CancellationException extends IllegalStateException {
+public class CompletionException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
-    public CancellationException() {
+    public CompletionException() {
     }
 
-    public CancellationException(String message) {
+    public CompletionException(String message) {
         super(message);
     }
 
-    public CancellationException(String message, Throwable cause) {
+    public CompletionException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public CancellationException(Throwable cause) {
+    public CompletionException(Throwable cause) {
         super(cause);
     }
 };

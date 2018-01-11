@@ -49,12 +49,12 @@ public interface IServiceManager extends IInterface {
             case MSG_START_SERVICE: {
                 Intent intent = (Intent) obj;
                 ComponentName component = startService(intent);
-                ((Promise<ComponentName>) result).set(component);
+                ((Promise<ComponentName>) result).complete(component);
                 break;
             }
             case MSG_STOP_SERVICE: {
                 Intent intent = (Intent) obj;
-                ((Promise<Boolean>) result).set(stopService(intent));
+                ((Promise<Boolean>) result).complete(stopService(intent));
                 break;
             }
             case MSG_BIND_SERVICE: {
@@ -62,7 +62,7 @@ public interface IServiceManager extends IInterface {
                 ServiceConnection conn = (ServiceConnection) data.getObject("conn");
                 int flags = data.getInt("flags");
                 IBinder binder = data.getBinder("binder");
-                ((Promise<Boolean>) result).set(bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(binder)));
+                ((Promise<Boolean>) result).complete(bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(binder)));
                 break;
             }
             case MSG_UNBIND_SERVICE: {
@@ -79,12 +79,12 @@ public interface IServiceManager extends IInterface {
             case MSG_START_SYSTEM_SERVICE: {
                 Intent intent = (Intent) obj;
                 ComponentName component = startSystemService(intent);
-                ((Promise<ComponentName>) result).set(component);
+                ((Promise<ComponentName>) result).complete(component);
                 break;
             }
             case MSG_STOP_SYSTEM_SERVICE: {
                 Intent intent = (Intent) obj;
-                ((Promise<Boolean>) result).set(stopSystemService(intent));
+                ((Promise<Boolean>) result).complete(stopSystemService(intent));
                 break;
             }
             default:

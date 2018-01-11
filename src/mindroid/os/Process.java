@@ -84,7 +84,7 @@ public class Process {
         final Promise<IProcess.Stub> promise = new Promise<>();
         mMainHandler.post(new Runnable() {
             public void run() {
-                promise.set(new ProcessImpl());
+                promise.complete(new ProcessImpl());
             }
         });
         mDebug.start(this);

@@ -107,12 +107,12 @@ public final class ServiceManager {
                 mHandler.post(new Runnable() {
                     public void run() {
                         process.stop(timeout);
-                        promise.set(true);
+                        promise.complete(true);
                     }
                 });
                 return promise;
             } else {
-                promise.set(false);
+                promise.complete(false);
                 return promise;
             }
         }
@@ -195,7 +195,7 @@ public final class ServiceManager {
         final Promise<IServiceManager.Stub> promise = new Promise<>();
         mMainHandler.post(new Runnable() {
             public void run() {
-                promise.set(new ServiceManagerImpl());
+                promise.complete(new ServiceManagerImpl());
             }
         });
         try {

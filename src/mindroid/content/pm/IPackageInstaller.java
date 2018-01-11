@@ -48,7 +48,7 @@ public interface IPackageInstaller extends IInterface {
             switch (what) {
             case MSG_INSTALL: {
                 install((File) obj);
-                ((Promise<Void>) result).set(null);
+                ((Promise<Void>) result).complete(null);
                 break;
             }
             case MSG_UNINSTALL: {
