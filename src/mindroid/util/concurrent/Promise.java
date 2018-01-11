@@ -407,7 +407,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(Function<? super T,? extends U> function) {
+    public <U> Promise<U> then(Function<? super T, ? extends U> function) {
         return then(mExecutor, function);
     }
 
@@ -425,7 +425,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(Handler handler, Function<? super T,? extends U> function) {
+    public <U> Promise<U> then(Handler handler, Function<? super T, ? extends U> function) {
         return then(handler.asExecutor(), function);
     }
 
@@ -443,7 +443,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(Executor executor, Function<? super T,? extends U> function) {
+    public <U> Promise<U> then(Executor executor, Function<? super T, ? extends U> function) {
         if (executor == null) {
             throw new NullPointerException();
         }
@@ -476,7 +476,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(BiFunction<? super T, Throwable,? extends U> function) {
+    public <U> Promise<U> then(BiFunction<? super T, Throwable, ? extends U> function) {
         return then(mExecutor, function);
     }
 
@@ -497,7 +497,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(Handler handler, BiFunction<? super T, Throwable,? extends U> function) {
+    public <U> Promise<U> then(Handler handler, BiFunction<? super T, Throwable, ? extends U> function) {
         return then(handler.asExecutor(), function);
     }
 
@@ -518,7 +518,7 @@ public class Promise<T> implements Future<T> {
      * @param <U> the function's return type
      * @return the new Promise
      */
-    public <U> Promise<U> then(Executor executor, BiFunction<? super T, Throwable,? extends U> function) {
+    public <U> Promise<U> then(Executor executor, BiFunction<? super T, Throwable, ? extends U> function) {
         if (executor == null) {
             throw new NullPointerException();
         }
