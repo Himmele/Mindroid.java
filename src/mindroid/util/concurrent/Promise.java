@@ -74,9 +74,9 @@ import sun.misc.Unsafe;
  * be arranged in any of two ways: default asynchronous execution,
  * or custom (via a supplied {@link Handler} or {@link Executor}).
  *
- * <li>Two method forms ({@link #then then} and {@link
- * #then then}) support unconditional computation
- * whether the triggering stage completed normally or exceptionally.
+ * <li>Two method forms ({@link #then(BiFunction) then(BiFunction)} and {@link
+ * #then(BiConsumer) then(BiConsumer)}) support unconditional computation
+ * whether the triggering Promise completed normally or exceptionally.
  * Method {@link #catchException catchException} supports computation
  * only when the triggering Promise completes exceptionally, computing a
  * replacement result, similarly to the java {@code catch} keyword.
@@ -100,12 +100,12 @@ import sun.misc.Unsafe;
  * value for any other parameter will result in a {@link
  * NullPointerException} being thrown.
  *
- * <p>Method form {@link #then then} is the most general way of
- * creating a continuation stage, unconditionally performing a
+ * <p>Method form {@link #then(BiFunction) then(BiFunction)} is the most general way of
+ * creating a continuation Promise, unconditionally performing a
  * computation that is given both the result and exception (if any) of
  * the triggering Promise, and computing an arbitrary result.
- * Method {@link #then then} is similar, but preserves
- * the result of the triggering stage instead of computing a new one.
+ * Method {@link #then(BiConsumer) then(BiConsumer)} is similar, but preserves
+ * the result of the triggering Promise instead of computing a new one.
  * Because a Promise's normal result may be {@code null}, both methods
  * should have a computation structured thus:
  *
@@ -337,6 +337,10 @@ public class Promise<T> implements Future<T> {
         return completed;
     }
 
+    private boolean setResult(Object result) {
+        return UNSAFE.compareAndSwapObject(this, RESULT, null, result);
+    }
+
     private void onComplete() {
         mLock.lock();
         try {
@@ -345,7 +349,7 @@ public class Promise<T> implements Future<T> {
             mLock.unlock();
         }
 
-        callActions();
+        runActions();
 
         completeConsumers();
     }
@@ -389,14 +393,10 @@ public class Promise<T> implements Future<T> {
         return false;
     }
 
-    private boolean setResult(Object result) {
-        return UNSAFE.compareAndSwapObject(this, RESULT, null, result);
-    }
-
     /**
      * Returns a new Promise that, when this Promise completes
      * normally, is executed using this Promise's default asynchronous
-     * execution facility, with this stage's result as the argument to
+     * execution facility, with this Promise's result as the argument to
      * the supplied function.
      *
      * See the {@link Promise} documentation for rules
@@ -453,7 +453,7 @@ public class Promise<T> implements Future<T> {
         Promise<U> p = new Promise<>(mExecutor);
         Action<?, ?> a = new FunctionAction<>(executor, this, p, function);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -466,7 +466,7 @@ public class Promise<T> implements Future<T> {
      * default asynchronous execution facility, with this Promise's
      * result and exception as arguments to the supplied function.
      *
-     * <p>When this stage is complete, the given function is invoked
+     * <p>When this Promise is complete, the given function is invoked
      * with the result (or {@code null} if none) and the exception (or
      * {@code null} if none) of this Promise as arguments, and the
      * function's result is used to complete the returned Promise.
@@ -528,7 +528,7 @@ public class Promise<T> implements Future<T> {
         Promise<U> p = new Promise<>(mExecutor);
         Action<?, ?> a = new BiFunctionAction<>(executor, this, p, function);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -562,7 +562,7 @@ public class Promise<T> implements Future<T> {
      *
      * @param handler the Handler to use for asynchronous execution
      * @param action the action to perform before completing the
-     * returned CompletionStage
+     * returned Promise
      * @return the new Promise
      */
     public Promise<T> then(Handler handler, Consumer<? super T> action) {
@@ -579,7 +579,7 @@ public class Promise<T> implements Future<T> {
      *
      * @param executor the Executor to use for asynchronous execution
      * @param action the action to perform before completing the
-     * returned CompletionStage
+     * returned Promise
      * @return the new Promise
      */
     public Promise<T> then(Executor executor, Consumer<? super T> action) {
@@ -592,7 +592,7 @@ public class Promise<T> implements Future<T> {
         Promise<T> p = new Promise<>(mExecutor);
         Action<?, ?> a = new ConsumerAction<>(executor, this, p, action);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -658,7 +658,7 @@ public class Promise<T> implements Future<T> {
         Promise<T> p = new Promise<>(mExecutor);
         Action<?, ?> a = new BiConsumerAction<>(executor, this, p, action);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -719,7 +719,7 @@ public class Promise<T> implements Future<T> {
         Promise<Void> p = new Promise<>(mExecutor);
         Action<?, ?> a = new RunAction<>(executor, this, p, action);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -730,8 +730,8 @@ public class Promise<T> implements Future<T> {
      * Returns a new Promise that, when this Promise completes
      * exceptionally, is executed with this Promise's exception as the
      * argument to the supplied function using this Promise's
-     * default asynchronous execution.  Otherwise, if this stage
-     * completes normally, then the returned stage also completes
+     * default asynchronous execution.  Otherwise, if this Promise
+     * completes normally, then the returned Promise also completes
      * normally with the same value.
      *
      * @param function the Function to use to compute the value of the
@@ -747,8 +747,8 @@ public class Promise<T> implements Future<T> {
      * Returns a new Promise that, when this Promise completes
      * exceptionally, is executed with this Promise's exception as the
      * argument to the supplied function using the supplied
-     * Handler.  Otherwise, if this stage completes normally,
-     * then the returned stage also completes normally with the same value.
+     * Handler.  Otherwise, if this Promise completes normally,
+     * then the returned Promise also completes normally with the same value.
      *
      * @param handler the Handler to use for asynchronous execution
      * @param function the Function to use to compute the value of the
@@ -764,8 +764,8 @@ public class Promise<T> implements Future<T> {
      * Returns a new Promise that, when this Promise completes
      * exceptionally, is executed with this Promise's exception as the
      * argument to the supplied function using the supplied
-     * Executor.  Otherwise, if this stage completes normally,
-     * then the returned stage also completes normally with the same value.
+     * Executor.  Otherwise, if this Promise completes normally,
+     * then the returned Promise also completes normally with the same value.
      *
      * @param executor the Executor to use for asynchronous execution
      * @param function the Function to use to compute the value of the
@@ -783,7 +783,7 @@ public class Promise<T> implements Future<T> {
         Promise<T> p = new Promise<>(mExecutor);
         Action<?, ?> a = new ErrorFunctionAction<T>(executor, this, p, function);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -808,7 +808,7 @@ public class Promise<T> implements Future<T> {
         Promise<T> p = new Promise<>(mExecutor);
         Action<?, ?> a = new ErrorConsumerAction<T>(executor, this, p, action);
         if (mResult != null) {
-            a.call();
+            a.tryRun();
         } else {
             addAction(a);
         }
@@ -850,7 +850,7 @@ public class Promise<T> implements Future<T> {
         protected Executor mExecutor;
         protected Promise<T> mSupplier;
         protected Promise<U> mConsumer;
-        private final AtomicBoolean mHasRun = new AtomicBoolean(false);
+        private final AtomicBoolean mClaim = new AtomicBoolean(false);
 
         Action(Executor executor, Promise<T> supplier, Promise<U> consumer) {
             mExecutor = executor;
@@ -858,8 +858,8 @@ public class Promise<T> implements Future<T> {
             mConsumer = consumer;
         }
 
-        final void call() {
-            if (!hasRun()) {
+        final void tryRun() {
+            if (claim()) {
                 mExecutor.execute(this);
             }
         }
@@ -867,8 +867,8 @@ public class Promise<T> implements Future<T> {
         @Override
         public abstract void run();
 
-        private final boolean hasRun() {
-            return !mHasRun.compareAndSet(false, true);
+        private final boolean claim() {
+            return mClaim.compareAndSet(false, true);
         }
     }
 
@@ -1069,15 +1069,15 @@ public class Promise<T> implements Future<T> {
         mActions.get().add(action);
         if (mResult != null) {
             mActions.get().remove(action);
-            action.call();
+            action.tryRun();
         }
     }
 
-    private void callActions() {
+    private void runActions() {
         if (mActions.get() != null) {
             Action<?, ?> action;
             while ((action = mActions.get().poll()) != null) {
-                action.call();
+                action.tryRun();
             }
         }
     }
