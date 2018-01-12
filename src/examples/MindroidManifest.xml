@@ -18,5 +18,9 @@
             mindroid:name=".TestService3"
             mindroid:autostart="true"
             mindroid:enabled="true" />
+        <service
+            mindroid:name=".TestService4"
+            mindroid:autostart="true"
+            mindroid:enabled="true" />
     </application>
 </manifest>
