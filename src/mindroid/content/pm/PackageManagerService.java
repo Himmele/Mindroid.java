@@ -192,17 +192,37 @@ public class PackageManagerService extends Service {
             if (app.exists()) {
                 PackageInfo packageInfo = loadPackage(app);
                 if (packageInfo != null) {
-                    boolean isNewPackage = true;
-                    for (ServiceInfo si : packageInfo.services) {
-                        if (mComponents.containsKey(new ComponentName(si.packageName, si.name))) {
-                            isNewPackage = false;
-                            break;
-                        }
-                    }
-                    if (isNewPackage) {
+                    if (!mPackages.containsKey(packageInfo.packageName)) {
                         addPackage(packageInfo);
                     }
                 }
+            }
+        }
+
+        @Override
+        public void install(String packageName, String[] classNames) throws RemoteException {
+            PackageInfo packageInfo = new PackageInfo();
+            ApplicationInfo applicationInfo = new ApplicationInfo();
+
+            packageInfo.packageName = packageName;
+            packageInfo.applicationInfo = applicationInfo;
+            applicationInfo.packageName = packageInfo.packageName;
+            applicationInfo.processName = applicationInfo.packageName;
+            applicationInfo.enabled = true;
+            List<ServiceInfo> services = new ArrayList<>();
+            for (String className : classNames) {
+                ServiceInfo serviceInfo = new ServiceInfo();
+                serviceInfo.packageName = applicationInfo.packageName;
+                serviceInfo.name = className;
+                serviceInfo.applicationInfo = applicationInfo;
+                serviceInfo.processName = applicationInfo.processName;
+                serviceInfo.enabled = true;
+                services.add(serviceInfo);
+            }
+            packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
+
+            if (!mPackages.containsKey(packageName)) {
+                addPackage(packageInfo);
             }
         }
 

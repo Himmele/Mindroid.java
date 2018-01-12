@@ -40,6 +40,14 @@ public class PackageInstaller {
         }
     }
 
+    public void install(String packageName, String[] classNames) {
+        try {
+            mService.install(packageName, classNames);
+        } catch (RemoteException e) {
+            throw new RuntimeException("System failure");
+        }
+    }
+
     public void uninstall(String packageName) {
         try {
             mService.uninstall(packageName);

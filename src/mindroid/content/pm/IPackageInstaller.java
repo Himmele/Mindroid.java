@@ -47,7 +47,14 @@ public interface IPackageInstaller extends IInterface {
         protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_INSTALL: {
-                install((File) obj);
+                if (data.containsKey("app")) {
+                    String app = data.getString("app");
+                    install(new File(app));
+                } else {
+                    String packageName = data.getString("packageName");
+                    String[] classNames = data.getStringArray("classNames");
+                    install(packageName, classNames);
+                }
                 ((Promise<Void>) result).complete(null);
                 break;
             }
@@ -92,7 +99,19 @@ public interface IPackageInstaller extends IInterface {
             @Override
             public void install(File app) throws RemoteException {
                 Promise<Void> promise = new Promise<>();
-                mRemote.transact(MSG_INSTALL, app, promise, 0);
+                Bundle data = new Bundle();
+                data.putString("app", app.getAbsolutePath());
+                mRemote.transact(MSG_INSTALL, data, promise, 0);
+                Binder.get(promise);
+            }
+
+            @Override
+            public void install(String packageName, String[] classNames) throws RemoteException {
+                Promise<Void> promise = new Promise<>();
+                Bundle data = new Bundle();
+                data.putString("packageName", packageName);
+                data.putStringArray("classNames", classNames);
+                mRemote.transact(MSG_INSTALL, data, promise, 0);
                 Binder.get(promise);
             }
 
@@ -144,6 +163,15 @@ public interface IPackageInstaller extends IInterface {
             }
 
             @Override
+            public void install(String packageName, String[] classNames) throws RemoteException {
+                if (mRemote.runsOnSameThread()) {
+                    mStub.install(packageName, classNames);
+                } else {
+                    mProxy.install(packageName, classNames);
+                }
+            }
+
+            @Override
             public void uninstall(String packageName) throws RemoteException {
                 if (mRemote.runsOnSameThread()) {
                     mStub.uninstall(packageName);
@@ -158,5 +186,6 @@ public interface IPackageInstaller extends IInterface {
     }
 
     public void install(File app) throws RemoteException;
+    public void install(String packageName, String[] classNames) throws RemoteException;
     public void uninstall(String packageName) throws RemoteException;
 }
