@@ -11,19 +11,19 @@ import mindroid.util.Log;
 import mindroid.util.concurrent.Promise;
 
 public class TestService3 extends Service {
-	private static final String LOG_TAG = "TestService3";
-	ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
-	Promise<Integer> mPromise1 = new Promise<>();
-	Promise<Integer> mPromise2 = new Promise<>();
+    private static final String LOG_TAG = "TestService3";
+    ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
+    Promise<Integer> mPromise1 = new Promise<>();
+    Promise<Integer> mPromise2 = new Promise<>();
 
-	public void onCreate() {
-	    Log.i(LOG_TAG, "onCreate");
-	}
+    public void onCreate() {
+        Log.i(LOG_TAG, "onCreate");
+    }
 
-	public int onStartCommand(Intent intent, int flags, int startId) {
-	    mPromise1.completeWith(mPromise2);
-	    mPromise1.orTimeout(10000)
-	    .then((value) -> {
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        mPromise1.completeWith(mPromise2);
+        mPromise1.orTimeout(10000)
+        .then((value) -> {
             Log.i(LOG_TAG, "Promise stage 1: " + value);
             if (System.currentTimeMillis() % 2 == 0) {
                 throw new RuntimeException("Test");
@@ -61,21 +61,21 @@ public class TestService3 extends Service {
             mPromise2.complete(42);
         }, 5000);
 
-		return 0;
-	}
+        return 0;
+    }
 
-	public IBinder onBind(Intent intent) {
-		return null;
-	}
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 
-	public void onDestroy() {
-	    Log.i(LOG_TAG, "onDestroy");
-	    try {
+    public void onDestroy() {
+        Log.i(LOG_TAG, "onDestroy");
+        try {
             mExecutorService.shutdown();
             mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "Cannot shutdown executor service", e);
             mExecutorService.shutdownNow();
         }
-	}
+    }
 }
