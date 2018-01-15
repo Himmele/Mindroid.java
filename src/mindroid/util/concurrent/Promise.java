@@ -28,6 +28,7 @@ package mindroid.util.concurrent;
 
 import java.lang.reflect.Field;
 import java.util.Queue;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledFuture;
@@ -176,7 +177,7 @@ public class Promise<T> implements Future<T> {
      * Creates a new Promise that is already completed with
      * the given throwable.
      */
-    public Promise(Throwable throwable) {
+    public Promise(final Throwable throwable) {
         this();
         completeWith(throwable);
     }
@@ -200,6 +201,11 @@ public class Promise<T> implements Future<T> {
         completeWith(supplier);
     }
 
+    public Promise(final CompletionStage<T> supplier) {
+        this();
+        completeWith(supplier);
+    }
+
     public Promise<T> onHandler(final Handler handler) {
         if (handler == null) {
             throw new NullPointerException();
@@ -216,26 +222,12 @@ public class Promise<T> implements Future<T> {
         return this;
     }
 
-    /**
-     * Returns {@code true} if completed in any fashion: normally,
-     * exceptionally, or via cancellation.
-     *
-     * @return {@code true} if completed
-     */
+    @Override
     public boolean isDone() {
         return mResult != null;
     }
 
-    /**
-     * Waits if necessary for this promise to complete, and then
-     * returns its result.
-     *
-     * @return the result value
-     * @throws CancellationException if this future was cancelled
-     * @throws ExecutionException if this future completed exceptionally
-     * @throws InterruptedException if the current thread was interrupted
-     * while waiting
-     */
+    @Override
     public T get() throws CancellationException, ExecutionException, InterruptedException {
         while (!isDone()) {
             mLock.lock();
@@ -266,18 +258,7 @@ public class Promise<T> implements Future<T> {
         return result;
     }
 
-    /**
-     * Waits if necessary for at most the given time for this promise
-     * to complete, and then returns its result, if available.
-     *
-     * @param timeout the maximum time to wait in milliseconds
-     * @return the result value
-     * @throws CancellationException if this future was cancelled
-     * @throws ExecutionException if this future completed exceptionally
-     * @throws InterruptedException if the current thread was interrupted
-     * while waiting
-     * @throws TimeoutException if the wait timed out
-     */
+    @Override
     public T get(long timeout) throws CancellationException, ExecutionException, TimeoutException, InterruptedException {
         long duration = timeout;
         long start = SystemClock.uptimeMillis();
@@ -377,27 +358,33 @@ public class Promise<T> implements Future<T> {
         return true;
     }
 
-    /**
-     * If not already completed, completes this Promise with
-     * a {@link CancellationException}. Dependent Promises
-     * that have not already completed will also complete
-     * exceptionally, with a {@link CompletionException} caused by
-     * this {@code CancellationException}.
-     *
-     * @return {@code true} if this task is now cancelled
-     */
+    public boolean completeWith(CompletionStage<T> supplier) {
+        if (supplier == null) {
+            throw new NullPointerException();
+        }
+        supplier.whenComplete((value, exception) -> {
+            if (exception != null) {
+                Throwable throwable = exception;
+                Throwable cause;
+                if ((throwable instanceof java.util.concurrent.CompletionException) &&
+                        (cause = throwable.getCause()) != null) {
+                    throwable = cause;
+                }
+                completeWith(new CompletionException(throwable));
+            } else {
+                complete(value);
+            }
+        });
+        return true;
+    }
+
+    @Override
     public boolean cancel() {
         boolean cancelled = completeWith(new CancellationException());
         return cancelled || isCancelled();
     }
 
-    /**
-     * Returns {@code true} if this Promise was cancelled
-     * before it completed normally.
-     *
-     * @return {@code true} if this Promise was cancelled
-     * before it completed normally
-     */
+    @Override
     public boolean isCancelled() {
         if (mResult instanceof Promise.Error) {
             Throwable throwable = ((Promise.Error) mResult).mThrowable;
@@ -408,84 +395,42 @@ public class Promise<T> implements Future<T> {
         return false;
     }
 
-    /**
-     * Returns {@code true} if this Promise completed
-     * exceptionally, in any way. Possible causes include
-     * cancellation, explicit invocation of {@code
-     * completeWith(Throwable)}, and abrupt termination of a
-     * Promise action.
-     *
-     * @return {@code true} if this Promise completed
-     * exceptionally
-     */
+    @Override
     public boolean isCompletedExceptionally() {
         return (mResult instanceof Promise.Error);
     }
 
     /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using this Promise's default asynchronous
-     * execution facility, with this Promise's result as the argument to
-     * the supplied function.
+     * Returns this Promise.
      *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
+     * @return this Promise
      */
+    @Override
+    public Promise<T> toPromise() {
+        return this;
+    }
+
+    @Override
     public <U> Promise<U> thenApply(Function<? super T, ? extends U> function) {
         return thenApply(mExecutor, function);
     }
 
-    /**
-     * @see #thenApply(Function)
-     */
+    @Override
     public <U> Promise<U> then(Function<? super T, ? extends U> function) {
         return thenApply(mExecutor, function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using the supplied Handler, with this
-     * Promise's result as the argument to the supplied function.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
-     */
+    @Override
     public <U> Promise<U> thenApply(Handler handler, Function<? super T, ? extends U> function) {
         return thenApply(handler.asExecutor(), function);
     }
 
-    /**
-     * @see #thenApply(Handler, Function)
-     */
+    @Override
     public <U> Promise<U> then(Handler handler, Function<? super T, ? extends U> function) {
         return thenApply(handler.asExecutor(), function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using the supplied Executor, with this
-     * Promise's result as the argument to the supplied function.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
-     */
+    @Override
     public <U> Promise<U> thenApply(Executor executor, Function<? super T, ? extends U> function) {
         if (executor == null) {
             throw new NullPointerException();
@@ -503,85 +448,32 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * @see #thenApply(Executor, Function)
-     */
+    @Override
     public <U> Promise<U> then(Executor executor, Function<? super T, ? extends U> function) {
         return thenApply(executor, function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * either normally or exceptionally, is executed using this Promise's
-     * default asynchronous execution facility, with this Promise's
-     * result and exception as arguments to the supplied function.
-     *
-     * <p>When this Promise is complete, the given function is invoked
-     * with the result (or {@code null} if none) and the exception (or
-     * {@code null} if none) of this Promise as arguments, and the
-     * function's result is used to complete the returned Promise.
-     *
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
-     */
+    @Override
     public <U> Promise<U> thenApply(BiFunction<? super T, Throwable, ? extends U> function) {
         return thenApply(mExecutor, function);
     }
 
-    /**
-     * @see #thenApply(BiFunction)
-     */
+    @Override
     public <U> Promise<U> then(BiFunction<? super T, Throwable, ? extends U> function) {
         return thenApply(mExecutor, function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * either normally or exceptionally, is executed using the
-     * supplied Handler, with this Promise's result and exception as
-     * arguments to the supplied function.
-     *
-     * <p>When this Promise is complete, the given function is invoked
-     * with the result (or {@code null} if none) and the exception (or
-     * {@code null} if none) of this Promise as arguments, and the
-     * function's result is used to complete the returned Promise.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
-     */
+    @Override
     public <U> Promise<U> thenApply(Handler handler, BiFunction<? super T, Throwable, ? extends U> function) {
         return thenApply(handler.asExecutor(), function);
     }
 
-    /**
-     * @see #thenApply(Handler, BiFunction)
-     */
+    @Override
     public <U> Promise<U> then(Handler handler, BiFunction<? super T, Throwable, ? extends U> function) {
         return thenApply(handler.asExecutor(), function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * either normally or exceptionally, is executed using the
-     * supplied Executor, with this Promise's result and exception as
-     * arguments to the supplied function.
-     *
-     * <p>When this Promise is complete, the given function is invoked
-     * with the result (or {@code null} if none) and the exception (or
-     * {@code null} if none) of this Promise as arguments, and the
-     * function's result is used to complete the returned Promise.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise
-     * @param <U> the function's return type
-     * @return the new Promise
-     */
+    @Override
     public <U> Promise<U> thenApply(Executor executor, BiFunction<? super T, Throwable, ? extends U> function) {
         if (executor == null) {
             throw new NullPointerException();
@@ -599,88 +491,23 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * @see #thenApply(Executor, BiFunction)
-     */
+    @Override
     public <U> Promise<U> then(Executor executor, BiFunction<? super T, Throwable, ? extends U> function) {
         return thenApply(executor, function);
     }
 
-    /**
-     * Returns a new Promise that is completed with the same
-     * value as the Promise returned by the given function,
-     * executed using this Promise's default asynchronous execution
-     * facility.
-     *
-     * <p>When this Promise completes normally, the given function is
-     * invoked with this Promise's result as the argument, returning
-     * another Promise.  When that Promise completes normally,
-     * the Promise returned by this method is completed with
-     * the same value.
-     *
-     * <p>To ensure progress, the supplied function must arrange
-     * eventual completion of its result.
-     *
-     * <p>See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param function the Function to use to compute another Promise
-     * @param <U> the type of the returned Promise's result
-     * @return the new Promise
-     */
-    public <U> Promise<U> thenCompose(Function<? super T, ? extends Promise<U>> function) {
+    @Override
+    public <U> Promise<U> thenCompose(Function<? super T, ? extends Future<U>> function) {
         return thenCompose(mExecutor, function);
     }
 
-    /**
-     * Returns a new Promise that is completed with the same
-     * value as the Promise returned by the given function,
-     * executed using the supplied Handler.
-     *
-     * <p>When this Promise completes normally, the given function is
-     * invoked with this Promise's result as the argument, returning
-     * another Promise.  When that Promise completes normally,
-     * the Promise returned by this method is completed with
-     * the same value.
-     *
-     * <p>To ensure progress, the supplied function must arrange
-     * eventual completion of its result.
-     *
-     * <p>See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param function the Function to use to compute another Promise
-     * @param <U> the type of the returned Promise's result
-     * @return the new Promise
-     */
-    public <U> Promise<U> thenCompose(Handler handler, Function<? super T, ? extends Promise<U>> function) {
+    @Override
+    public <U> Promise<U> thenCompose(Handler handler, Function<? super T, ? extends Future<U>> function) {
         return thenCompose(handler.asExecutor(), function);
     }
 
-    /**
-     * Returns a new Promise that is completed with the same
-     * value as the Promise returned by the given function,
-     * executed using the supplied Executor.
-     *
-     * <p>When this Promise completes normally, the given function is
-     * invoked with this Promise's result as the argument, returning
-     * another Promise.  When that Promise completes normally,
-     * the Promise returned by this method is completed with
-     * the same value.
-     *
-     * <p>To ensure progress, the supplied function must arrange
-     * eventual completion of its result.
-     *
-     * <p>See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param function the Function to use to compute another Promise
-     * @param <U> the type of the returned Promise's result
-     * @return the new Promise
-     */
-    public <U> Promise<U> thenCompose(Executor executor, Function<? super T, ? extends Promise<U>> function) {
+    @Override
+    public <U> Promise<U> thenCompose(Executor executor, Function<? super T, ? extends Future<U>> function) {
         if (executor == null) {
             throw new NullPointerException();
         }
@@ -697,67 +524,27 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using this Promise's default asynchronous
-     * execution facility, with this Promise's result as the argument to
-     * the supplied action.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(Consumer<? super T> action) {
         return thenAccept(mExecutor, action);
     }
 
-    /**
-     * @see #thenAccept(Consumer)
-     */
+    @Override
     public Promise<T> then(Consumer<? super T> action) {
         return thenAccept(mExecutor, action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using the supplied Handler, with this
-     * Promise's result as the argument to the supplied action.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(Handler handler, Consumer<? super T> action) {
         return thenAccept(handler.asExecutor(), action);
     }
 
-    /**
-     * @see #thenAccept(Handler, Consumer)
-     */
+    @Override
     public Promise<T> then(Handler handler, Consumer<? super T> action) {
         return thenAccept(handler.asExecutor(), action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, is executed using the supplied Executor, with this
-     * Promise's result as the argument to the supplied action.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(Executor executor, Consumer<? super T> action) {
         if (executor == null) {
             throw new NullPointerException();
@@ -775,76 +562,32 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * @see #thenAccept(Executor, Consumer)
-     */
+    @Override
     public Promise<T> then(Executor executor, Consumer<? super T> action) {
         return thenAccept(executor, action);
     }
 
-    /**
-     * Returns a new Promise with the same result or exception as
-     * this Promise, that executes the given action using this Promise's
-     * default asynchronous execution facility when this Promise completes.
-     *
-     * <p>When this Promise is complete, the given action is invoked with the
-     * result (or {@code null} if none) and the exception (or {@code null}
-     * if none) of this Promise as arguments.  The returned Promise is completed
-     * when the action returns.
-     *
-     * @param action the action to perform
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(BiConsumer<? super T, ? super Throwable> action) {
         return thenAccept(mExecutor, action);
     }
 
-    /**
-     * @see #thenAccept(BiConsumer)
-     */
+    @Override
     public Promise<T> then(BiConsumer<? super T, ? super Throwable> action) {
         return thenAccept(mExecutor, action);
     }
 
-    /**
-     * Returns a new Promise with the same result or exception as
-     * this Promise, that executes the given action using the supplied
-     * Handler when this Promise completes.
-     *
-     * <p>When this Promise is complete, the given action is invoked with the
-     * result (or {@code null} if none) and the exception (or {@code null}
-     * if none) of this Promise as arguments.  The returned Promise is completed
-     * when the action returns.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param action the action to perform
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(Handler handler, BiConsumer<? super T, ? super Throwable> action) {
         return thenAccept(handler.asExecutor(), action);
     }
 
-    /**
-     * @see #thenAccept(Handler, BiConsumer)
-     */
+    @Override
     public Promise<T> then(Handler handler, BiConsumer<? super T, ? super Throwable> action) {
         return thenAccept(handler.asExecutor(), action);
     }
 
-    /**
-     * Returns a new Promise with the same result or exception as
-     * this Promise, that executes the given action using the supplied
-     * Executor when this Promise completes.
-     *
-     * <p>When this Promise is complete, the given action is invoked with the
-     * result (or {@code null} if none) and the exception (or {@code null}
-     * if none) of this Promise as arguments.  The returned Promise is completed
-     * when the action returns.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param action the action to perform
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenAccept(Executor executor, BiConsumer<? super T, ? super Throwable> action) {
         if (executor == null) {
             throw new NullPointerException();
@@ -862,71 +605,32 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * @see #thenAccept(Executor, BiConsumer)
-     */
+    @Override
     public Promise<T> then(Executor executor, BiConsumer<? super T, ? super Throwable> action) {
         return thenAccept(executor, action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, executes the given action using this Promise's default
-     * asynchronous execution facility.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenRun(Runnable action) {
         return thenRun(mExecutor, action);
     }
 
-    /**
-     * @see #thenRun(Runnable)
-     */
+    @Override
     public Promise<T> then(Runnable action) {
         return thenRun(mExecutor, action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, executes the given action using the supplied Handler.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenRun(Handler handler, Runnable action) {
         return thenRun(handler.asExecutor(), action);
     }
 
-    /**
-     * @see #thenRun(Handler, Runnable)
-     */
+    @Override
     public Promise<T> then(Handler handler, Runnable action) {
         return thenRun(handler.asExecutor(), action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * normally, executes the given action using the supplied Executor.
-     *
-     * See the {@link Promise} documentation for rules
-     * covering exceptional completion.
-     *
-     * @param executor the executor to use for asynchronous execution
-     * @param action the action to perform before completing the
-     * returned Promise
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> thenRun(Executor executor, Runnable action) {
         if (executor == null) {
             throw new NullPointerException();
@@ -944,60 +648,22 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * @see #thenRun(Executor, Runnable)
-     */
+    @Override
     public Promise<T> then(Executor executor, Runnable action) {
         return thenRun(executor, action);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * exceptionally, is executed with this Promise's exception as the
-     * argument to the supplied function using this Promise's
-     * default asynchronous execution.  Otherwise, if this Promise
-     * completes normally, then the returned Promise also completes
-     * normally with the same value.
-     *
-     * @param function the Function to use to compute the value of the
-     * returned Promise if this Promise completed
-     * exceptionally
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> catchException(Function<Throwable, ? extends T> function) {
         return catchException(mExecutor, function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * exceptionally, is executed with this Promise's exception as the
-     * argument to the supplied function using the supplied
-     * Handler.  Otherwise, if this Promise completes normally,
-     * then the returned Promise also completes normally with the same value.
-     *
-     * @param handler the Handler to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise if this Promise completed
-     * exceptionally
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> catchException(Handler handler, Function<Throwable, ? extends T> function) {
         return catchException(handler.asExecutor(), function);
     }
 
-    /**
-     * Returns a new Promise that, when this Promise completes
-     * exceptionally, is executed with this Promise's exception as the
-     * argument to the supplied function using the supplied
-     * Executor.  Otherwise, if this Promise completes normally,
-     * then the returned Promise also completes normally with the same value.
-     *
-     * @param executor the Executor to use for asynchronous execution
-     * @param function the Function to use to compute the value of the
-     * returned Promise if this Promise completed
-     * exceptionally
-     * @return the new Promise
-     */
+    @Override
     public Promise<T> catchException(Executor executor, Function<Throwable, ? extends T> function) {
         if (executor == null) {
             throw new NullPointerException();
@@ -1015,14 +681,17 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
+    @Override
     public Promise<T> catchException(Consumer<Throwable> action) {
         return catchException(mExecutor, action);
     }
 
+    @Override
     public Promise<T> catchException(Handler handler, Consumer<Throwable> action) {
         return catchException(handler.asExecutor(), action);
     }
 
+    @Override
     public Promise<T> catchException(Executor executor, Consumer<Throwable> action) {
         if (executor == null) {
             throw new NullPointerException();
@@ -1040,14 +709,7 @@ public class Promise<T> implements Future<T> {
         return p;
     }
 
-    /**
-     * Exceptionally completes this Promise with a {@link TimeoutException}
-     * if not otherwise completed before the given timeout.
-     *
-     * @param timeout how long to wait before completing exceptionally
-     *        with a TimeoutException in milliseconds
-     * @return this Promise
-     */
+    @Override
     public Promise<T> orTimeout(long timeout) {
         if (mResult == null) {
             then(Timeout.add(new Timeout.Exception(this), timeout));
@@ -1055,15 +717,7 @@ public class Promise<T> implements Future<T> {
         return this;
     }
 
-    /**
-     * Completes this Promise with the given value if not otherwise
-     * completed before the given timeout.
-     *
-     * @param value the value to use upon timeout
-     * @param timeout how long to wait before completing normally
-     *        with the given value in milliseconds
-     * @return this Promise
-     */
+    @Override
     public Promise<T> completeOnTimeout(T value, long timeout) {
         if (mResult == null) {
             then(Timeout.add(new Timeout.Completion<T>(this, value), timeout));
@@ -1178,10 +832,10 @@ public class Promise<T> implements Future<T> {
     }
 
     private static final class CompositionFunctionAction<T, U> extends Action<T, U> {
-        private Function<? super T, ? extends Promise<U>> mFunction;
+        private Function<? super T, ? extends Future<U>> mFunction;
 
         CompositionFunctionAction(Executor executor, Promise<T> supplier, Promise<U> consumer,
-                 Function<? super T, ? extends Promise<U>> function) {
+                 Function<? super T, ? extends Future<U>> function) {
             super(executor, supplier, consumer);
             mFunction = function;
         }
@@ -1191,7 +845,7 @@ public class Promise<T> implements Future<T> {
             if (!(mSupplier.mResult instanceof Promise.Error)) {
                 try {
                     @SuppressWarnings("unchecked") T result = (T) mSupplier.mResult;
-                    Promise<U> u = mFunction.apply(result != NULL ? result : null);
+                    Promise<U> u = mFunction.apply(result != NULL ? result : null).toPromise();
                     mConsumer.completeWith(u);
                     return;
                 } catch (Throwable e) {
@@ -1390,6 +1044,7 @@ public class Promise<T> implements Future<T> {
         }
 
         private static final class DaemonThreadFactory implements ThreadFactory {
+            @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
                 t.setDaemon(true);
@@ -1406,6 +1061,7 @@ public class Promise<T> implements Future<T> {
                 mConsumer = consumer; this.u = u;
             }
 
+            @Override
             public void run() {
                 if (mConsumer != null && !mConsumer.isDone()) {
                     mConsumer.complete(u);
@@ -1420,6 +1076,7 @@ public class Promise<T> implements Future<T> {
                 mConsumer = consumer;
             }
 
+            @Override
             public void run() {
                 if (mConsumer != null && !mConsumer.isDone()) {
                     mConsumer.completeWith(new TimeoutException());
