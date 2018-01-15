@@ -15,6 +15,7 @@ public class TestService3 extends Service {
     ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
     Promise<Integer> mPromise1 = new Promise<>();
     Promise<Integer> mPromise2 = new Promise<>();
+    private Handler mHandler = new Handler();
 
     public void onCreate() {
         Log.i(LOG_TAG, "onCreate");
@@ -61,6 +62,18 @@ public class TestService3 extends Service {
             mPromise2.complete(42);
         }, 5000);
 
+
+        action1(42)
+            .thenCompose(value -> action2(value))
+            .thenCompose(mExecutorService, value -> action3(value))
+            .thenCompose(value -> action4(value))
+            .then(value -> { Log.i(LOG_TAG, "Result: " + value); });
+
+
+        new Promise<>(42)
+            .thenApply(value -> String.valueOf(value))
+            .thenAccept(value -> Log.i(LOG_TAG, "Result: " + value));
+
         return 0;
     }
 
@@ -77,5 +90,37 @@ public class TestService3 extends Service {
             Log.w(LOG_TAG, "Cannot shutdown executor service", e);
             mExecutorService.shutdownNow();
         }
+    }
+
+    private Promise<Integer> action1(int value) {
+        Log.i(LOG_TAG, "Action 1: " + value);
+        Promise<Integer> promise = new Promise<>();
+        mHandler.postDelayed(() -> { promise.complete(value + 1); }, 1000);
+        return promise;
+    }
+
+    private Promise<Integer> action2(int value) {
+        Log.i(LOG_TAG, "Action 2: " + value);
+        Promise<Integer> promise = new Promise<>();
+        mHandler.postDelayed(() -> { promise.complete(value + 2); }, 1000);
+        return promise;
+    }
+
+    private Promise<Integer> action3(int value) {
+        Log.i(LOG_TAG, "Action 3: " + value);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        Promise<Integer> promise = new Promise<>(value + 3);
+        return promise;
+    }
+
+    private Promise<Integer> action4(int value) {
+        Log.i(LOG_TAG, "Action 4: " + value);
+        Promise<Integer> promise = new Promise<>();
+        mHandler.postDelayed(() -> { promise.complete(value + 4); }, 1000);
+        return promise;
     }
 }

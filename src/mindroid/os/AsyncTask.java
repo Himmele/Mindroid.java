@@ -556,8 +556,10 @@ public abstract class AsyncTask<Params, Progress, Result> {
 
         onPreExecute();
 
-        mWorker.mParams = params;
-        executor.execute(mFuture);
+        if (!isCancelled()) {
+            mWorker.mParams = params;
+            executor.execute(mFuture);
+        }
 
         return this;
     }

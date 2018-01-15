@@ -46,9 +46,14 @@ public class TestService4 extends Service {
             protected void onPostExecute(Integer result) {
                 Log.i(LOG_TAG, "onPostExecute: " + result);
             }
+
+            @Override
+            protected void onCancelled(Integer result) {
+                Log.i(LOG_TAG, "onCancelled: " + result);
+            }
         };
         asyncTask.execute(1, 2, 3);
-    
+
         return 0;
     }
 
