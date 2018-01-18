@@ -160,7 +160,7 @@ public class Logger extends Service {
                     System.out.println("E/" + LOG_TAG + ": Cannot join thread " + getName());
                     mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
                 }
-            } catch (InterruptedException ignore) {
+            } catch (InterruptedException e) {
             }
         }
 

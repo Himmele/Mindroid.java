@@ -212,7 +212,7 @@ public abstract class Service extends ContextWrapper {
         try {
             mProcess.stopService(intent);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 

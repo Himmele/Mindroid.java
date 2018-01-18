@@ -32,6 +32,11 @@ public interface IServiceManager extends IInterface {
             this.attachInterface(this, DESCRIPTOR);
         }
 
+        public Stub(Looper looper) {
+            super(looper);
+            this.attachInterface(this, DESCRIPTOR);
+        }
+
         public static IServiceManager asInterface(IBinder binder) {
             if (binder == null) {
                 return null;

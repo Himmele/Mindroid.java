@@ -34,9 +34,6 @@ import mindroid.content.pm.ServiceInfo;
 import mindroid.app.ContextImpl;
 import mindroid.app.Service;
 import mindroid.util.Log;
-import mindroid.util.concurrent.CancellationException;
-import mindroid.util.concurrent.ExecutionException;
-import mindroid.util.concurrent.Promise;
 
 public class Process {
     private static final String LOG_TAG = "Process";
@@ -44,7 +41,6 @@ public class Process {
     private final String mName;
     private final ThreadGroup mThreadGroup;
     private final HandlerThread mMainThread;
-    private Handler mMainHandler;
     private IProcess.Stub mStub;
     private IPackageManager mPackageManager;
     private final HashMap<ComponentName, Service> mServices;
@@ -80,24 +76,10 @@ public class Process {
         }
 
         mMainThread.start();
-        mMainHandler = new Handler(mMainThread.getLooper());
-        final Promise<IProcess.Stub> promise = new Promise<>();
-        mMainHandler.post(new Runnable() {
-            public void run() {
-                promise.complete(new ProcessImpl());
-            }
-        });
+        mStub = new ProcessImpl(mMainThread.getLooper());
+
         mDebug.start(this);
 
-        try {
-            mStub = promise.get();
-        } catch (CancellationException e) {
-            throw new RuntimeException("System failure");
-        } catch (ExecutionException e) {
-            throw new RuntimeException("System failure");
-        } catch (InterruptedException e) {
-            throw new RuntimeException("System failure");
-        }
         return IProcess.Stub.asInterface(mStub);
     }
 
@@ -121,7 +103,7 @@ public class Process {
                     try {
                         process.stopService(intent);
                     } catch (RemoteException e) {
-                        throw new RuntimeException("System failure");
+                        throw new RuntimeException("System failure", e);
                     }
                 }
 
@@ -136,10 +118,12 @@ public class Process {
             }
         }
 
-        mMainThread.quit();
-        try {
-            mMainThread.join();
-        } catch (InterruptedException e) {
+        if (mMainThread.quit()) {
+            mMainThread.interrupt();
+            try {
+                mMainThread.join();
+            } catch (InterruptedException e) {
+            }
         }
 
         synchronized (sPids) {
@@ -173,6 +157,10 @@ public class Process {
     }
 
     private class ProcessImpl extends IProcess.Stub {
+        public ProcessImpl(Looper looper) {
+            super(looper);
+        }
+
         @Override
         public void createService(Intent intent, IRemoteCallback callback) throws RemoteException {
             Service service = null;
@@ -200,9 +188,9 @@ public class Process {
                     try {
                         resolveInfo = mPackageManager.resolveService(intent, 0);
                     } catch (NullPointerException e) {
-                        throw new RuntimeException("System failure");
+                        throw new RuntimeException("System failure", e);
                     } catch (RemoteException e) {
-                        throw new RuntimeException("System failure");
+                        throw new RuntimeException("System failure", e);
                     }
                     if (resolveInfo != null && resolveInfo.serviceInfo != null) {
                         serviceInfo = resolveInfo.serviceInfo;

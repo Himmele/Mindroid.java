@@ -36,7 +36,7 @@ public class PackageInstaller {
         try {
             mService.install(app);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -44,7 +44,7 @@ public class PackageInstaller {
         try {
             mService.install(packageName, classNames);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -52,7 +52,7 @@ public class PackageInstaller {
         try {
             mService.uninstall(packageName);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 }

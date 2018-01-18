@@ -75,7 +75,7 @@ public class PackageManager {
         try {
             return mService.getInstalledPackages(flags);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -99,7 +99,7 @@ public class PackageManager {
         try {
             return mService.getPackageInfo(packageName, flags);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -121,7 +121,7 @@ public class PackageManager {
         try {
             return mService.getPackageArchiveInfo(archiveFilePath, flags);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -139,7 +139,7 @@ public class PackageManager {
         try {
             return mService.resolveService(intent, flags);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -161,7 +161,7 @@ public class PackageManager {
         try {
             return mService.checkPermission(permissionName, pid);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -169,7 +169,7 @@ public class PackageManager {
         try {
             return mService.getPermissions(pid);
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -177,7 +177,7 @@ public class PackageManager {
         try {
             mService.addListener(listener.asInterface());
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -185,7 +185,7 @@ public class PackageManager {
         try {
             mService.removeListener(listener.asInterface());
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 }

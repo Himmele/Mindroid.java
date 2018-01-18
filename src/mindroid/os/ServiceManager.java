@@ -44,7 +44,6 @@ public final class ServiceManager {
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private final ProcessManager mProcessManager;
     private final HandlerThread mMainThread;
-    private Handler mMainHandler;
     private HashMap<String, ProcessRecord> mProcesses = new HashMap<>();
     private HashMap<ComponentName, ServiceRecord> mServices = new HashMap<>();
     private int mStartId = 0;
@@ -65,10 +64,13 @@ public final class ServiceManager {
         }
 
         public void shutdown() {
-            mThread.quit();
-            try {
-                mThread.join(SHUTDOWN_TIMEOUT);
-            } catch (InterruptedException e) {
+            if (mThread.quit()) {
+                try {
+                    System.out.println("D/" + LOG_TAG + ": Shutting down ProcessManager");
+                    mThread.join();
+                    System.out.println("D/" + LOG_TAG + ": ProcessManager has been shut down");
+                } catch (InterruptedException e) {
+                }
             }
         }
 
@@ -137,7 +139,7 @@ public final class ServiceManager {
         }
 
         ServiceRecord getService(ComponentName component) {
-            return (ServiceRecord) services.get(component);
+            return services.get(component);
         }
 
         boolean containsService(ComponentName component) {
@@ -191,22 +193,7 @@ public final class ServiceManager {
         mProcessManager.start();
 
         mMainThread.start();
-        mMainHandler = new Handler(mMainThread.getLooper());
-        final Promise<IServiceManager.Stub> promise = new Promise<>();
-        mMainHandler.post(new Runnable() {
-            public void run() {
-                promise.complete(new ServiceManagerImpl());
-            }
-        });
-        try {
-            sStub = promise.get();
-        } catch (CancellationException e) {
-            throw new RuntimeException("System failure");
-        } catch (ExecutionException e) {
-            throw new RuntimeException("System failure");
-        } catch (InterruptedException e) {
-            throw new RuntimeException("System failure");
-        }
+        sStub = new ServiceManagerImpl(mMainThread.getLooper());
 
         addService(Context.SERVICE_MANAGER, sStub);
     }
@@ -231,10 +218,13 @@ public final class ServiceManager {
 
         removeService(Context.SERVICE_MANAGER);
 
-        mMainThread.quit();
-        try {
-            mMainThread.join(SHUTDOWN_TIMEOUT);
-        } catch (InterruptedException e) {
+        if (mMainThread.quit()) {
+            try {
+                System.out.println("D/" + LOG_TAG + ": Shutting down ServiceManager");
+                mMainThread.join();
+                System.out.println("D/" + LOG_TAG + ": ServiceManager has been shut down");
+            } catch (InterruptedException e) {
+            }
         }
 
         mProcessManager.shutdown();
@@ -243,6 +233,10 @@ public final class ServiceManager {
     }
 
     class ServiceManagerImpl extends IServiceManager.Stub {
+        public ServiceManagerImpl(Looper looper) {
+            super(looper);
+        }
+
         @Override
         public ComponentName startService(Intent intent) {
             intent.putExtra(SYSTEM_SERVICE, false);
@@ -252,7 +246,7 @@ public final class ServiceManager {
         @Override
         public boolean stopService(Intent service) {
             if (mServices.containsKey(service.getComponent())) {
-                final ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+                final ServiceRecord serviceRecord = mServices.get(service.getComponent());
                 final ProcessRecord processRecord = serviceRecord.processRecord;
                 final IProcess process = processRecord.process;
 
@@ -279,7 +273,7 @@ public final class ServiceManager {
                 try {
                     process.stopService(service, callback.asInterface());
                 } catch (RemoteException e) {
-                    throw new RuntimeException("System failure");
+                    throw new RuntimeException("System failure", e);
                 }
 
                 serviceRecord.alive = false;
@@ -288,16 +282,10 @@ public final class ServiceManager {
                 processRecord.removeService(service.getComponent());
 
                 if (processRecord.numServices() == 0) {
-                    mMainHandler.post(new Runnable() {
-                        public void run() {
-                            if (processRecord.numServices() == 0) {
-                                mProcessManager.stopProcess(processRecord.name);
-                                synchronized (mProcesses) {
-                                    mProcesses.remove(processRecord.name);
-                                }
-                            }
-                        }
-                    });
+                    mProcessManager.stopProcess(processRecord.name);
+                    synchronized (mProcesses) {
+                        mProcesses.remove(processRecord.name);
+                    }
                 }
 
                 return true;
@@ -316,14 +304,14 @@ public final class ServiceManager {
             }
 
             if (mServices.containsKey(intent.getComponent())) {
-                ServiceRecord serviceRecord = (ServiceRecord) mServices.get(intent.getComponent());
+                ServiceRecord serviceRecord = mServices.get(intent.getComponent());
                 if (!serviceRecord.hasServiceConnection(conn)) {
                     serviceRecord.addServiceConnection(conn);
 
                     try {
                         serviceRecord.processRecord.process.bindService(intent, conn, flags, callback);
                     } catch (RemoteException e) {
-                        throw new RuntimeException("System failure");
+                        throw new RuntimeException("System failure", e);
                     }
 
                     Log.d(LOG_TAG, "Bound to service " + serviceRecord.name + " in process " + serviceRecord.processRecord.name);
@@ -343,7 +331,7 @@ public final class ServiceManager {
 
         @Override
         public void unbindService(Intent service, ServiceConnection conn, IRemoteCallback callback) {
-            ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+            ServiceRecord serviceRecord = mServices.get(service.getComponent());
             if (serviceRecord != null) {
                 IProcess process = serviceRecord.processRecord.process;
                 try {
@@ -353,7 +341,7 @@ public final class ServiceManager {
                         process.unbindService(service);
                     }
                 } catch (RemoteException e) {
-                    throw new RuntimeException("System failure");
+                    throw new RuntimeException("System failure", e);
                 }
                 Log.d(LOG_TAG, "Unbound from service " + serviceRecord.name + " in process " + serviceRecord.processRecord.name);
 
@@ -362,7 +350,7 @@ public final class ServiceManager {
                     try {
                         sServiceManager.stopService(service);
                     } catch (RemoteException e) {
-                        throw new RuntimeException("System failure");
+                        throw new RuntimeException("System failure", e);
                     }
                 }
             }
@@ -391,7 +379,7 @@ public final class ServiceManager {
         IProcess process;
         synchronized (mProcesses) {
             if (mProcesses.containsKey(name)) {
-                final ProcessRecord processRecord = (ProcessRecord) mProcesses.get(name);
+                final ProcessRecord processRecord = mProcesses.get(name);
                 process = processRecord.process;
             } else {
                 process = mProcessManager.startProcess(name);
@@ -422,9 +410,9 @@ public final class ServiceManager {
             try {
                 resolveInfo = mPackageManager.resolveService(service, 0);
             } catch (NullPointerException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
 
             if (resolveInfo == null || resolveInfo.serviceInfo == null) {
@@ -442,7 +430,7 @@ public final class ServiceManager {
             if (process == null) {
                 return false;
             }
-            processRecord = (ProcessRecord) mProcesses.get(serviceInfo.processName);
+            processRecord = mProcesses.get(serviceInfo.processName);
             boolean systemService = service.getBooleanExtra(SYSTEM_SERVICE, false);
             String name;
             if (systemService) {
@@ -456,7 +444,7 @@ public final class ServiceManager {
                 processRecord.addService(service.getComponent(), serviceRecord);
             }
         } else {
-            serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+            serviceRecord = mServices.get(service.getComponent());
             processRecord = serviceRecord.processRecord;
             process = processRecord.process;
         }
@@ -468,7 +456,7 @@ public final class ServiceManager {
                     boolean result = data.getBoolean("result");
                     ComponentName component = service.getComponent();
                     if (mServices.containsKey(component)) {
-                        ServiceRecord serviceRecord = (ServiceRecord) mServices.get(component);
+                        ServiceRecord serviceRecord = mServices.get(component);
                         if (result) {
                             Log.d(LOG_TAG, "Service " + serviceRecord.name + " has been created in process " + serviceRecord.processRecord.name);
                         } else {
@@ -483,7 +471,7 @@ public final class ServiceManager {
             try {
                 process.createService(service, callback.asInterface());
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         }
 
@@ -495,7 +483,7 @@ public final class ServiceManager {
             return null;
         }
 
-        final ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+        final ServiceRecord serviceRecord = mServices.get(service.getComponent());
         serviceRecord.running = true;
 
         RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
@@ -512,7 +500,7 @@ public final class ServiceManager {
         try {
             serviceRecord.processRecord.process.startService(service, 0, mStartId++, callback.asInterface());
         } catch (RemoteException e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
 
         return service.getComponent();
@@ -520,7 +508,7 @@ public final class ServiceManager {
 
     private boolean cleanupService(Intent service) {
         if (mServices.containsKey(service.getComponent())) {
-            final ServiceRecord serviceRecord = (ServiceRecord) mServices.get(service.getComponent());
+            final ServiceRecord serviceRecord = mServices.get(service.getComponent());
             final ProcessRecord processRecord = serviceRecord.processRecord;
 
             if (serviceRecord.alive) {
@@ -534,16 +522,10 @@ public final class ServiceManager {
             processRecord.removeService(service.getComponent());
 
             if (processRecord.numServices() == 0) {
-                mMainHandler.post(new Runnable() {
-                    public void run() {
-                        if (processRecord.numServices() == 0) {
-                            mProcessManager.stopProcess(processRecord.name);
-                            synchronized (mProcesses) {
-                                mProcesses.remove(processRecord.name);
-                            }
-                        }
-                    }
-                });
+                mProcessManager.stopProcess(processRecord.name);
+                synchronized (mProcesses) {
+                    mProcesses.remove(processRecord.name);
+                }
             }
 
             return true;

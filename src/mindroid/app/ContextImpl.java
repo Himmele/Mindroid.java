@@ -139,7 +139,7 @@ public class ContextImpl extends Context {
             try {
                 return mServiceManager.startService(service);
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return null;
@@ -152,7 +152,7 @@ public class ContextImpl extends Context {
             try {
                 return mServiceManager.stopService(service);
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return false;
@@ -180,7 +180,7 @@ public class ContextImpl extends Context {
             try {
                 return mServiceManager.bindService(service, conn, flags, callback.asInterface());
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return false;

@@ -28,6 +28,11 @@ public interface IProcess extends IInterface {
             this.attachInterface(this, DESCRIPTOR);
         }
 
+        public Stub(Looper looper) {
+            super(looper);
+            this.attachInterface(this, DESCRIPTOR);
+        }
+
         public static IProcess asInterface(IBinder binder) {
             if (binder == null) {
                 return null;

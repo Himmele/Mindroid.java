@@ -23,6 +23,7 @@ import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Promise;
 import mindroid.util.concurrent.TimeoutException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Base class for a remotable object, the core part of a lightweight remote procedure call mechanism
@@ -187,7 +188,9 @@ public class Binder implements IBinder {
 
     private final void transact(Message message, int flags) throws RemoteException {
         message.sendingPid = Process.myPid();
-        mTarget.send(message);
+        if (!mTarget.send(message)) {
+            throw new RemoteException(EXCEPTION_MESSAGE);
+        }
     }
 
     private final void onTransact(final Message message) {
@@ -242,7 +245,7 @@ public class Binder implements IBinder {
 
     private interface IMessenger {
         public boolean runsOnSameThread();
-        public void send(final Message message);
+        public boolean send(final Message message);
     }
 
     private class Messenger implements IMessenger {
@@ -267,9 +270,8 @@ public class Binder implements IBinder {
         }
 
         @Override
-        public void send(final Message message) {
-            message.setTarget(mHandler);
-            message.sendToTarget();
+        public boolean send(final Message message) {
+            return mHandler.sendMessage(message);
         }
     }
 
@@ -286,13 +288,18 @@ public class Binder implements IBinder {
         }
 
         @Override
-        public void send(final Message message) {
-            mExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    onTransact(message);
-                }
-            });
+        public boolean send(final Message message) {
+            try {
+                mExecutor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        onTransact(message);
+                    }
+                });
+                return true;
+            } catch (RejectedExecutionException e) {
+                return false;
+            }
         }
     }
 
@@ -311,6 +318,10 @@ public class Binder implements IBinder {
             }
             throw new RemoteException(EXCEPTION_MESSAGE, e.getCause());
         } catch (InterruptedException e) {
+            // Important: Do not quietly eat an interrupt() event,
+            // but re-interrupt the thread for other blocking calls
+            // to be interrupted as well.
+            Thread.currentThread().interrupt();
             throw new RemoteException(EXCEPTION_MESSAGE);
         }
     }
@@ -330,6 +341,10 @@ public class Binder implements IBinder {
             }
             throw new RemoteException(EXCEPTION_MESSAGE, e.getCause());
         } catch (InterruptedException e) {
+            // Important: Do not quietly eat an interrupt() event,
+            // but re-interrupt the thread for other blocking calls
+            // to be interrupted as well.
+            Thread.currentThread().interrupt();
             throw new RemoteException(EXCEPTION_MESSAGE);
         }
     }
