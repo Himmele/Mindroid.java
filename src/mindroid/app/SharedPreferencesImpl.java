@@ -48,15 +48,15 @@ public final class SharedPreferencesImpl implements SharedPreferences {
     private static final String LOG_TAG = "SharedPreferences";
     private static final String UTF_8 = "UTF-8";
     private static final int SIZE_16_KB = 16 * 1024;
-    private final static String MAP_TAG = "map";
-    private final static String BOOLEAN_TAG = "boolean";
-    private final static String INT_TAG = "int";
-    private final static String LONG_TAG = "long";
-    private final static String FLOAT_TAG = "float";
-    private final static String STRING_TAG = "string";
-    private final static String STRING_SET_TAG = "set";
-    private final static String NAME_ATTR = "name";
-    private final static String VALUE_ATTR = "value";
+    private static final String MAP_TAG = "map";
+    private static final String BOOLEAN_TAG = "boolean";
+    private static final String INT_TAG = "int";
+    private static final String LONG_TAG = "long";
+    private static final String FLOAT_TAG = "float";
+    private static final String STRING_TAG = "string";
+    private static final String STRING_SET_TAG = "set";
+    private static final String NAME_ATTR = "name";
+    private static final String VALUE_ATTR = "value";
 
     private final File mFile;
     private final File mBackupFile;

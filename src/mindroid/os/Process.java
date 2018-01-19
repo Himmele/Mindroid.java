@@ -37,7 +37,7 @@ import mindroid.util.Log;
 
 public class Process {
     private static final String LOG_TAG = "Process";
-    private static HashMap<Integer, String> sPids = new HashMap<>();
+    private static final HashMap<Integer, String> sPids = new HashMap<>();
     private final String mName;
     private final ThreadGroup mThreadGroup;
     private final HandlerThread mMainThread;

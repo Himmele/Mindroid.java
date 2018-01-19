@@ -40,7 +40,7 @@ public final class ServiceManager {
     private static final String SYSTEM_SERVICE = "systemService";
     private static IServiceManager sServiceManager;
     private static IServiceManager.Stub sStub;
-    private static HashMap<String, IBinder> sSystemServices = new HashMap<>();
+    private static final HashMap<String, IBinder> sSystemServices = new HashMap<>();
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private final ProcessManager mProcessManager;
     private final HandlerThread mMainThread;
@@ -619,6 +619,23 @@ public final class ServiceManager {
                         duration = TIMEOUT;
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public static void waitForSystemServiceShutdown(String name, long timeout) throws InterruptedException {
+        synchronized (sSystemServices) {
+            long start = SystemClock.uptimeMillis();
+            long duration = timeout;
+            while (sSystemServices.containsKey(name) && (duration > 0)) {
+                sSystemServices.wait(duration);
+                duration = start + timeout - SystemClock.uptimeMillis();
+            }
+            if (sSystemServices.containsKey(name)) {
+                Log.w(LOG_TAG, "Failed to wait for " + name + " shutdown");
             }
         }
     }

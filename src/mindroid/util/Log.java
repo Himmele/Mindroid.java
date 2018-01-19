@@ -386,7 +386,7 @@ public final class Log {
     /** @hide */
     public static final int LOG_ID_DEBUG = 2;
 
-    private static LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, 262144); // 256KB
-    private static LogBuffer sEventLogBuffer = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
-    private static LogBuffer sDebugLogBuffer = new LogBuffer(LOG_ID_DEBUG, 262144); // 256KB
+    private static final LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, 262144); // 256KB
+    private static final LogBuffer sEventLogBuffer = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
+    private static final LogBuffer sDebugLogBuffer = new LogBuffer(LOG_ID_DEBUG, 262144); // 256KB
 }
