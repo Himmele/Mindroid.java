@@ -146,7 +146,7 @@ public class Promise<T> implements Future<T> {
     }
 
     private static class Error {
-        Throwable mThrowable;
+        final Throwable mThrowable;
 
         public Error(Throwable throwable) {
             mThrowable = throwable;
@@ -398,6 +398,220 @@ public class Promise<T> implements Future<T> {
     @Override
     public boolean isCompletedExceptionally() {
         return (mResult instanceof Promise.Error);
+    }
+
+    /**
+     * Returns a new Promise that is completed when all of
+     * the given Promises complete and is executed using
+     * this Promise's default asynchronous execution facility.
+     * If any of the given Promises complete exceptionally,
+     * then the returned Promise also does so, with a
+     * CompletionException holding this exception as its cause.
+     * Otherwise, the results, if any, of the given Promises
+     * are not reflected in the returned Promise, but may be
+     * obtained by inspecting them individually. If no
+     * Promises are provided, returns a Promise completed
+     * with the value {@code null}.
+     *
+     * <p>Among the applications of this method is to await completion
+     * of a set of independent Promise before continuing a
+     * program, as in: {@code Promise.allOf(p1, p2, p3).get();}.
+     *
+     * @param promises the Promises
+     * @return a new Promise that is completed when all of the
+     * given Promise complete
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Void> allOf(Promise<?>... promises) {
+        return allOf((Looper.myLooper() != null) ? new Handler().asExecutor() : null, promises);
+    }
+
+    /**
+     * Returns a new Promise that is completed when all of
+     * the given Promises complete and is executed using
+     * the supplied Handler.
+     * If any of the given Promises complete exceptionally,
+     * then the returned Promise also does so, with a
+     * CompletionException holding this exception as its cause.
+     * Otherwise, the results, if any, of the given Promises
+     * are not reflected in the returned Promise, but may be
+     * obtained by inspecting them individually. If no
+     * Promises are provided, returns a Promise completed
+     * with the value {@code null}.
+     *
+     * <p>Among the applications of this method is to await completion
+     * of a set of independent Promise before continuing a
+     * program, as in: {@code Promise.allOf(p1, p2, p3).get();}.
+     *
+     * @param handler the Handler to use for asynchronous execution
+     * @param promises the Promises
+     * @return a new Promise that is completed when all of the
+     * given Promise complete
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Void> allOf(Handler handler, Promise<?>... promises) {
+        return allOf(handler.asExecutor(), promises);
+    }
+
+    /**
+     * Returns a new Promise that is completed when all of
+     * the given Promises complete and is executed using
+     * the supplied Executor.
+     * If any of the given Promises complete exceptionally,
+     * then the returned Promise also does so, with a
+     * CompletionException holding this exception as its cause.
+     * Otherwise, the results, if any, of the given Promises
+     * are not reflected in the returned Promise, but may be
+     * obtained by inspecting them individually. If no
+     * Promises are provided, returns a Promise completed
+     * with the value {@code null}.
+     *
+     * <p>Among the applications of this method is to await completion
+     * of a set of independent Promise before continuing a
+     * program, as in: {@code Promise.allOf(p1, p2, p3).get();}.
+     *
+     * @param executor the Executor to use for asynchronous execution
+     * @param promises the Promises
+     * @return a new Promise that is completed when all of the
+     * given Promise complete
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Void> allOf(Executor executor, Promise<?>... promises) {
+        if (promises.length == 0) {
+            Promise<Void> p = new Promise<>(executor);
+            p.complete(null);
+            return p;
+        }
+        return andTree(executor, promises, 0, promises.length - 1);
+    }
+
+    private static Promise<Void> andTree(Executor executor, Promise<?>[] promises, int start, int end) {
+        Promise<?> supplier1;
+        Promise<?> supplier2;
+        Promise<Void> consumer = new Promise<>(executor);
+        Object error;
+        int mid = (start + end) / 2;
+        if ((supplier1 = (start == mid ? promises[start] :
+                andTree(executor, promises, start, mid))) == null ||
+            (supplier2 = (start == end ? supplier1 : (end == mid + 1) ? promises[end] :
+                andTree(executor, promises, mid + 1, end))) == null) {
+            throw new NullPointerException();
+        }
+        if (supplier1.mResult == null || supplier2.mResult == null) {
+            Action<?, ?> action = new BiRelayAction<>(supplier1, supplier2, consumer);
+            if (supplier1.mResult != null) {
+                action.tryRun();
+            } else {
+                supplier1.addAction(action);
+            }
+            if (supplier2.mResult != null) {
+                action.tryRun();
+            } else {
+                supplier2.addAction(action);
+            }
+        } else if (((error = supplier1.mResult) instanceof Error) || ((error = supplier2.mResult) instanceof Error)) {
+            consumer.setResult(toCompletionException((Promise.Error) error));
+        } else {
+            consumer.setResult(NULL);
+        }
+        return consumer;
+    }
+
+    /**
+     * Returns a new Promise that is completed when any of
+     * the given Promises complete, with the same result
+     * and is executed using this Promise's default asynchronous
+     * execution facility.
+     * Otherwise, if it completed exceptionally, the returned
+     * Promise also does so, with a CompletionException
+     * holding this exception as its cause.  If no Promises
+     * are provided, returns an incomplete Promise.
+     *
+     * @param promises the Promises
+     * @return a new Promise that is completed with the
+     * result or exception of any of the given Promises when
+     * one completes
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Object> anyOf(Promise<?>... promises) {
+        return anyOf((Looper.myLooper() != null) ? new Handler().asExecutor() : null, promises);
+    }
+
+    /**
+     * Returns a new Promise that is completed when any of
+     * the given Promises complete, with the same result
+     * and is executed using the supplied Handler.
+     * Otherwise, if it completed exceptionally, the returned
+     * Promise also does so, with a CompletionException
+     * holding this exception as its cause.  If no Promises
+     * are provided, returns an incomplete Promise.
+     *
+     * @param handler the Handler to use for asynchronous execution
+     * @param promises the Promises
+     * @return a new Promise that is completed with the
+     * result or exception of any of the given Promises when
+     * one completes
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Object> anyOf(Handler handler, Promise<?>... promises) {
+        return anyOf(handler.asExecutor(), promises);
+    }
+
+    /**
+     * Returns a new Promise that is completed when any of
+     * the given Promises complete, with the same result
+     * and is executed using the supplied Executor.
+     * Otherwise, if it completed exceptionally, the returned
+     * Promise also does so, with a CompletionException
+     * holding this exception as its cause.  If no Promises
+     * are provided, returns an incomplete Promise.
+     *
+     * @param executor the Executor to use for asynchronous execution
+     * @param promises the Promises
+     * @return a new Promise that is completed with the
+     * result or exception of any of the given Promises when
+     * one completes
+     * @throws NullPointerException if the array or any of its elements are
+     * {@code null}
+     */
+    public static Promise<Object> anyOf(Executor executor, Promise<?>... promises) {
+        if (promises.length == 0) {
+            return new Promise<>(executor);
+        } else {
+            Promise<Object> consumer = new Promise<>(executor);
+            for (Promise<?> p : promises) {
+                if (p.mResult != null) {
+                    if (!(p.mResult instanceof Error)) {
+                        consumer.setResult(p.mResult);
+                    } else {
+                        consumer.setResult(toCompletionException((Promise.Error) p.mResult));
+                    }
+                    return consumer;
+                }
+            }
+
+            final Action<?, ?>[] actions = new Action<?, ?>[promises.length];
+            for (int i = 0; i < promises.length; i++) {
+                actions[i] =  new AnyOfAction<>(promises[i], consumer, actions);
+            }
+            for (int i = 0; i < promises.length; i++) {
+                promises[i].addAction(actions[i]);
+            }
+
+            // Clean up all promises if the consumer completed while adding the AnyOfAction actions.
+            if (consumer.mResult != null) {
+                for (int i = 0; i < promises.length; i++) {
+                    promises[i].removeAction(actions[i]);
+                }
+            }
+
+            return consumer;
+        }
     }
 
     /**
@@ -751,6 +965,27 @@ public class Promise<T> implements Future<T> {
         }
     }
 
+    private static abstract class BiAction<T, U, V> extends Action<T, V> {
+        protected Promise<U> mSupplier2;
+
+        BiAction(Executor executor, Promise<T> supplier1, Promise<U> supplier2, Promise<V> consumer) {
+            super(executor, supplier1, consumer);
+            mSupplier2 = supplier2;
+        }
+
+        @Override
+        void tryRun() {
+            if (mSupplier.mResult != null && mSupplier2.mResult != null) {
+                if (claim()) {
+                    mExecutor.execute(this);
+                }
+            }
+        }
+
+        @Override
+        public abstract void run();
+    }
+
     private static final class RelayAction<T, U extends T> extends Action<T, U> {
         RelayAction(Promise<T> supplier, Promise<U> consumer) {
             super(null, supplier, consumer);
@@ -767,6 +1002,33 @@ public class Promise<T> implements Future<T> {
         public final void run() {
             if (!(mSupplier.mResult instanceof Promise.Error)) {
                 mConsumer.setResult(mSupplier.mResult);
+            } else {
+                mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
+            }
+
+            mConsumer.onComplete();
+        }
+    }
+
+    private static final class BiRelayAction<T, U> extends BiAction<T, U, Void> {
+        BiRelayAction(Promise<T> supplier1, Promise<U> supplier2, Promise<Void> consumer) {
+            super(null, supplier1, supplier2, consumer);
+        }
+
+        @Override
+        final void tryRun() {
+            if (mSupplier.mResult != null && mSupplier2.mResult != null) {
+                if (claim()) {
+                    run();
+                }
+            }
+        }
+
+        @Override
+        public final void run() {
+            if (!(mSupplier.mResult instanceof Promise.Error) &&
+                    !(mSupplier2.mResult instanceof Promise.Error)) {
+                mConsumer.setResult(NULL);
             } else {
                 mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
             }
@@ -873,7 +1135,7 @@ public class Promise<T> implements Future<T> {
             if (!(mSupplier.mResult instanceof Promise.Error)) {
                 try {
                     @SuppressWarnings("unchecked") T result = (T) mSupplier.mResult;
-                    mAction.accept(result);
+                    mAction.accept(result != NULL ? result : null);
                     mConsumer.setResult(mSupplier.mResult);
                 } catch (Throwable e) {
                     mConsumer.setResult(toCompletionException(e));
@@ -936,6 +1198,39 @@ public class Promise<T> implements Future<T> {
             }
 
             mConsumer.onComplete();
+        }
+    }
+
+    private static final class AnyOfAction<T> extends Action<T, Object> {
+        final Action<?, ?>[] mActions;
+
+        AnyOfAction(Promise<T> supplier, Promise<Object> consumer, Action<?, ?>[] actions) {
+            super(null, supplier, consumer);
+            mActions = actions;
+        }
+
+        @Override
+        final void tryRun() {
+            if (claim()) {
+                run();
+            }
+        }
+
+        @Override
+        public final void run() {
+            if (!(mSupplier.mResult instanceof Promise.Error)) {
+                mConsumer.setResult(mSupplier.mResult);
+            } else {
+                mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
+            }
+
+            mConsumer.onComplete();
+
+            for (Action<?, ?> a : mActions) {
+                if (a != this) {
+                    a.mSupplier.removeAction(a);
+                }
+            }
         }
     }
 
@@ -1004,6 +1299,12 @@ public class Promise<T> implements Future<T> {
         }
     }
 
+    private void removeAction(Action<?, ?> action) {
+        if (mActions.get() != null) {
+            mActions.get().remove(action);
+        }
+    }
+
     private void runActions() {
         if (mActions.get() != null) {
             Action<?, ?> action;
@@ -1055,16 +1356,17 @@ public class Promise<T> implements Future<T> {
 
         static final class Completion<U> implements Runnable {
             final Promise<U> mConsumer;
-            final U u;
+            final U mValue;
 
-            Completion(Promise<U> consumer, U u) {
-                mConsumer = consumer; this.u = u;
+            Completion(Promise<U> consumer, U value) {
+                mConsumer = consumer;
+                mValue = value;
             }
 
             @Override
             public void run() {
                 if (mConsumer != null && !mConsumer.isDone()) {
-                    mConsumer.complete(u);
+                    mConsumer.complete(mValue);
                 }
             }
         }

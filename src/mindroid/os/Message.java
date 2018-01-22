@@ -240,6 +240,7 @@ public final class Message {
         callback = null;
         data = null;
         result = null;
+        sendingPid = -1;
 
         synchronized (sMessagePoolSync) {
             if (sMessagePoolSize < MAX_MESSAGE_POOL_SIZE) {

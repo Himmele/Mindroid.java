@@ -212,6 +212,7 @@ public class Binder implements IBinder {
                 Log.w(LOG_TAG, EXCEPTION_MESSAGE, e);
             }
         } finally {
+            message.result = null;
             setCallingPid(origPid);
         }
     }

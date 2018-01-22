@@ -7,6 +7,7 @@ import mindroid.app.Service;
 import mindroid.content.Intent;
 import mindroid.os.Handler;
 import mindroid.os.IBinder;
+import mindroid.os.SystemClock;
 import mindroid.util.Log;
 import mindroid.util.concurrent.Promise;
 
@@ -15,6 +16,8 @@ public class TestService3 extends Service {
     ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
     Promise<Integer> mPromise1 = new Promise<>();
     Promise<Integer> mPromise2 = new Promise<>();
+    Promise<Integer> mPromise3 = new Promise<>();
+    Promise<Integer> mPromise4 = new Promise<>();
     private Handler mHandler = new Handler();
 
     public void onCreate() {
@@ -73,6 +76,28 @@ public class TestService3 extends Service {
         new Promise<>(42)
             .thenApply(value -> String.valueOf(value))
             .thenAccept(value -> Log.i(LOG_TAG, "Result: " + value));
+
+
+        new Handler().postDelayed(() -> {
+            mPromise3.complete(17);
+        }, 10000);
+
+        new Handler().postDelayed(() -> {
+            mPromise4.complete(0);
+        }, 7500);
+
+        long startTime = SystemClock.uptimeMillis();
+        Promise<Void> allOf = Promise.allOf(mPromise1, mPromise2, mPromise3, mPromise4);
+        allOf.then((value, exception) -> {
+            long now = SystemClock.uptimeMillis();
+            Log.i(LOG_TAG, "AllOf result after " + (now - startTime) + "ms: " + value);
+        });
+
+        Promise<Object> anyOf = Promise.anyOf(mPromise1, mPromise2, mPromise3, mPromise4);
+        anyOf.then((value, exception) -> {
+            long now = SystemClock.uptimeMillis();
+            Log.i(LOG_TAG, "AnyOf result after " + (now - startTime) + "ms: " + value);
+        });
 
         return 0;
     }
