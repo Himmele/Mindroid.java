@@ -19,6 +19,7 @@ package mindroid.os;
 
 import mindroid.util.Log;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * A Handler allows you to send and process {@link Message} and Runnable objects associated with a
@@ -458,7 +459,12 @@ public class Handler {
         return (mExecutor = new Executor() {
             @Override
             public void execute(Runnable command) {
-                post(command);
+                if (command == null) {
+                    throw new NullPointerException("Runnable must not be null");
+                }
+                if (!post(command)) {
+                    throw new RejectedExecutionException("Runnable has been rejected by Handler");
+                }
             }
         });
     }
