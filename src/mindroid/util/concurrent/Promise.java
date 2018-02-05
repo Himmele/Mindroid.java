@@ -1026,11 +1026,12 @@ public class Promise<T> implements Future<T> {
 
         @Override
         public final void run() {
-            if (!(mSupplier.mResult instanceof Promise.Error) &&
-                    !(mSupplier2.mResult instanceof Promise.Error)) {
-                mConsumer.setResult(NULL);
-            } else {
+            if (mSupplier.mResult instanceof Promise.Error) {
                 mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
+            } else if (mSupplier2.mResult instanceof Promise.Error) {
+                mConsumer.setResult(toCompletionException((Promise.Error) mSupplier2.mResult));
+            } else {
+                mConsumer.setResult(NULL);
             }
 
             mConsumer.onComplete();
