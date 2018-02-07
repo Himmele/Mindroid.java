@@ -739,6 +739,33 @@ public class Promise<T> implements Future<T> {
     }
 
     @Override
+    public <U> Promise<U> thenCompose(BiFunction<? super T, Throwable, ? extends Future<U>> function) {
+        return thenCompose(mExecutor, function);
+    }
+
+    @Override
+    public <U> Promise<U> thenCompose(Handler handler, BiFunction<? super T, Throwable, ? extends Future<U>> function) {
+        return thenCompose(handler.asExecutor(), function);
+    }
+
+    public <U> Promise<U> thenCompose(Executor executor, BiFunction<? super T, Throwable, ? extends Future<U>> function) {
+        if (executor == null) {
+            throw new NullPointerException();
+        }
+        if (function == null) {
+            throw new NullPointerException();
+        }
+        Promise<U> p = new Promise<>(mExecutor);
+        Action<?, ?> a = new BiCompositionFunctionAction<>(executor, this, p, function);
+        if (mResult != null) {
+            a.tryRun();
+        } else {
+            addAction(a);
+        }
+        return p;
+    }
+
+    @Override
     public Promise<T> thenAccept(Consumer<? super T> action) {
         return thenAccept(mExecutor, action);
     }
@@ -1116,6 +1143,36 @@ public class Promise<T> implements Future<T> {
                 }
             } else {
                 mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
+            }
+
+            mConsumer.onComplete();
+        }
+    }
+
+    private static final class BiCompositionFunctionAction<T, U> extends Action<T, U> {
+        private BiFunction<? super T, Throwable, ? extends Future<U>> mFunction;
+
+        BiCompositionFunctionAction(Executor executor, Promise<T> supplier, Promise<U> consumer,
+                BiFunction<? super T, Throwable, ? extends Future<U>> function) {
+            super(executor, supplier, consumer);
+            mFunction = function;
+        }
+
+        @Override
+        public final void run() {
+            try {
+                Promise<U> u;
+                if (!(mSupplier.mResult instanceof Promise.Error)) {
+                    @SuppressWarnings("unchecked") T result = (T) mSupplier.mResult;
+                    u = mFunction.apply(result != NULL ? result : null, null).toPromise();
+                } else {
+                    Throwable throwable = ((Promise.Error) mSupplier.mResult).mThrowable;
+                    u = mFunction.apply(null, throwable).toPromise();
+                }
+                mConsumer.completeWith(u);
+                return;
+            } catch (Throwable e) {
+                mConsumer.setResult(toCompletionException(e));
             }
 
             mConsumer.onComplete();

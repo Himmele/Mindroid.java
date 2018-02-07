@@ -307,6 +307,81 @@ public interface Future<T> {
     public <U> Future<U> thenCompose(Executor executor, Function<? super T, ? extends Future<U>> function);
 
     /**
+     * Returns a new Future that is completed with the same
+     * value as the Future returned by the given function,
+     * executed using this Future's default asynchronous execution
+     * facility.
+     *
+     * <p>When this Future is complete, the given function is invoked
+     * with the result (or {@code null} if none) and the exception (or
+     * {@code null} if none) of this Future as arguments, returning
+     * another Future.  When that Future completes normally,
+     * the Future returned by this method is completed with
+     * the same value.
+     *
+     * <p>To ensure progress, the supplied function must arrange
+     * eventual completion of its result.
+     *
+     * <p>See the {@link Future} documentation for rules
+     * covering exceptional completion.
+     *
+     * @param function the Function to use to compute another Future
+     * @param <U> the type of the returned Future's result
+     * @return the new Future
+     */
+    public <U> Future<U> thenCompose(BiFunction<? super T, Throwable, ? extends Future<U>> function);
+
+    /**
+     * Returns a new Future that is completed with the same
+     * value as the Future returned by the given function,
+     * executed using the supplied Handler.
+     *
+     * <p>When this Future is complete, the given function is invoked
+     * with the result (or {@code null} if none) and the exception (or
+     * {@code null} if none) of this Future as arguments, returning
+     * another Future.  When that Future completes normally,
+     * the Future returned by this method is completed with
+     * the same value.
+     *
+     * <p>To ensure progress, the supplied function must arrange
+     * eventual completion of its result.
+     *
+     * <p>See the {@link Future} documentation for rules
+     * covering exceptional completion.
+     *
+     * @param handler the Handler to use for asynchronous execution
+     * @param function the Function to use to compute another Future
+     * @param <U> the type of the returned Future's result
+     * @return the new Future
+     */
+    public <U> Future<U> thenCompose(Handler handler, BiFunction<? super T, Throwable, ? extends Future<U>> function);
+
+    /**
+     * Returns a new Future that is completed with the same
+     * value as the Future returned by the given function,
+     * executed using the supplied Executor.
+     *
+     * <p>When this Future is complete, the given function is invoked
+     * with the result (or {@code null} if none) and the exception (or
+     * {@code null} if none) of this Future as arguments, returning
+     * another Future.  When that Future completes normally,
+     * the Future returned by this method is completed with
+     * the same value.
+     *
+     * <p>To ensure progress, the supplied function must arrange
+     * eventual completion of its result.
+     *
+     * <p>See the {@link Future} documentation for rules
+     * covering exceptional completion.
+     *
+     * @param executor the Executor to use for asynchronous execution
+     * @param function the Function to use to compute another Future
+     * @param <U> the type of the returned Future's result
+     * @return the new Future
+     */
+    public <U> Future<U> thenCompose(Executor executor, BiFunction<? super T, Throwable, ? extends Future<U>> function);
+
+    /**
      * Returns a new Future that, when this Future completes
      * normally, is executed using this Future's default asynchronous
      * execution facility, with this Future's result as the argument to

@@ -67,7 +67,7 @@ public class TestService3 extends Service {
 
 
         action1(42)
-            .thenCompose(value -> action2(value))
+            .thenCompose((value, exception) -> action2(value, exception))
             .thenCompose(mExecutorService, value -> action3(value))
             .thenCompose(value -> action4(value))
             .then(value -> { Log.i(LOG_TAG, "Result: " + value); });
@@ -124,7 +124,7 @@ public class TestService3 extends Service {
         return promise;
     }
 
-    private Promise<Integer> action2(int value) {
+    private Promise<Integer> action2(int value, Throwable exception) {
         Log.i(LOG_TAG, "Action 2: " + value);
         Promise<Integer> promise = new Promise<>();
         mHandler.postDelayed(() -> { promise.complete(value + 2); }, 1000);
