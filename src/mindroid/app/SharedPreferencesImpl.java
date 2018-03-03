@@ -721,12 +721,24 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         if (file == null) {
             return false;
         }
-        try (final FileChannel fc = FileChannel.open(file.toPath(), file.isDirectory() ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
-            fc.force(true);
-            return true;
-        } catch (IOException e) {
-            Log.w(LOG_TAG, "Cannot sync " + (file.isDirectory() ? "directory " : "file ") + file, e);
-            return false;
+
+        int attempts = 2;
+        boolean synced = false;
+        while (attempts > 0 && !synced) {
+            boolean interrupted = Thread.interrupted();
+            try (final FileChannel fc = FileChannel.open(file.toPath(), file.isDirectory() ? StandardOpenOption.READ : StandardOpenOption.WRITE)) {
+                fc.force(true);
+                synced = true;
+            } catch (IOException e) {
+                Log.w(LOG_TAG, "Cannot sync " + (file.isDirectory() ? "directory " : "file ") + file, e);
+                synced = false;
+            } finally {
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+                attempts--;
+            }
         }
+        return synced;
     }
 }

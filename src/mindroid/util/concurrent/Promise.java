@@ -127,9 +127,6 @@ public class Promise<T> implements Future<T> {
     private static final long RESULT;
     private static final Object NULL = new Object();
 
-    private final Lock mLock = new ReentrantLock();
-    private final Condition mCondition = mLock.newCondition();
-
     private Executor mExecutor;
     private volatile Object mResult = null;
     private AtomicReference<Queue<Action<?, ?>>> mActions = new AtomicReference<>();
@@ -229,14 +226,13 @@ public class Promise<T> implements Future<T> {
 
     @Override
     public T get() throws CancellationException, ExecutionException, InterruptedException {
-        while (!isDone()) {
-            mLock.lock();
-            try {
-                mCondition.await();
-            } catch (InterruptedException e) {
-                throw e;
-            } finally {
-                mLock.unlock();
+        synchronized (this) {
+            while (!isDone()) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    throw e;
+                }
             }
         }
         if (mResult == NULL) {
@@ -262,14 +258,13 @@ public class Promise<T> implements Future<T> {
     public T get(long timeout) throws CancellationException, ExecutionException, TimeoutException, InterruptedException {
         long duration = timeout;
         long start = SystemClock.uptimeMillis();
-        while (!isDone() && (duration > 0)) {
-            mLock.lock();
-            try {
-                mCondition.await(duration, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                throw e;
-            } finally {
-                mLock.unlock();
+        synchronized (this) {
+            while (!isDone() && (duration > 0)) {
+                try {
+                    wait(duration);
+                } catch (InterruptedException e) {
+                    throw e;
+                }
             }
             duration = start + timeout - SystemClock.uptimeMillis();
         }
@@ -335,11 +330,8 @@ public class Promise<T> implements Future<T> {
     }
 
     private void onComplete() {
-        mLock.lock();
-        try {
-            mCondition.signalAll();
-        } finally {
-            mLock.unlock();
+        synchronized (this) {
+            notifyAll();
         }
 
         runActions();
