@@ -37,9 +37,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -265,8 +262,8 @@ public class Promise<T> implements Future<T> {
                 } catch (InterruptedException e) {
                     throw e;
                 }
+                duration = start + timeout - SystemClock.uptimeMillis();
             }
-            duration = start + timeout - SystemClock.uptimeMillis();
         }
         if (!isDone()) {
             throw new TimeoutException("Promise timed out");
