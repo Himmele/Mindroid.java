@@ -1,4 +1,20 @@
-package examples;
+/*
+ * Copyright (C) 2018 Daniel Himmelein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.services;
 
 import mindroid.app.Service;
 import mindroid.content.ComponentName;
@@ -8,13 +24,13 @@ import mindroid.os.Handler;
 import mindroid.os.IBinder;
 import mindroid.util.Log;
 
-public class TestService1 extends Service {
-    private static final String LOG_TAG = "TestService1";
+public class ServiceExample1 extends Service {
+    private static final String LOG_TAG = "ServiceExample1";
     private final Handler mHandler = new Handler();
 
     public void onCreate() {
         final Intent intent = new Intent();
-        intent.setClassName("examples", "TestService2");
+        intent.setClassName("examples", "ServiceExample2");
         final ServiceConnection conn = new ServiceConnection() {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Log.i(LOG_TAG, "onServiceConnected: " + service);

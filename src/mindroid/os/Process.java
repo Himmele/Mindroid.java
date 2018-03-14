@@ -55,7 +55,7 @@ public class Process {
                 if (message == null) {
                     message = e.toString();
                 }
-                System.out.println("Uncaught exception in process " + mName + ": " + message);
+                Log.println('A', LOG_TAG, "Uncaught exception in process " + mName + ": " + message);
                 mUncaughtException = true;
                 synchronized (mServices) {
                     mServices.notifyAll();
@@ -132,7 +132,7 @@ public class Process {
 
         Log.d(LOG_TAG, "Process " + mName + " has been stopped");
         if (SystemClock.uptimeMillis() - start >= 1000) {
-            System.out.println("W/Process: Stopping process " + mName + " took " + (SystemClock.uptimeMillis() - start) + "ms");
+            Log.println('W', LOG_TAG, "Stopping process " + mName + " took " + (SystemClock.uptimeMillis() - start) + "ms");
         }
     }
 

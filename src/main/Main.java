@@ -1,6 +1,22 @@
+/*
+ * Copyright (C) 2018 Daniel Himmelein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package main;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 import mindroid.content.ComponentName;
@@ -18,24 +34,40 @@ import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
 import mindroid.util.logging.Logger;
+import mindroid.runtime.system.Runtime;
 
 public class Main {
     private static final String LOG_TAG = "Mindroid";
+    private static final String ID_ARG = "id=";
+    private static final String ROOT_DIR_ARG = "rootDir=";
 
     /**
      * Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
      * Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
      */
     public static void main(String[] args) {
-        Looper.prepare();
-
+        int nodeId = 1;
         String rootDir = ".";
-        if (args.length > 0) {
-            if (args[0].startsWith("rootDir=")) {
-                rootDir = args[0].substring("rootDir=".length());
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg.startsWith(ID_ARG)) {
+                try {
+                    nodeId = Integer.valueOf(args[i].substring(ID_ARG.length()));
+                } catch (NumberFormatException e) {
+                    Log.println('E', LOG_TAG, "Invalid node id: " + args[i]);
+                    System.exit(-1);
+                }
+            } else if (arg.startsWith(ROOT_DIR_ARG)) {
+                rootDir = args[i].substring(ROOT_DIR_ARG.length());
             }
         }
+
+        Looper.prepare();
+
         Environment.setRootDirectory(rootDir);
+
+        File file = new File(Environment.getRootDirectory(), "res/MindroidRuntimeSystem.xml");
+        Runtime.start(nodeId, file.exists() ? file : null);
 
         ServiceManager serviceManager = new ServiceManager();
         serviceManager.start();
@@ -60,9 +92,9 @@ public class Main {
 
         serviceManager.startSystemService(new Intent()
                 .setComponent(Consts.LOGGER_SERVICE)
-                .putExtra("name", Context.LOGGER_SERVICE)
+                .putExtra("name", Context.LOGGER_SERVICE.toString())
                 .putExtra("process", "main"));
-        
+
         serviceManager.startSystemService(new Intent(Logger.ACTION_LOG)
                 .setComponent(Consts.LOGGER_SERVICE)
                 .putExtra("logBuffer", Log.LOG_ID_MAIN)
@@ -76,9 +108,8 @@ public class Main {
 
         serviceManager.startSystemService(new Intent()
                 .setComponent(Consts.PACKAGE_MANAGER)
-                .putExtra("name", Context.PACKAGE_MANAGER)
+                .putExtra("name", Context.PACKAGE_MANAGER.toString())
                 .putExtra("process", "main"));
-
         ServiceManager.waitForSystemService(Context.PACKAGE_MANAGER);
     }
 

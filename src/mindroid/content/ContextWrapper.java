@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.URI;
 import mindroid.content.pm.PackageManager;
 import mindroid.os.IBinder;
 import mindroid.os.Looper;
@@ -102,7 +103,7 @@ public class ContextWrapper extends Context {
     }
 
     @Override
-    public IBinder getSystemService(String name) {
+    public IBinder getSystemService(URI name) {
         return mBaseContext.getSystemService(name);
     }
 

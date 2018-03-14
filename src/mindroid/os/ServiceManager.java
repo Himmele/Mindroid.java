@@ -16,6 +16,7 @@
 
 package mindroid.os;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Future;
 import mindroid.util.concurrent.Promise;
+import mindroid.runtime.system.Runtime;
 
 public final class ServiceManager {
     private static final String LOG_TAG = "ServiceManager";
@@ -42,6 +44,7 @@ public final class ServiceManager {
     private static IServiceManager.Stub sStub;
     private static final HashMap<String, IBinder> sSystemServices = new HashMap<>();
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
+    private static final Runtime sRuntime = Runtime.getRuntime();
     private final ProcessManager mProcessManager;
     private final HandlerThread mMainThread;
     private HashMap<String, ProcessRecord> mProcesses = new HashMap<>();
@@ -66,9 +69,9 @@ public final class ServiceManager {
         public void shutdown() {
             if (mThread.quit()) {
                 try {
-                    System.out.println("D/" + LOG_TAG + ": Shutting down ProcessManager");
+                    Log.println('D', LOG_TAG, "Shutting down ProcessManager");
                     mThread.join();
-                    System.out.println("D/" + LOG_TAG + ": ProcessManager has been shut down");
+                    Log.println('D', LOG_TAG, "ProcessManager has been shut down");
                 } catch (InterruptedException e) {
                 }
             }
@@ -216,13 +219,13 @@ public final class ServiceManager {
             }
         }
 
-        removeService(Context.SERVICE_MANAGER);
+        removeService(sStub);
 
         if (mMainThread.quit()) {
             try {
-                System.out.println("D/" + LOG_TAG + ": Shutting down ServiceManager");
+                Log.println('D', LOG_TAG, "Shutting down ServiceManager");
                 mMainThread.join();
-                System.out.println("D/" + LOG_TAG + ": ServiceManager has been shut down");
+                Log.println('D', LOG_TAG, "ServiceManager has been shut down");
             } catch (InterruptedException e) {
             }
         }
@@ -550,20 +553,19 @@ public final class ServiceManager {
      * @param name the name of the service to get
      * @return a reference to the service, or <code>null</code> if the service doesn't exist
      */
-    public static IBinder getSystemService(String name) {
-        synchronized (sSystemServices) {
-            IBinder service = (IBinder) sSystemServices.get(name);
-            return service;
-        }
+    public static IBinder getSystemService(URI uri) {
+        IBinder service = sRuntime.getService(uri);
+        return service;
     }
 
     /**
      * @hide
      */
-    public static void addService(String name, IBinder service) {
+    public static void addService(URI uri, IBinder service) {
         synchronized (sSystemServices) {
-            if (!sSystemServices.containsKey(name)) {
-                sSystemServices.put(name, service);
+            if (!sSystemServices.containsKey(uri.toString())) {
+                sSystemServices.put(uri.toString(), service);
+                sRuntime.addService(uri, service);
                 sSystemServices.notifyAll();
             }
         }
@@ -572,9 +574,10 @@ public final class ServiceManager {
     /**
      * @hide
      */
-    public static void removeService(String name) {
+    public static void removeService(IBinder service) {
         synchronized (sSystemServices) {
-            sSystemServices.remove(name);
+            sRuntime.removeService(service);
+            sSystemServices.remove(service.getUri());
             sSystemServices.notifyAll();
         }
     }
@@ -582,14 +585,14 @@ public final class ServiceManager {
     /**
      * @hide
      */
-    public static void waitForSystemService(String name) throws InterruptedException {
+    public static void waitForSystemService(URI name) throws InterruptedException {
         synchronized (sSystemServices) {
             final long TIMEOUT = 10000;
             long start = SystemClock.uptimeMillis();
             long duration = TIMEOUT;
-            while (!sSystemServices.containsKey(name)) {
+            while (!sSystemServices.containsKey(name.toString())) {
                 sSystemServices.wait(duration);
-                if (!sSystemServices.containsKey(name)) {
+                if (!sSystemServices.containsKey(name.toString())) {
                     duration = start + TIMEOUT - SystemClock.uptimeMillis();
                     if (duration <= 0) {
                         Log.w(LOG_TAG, "Starting " + name + " takes very long");
@@ -604,14 +607,14 @@ public final class ServiceManager {
     /**
      * @hide
      */
-    public static void waitForSystemServiceShutdown(String name) throws InterruptedException {
+    public static void waitForSystemServiceShutdown(URI name) throws InterruptedException {
         synchronized (sSystemServices) {
             final long TIMEOUT = 10000;
             long start = SystemClock.uptimeMillis();
             long duration = TIMEOUT;
-            while (sSystemServices.containsKey(name)) {
+            while (sSystemServices.containsKey(name.toString())) {
                 sSystemServices.wait(duration);
-                if (sSystemServices.containsKey(name)) {
+                if (sSystemServices.containsKey(name.toString())) {
                     duration = start + TIMEOUT - SystemClock.uptimeMillis();
                     if (duration <= 0) {
                         Log.w(LOG_TAG, "Stopping " + name + " takes very long");

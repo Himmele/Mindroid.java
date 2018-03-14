@@ -20,8 +20,12 @@ package mindroid.os;
 import mindroid.util.Log;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
+import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
 import mindroid.util.concurrent.TimeoutException;
+import mindroid.runtime.system.Runtime;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -37,27 +41,69 @@ import java.util.concurrent.RejectedExecutionException;
  */
 public class Binder implements IBinder {
     private static final String LOG_TAG = "Binder";
+    private static final int TRANSACTION = 1;
+    private static final int LIGHTWEIGHT_TRANSACTION = 2;
     private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
     private static final ThreadLocal<Integer> sCallingPid = new ThreadLocal<>();
+    private final Runtime mRuntime;
+    private long mId;
     private final IMessenger mTarget;
     private IInterface mOwner;
     private String mDescriptor;
+    private URI mUri;
 
     public Binder() {
+        mRuntime = Runtime.getRuntime();
+        mId = mRuntime.attachBinder(this);
         mTarget = new Messenger();
         setCallingPid(Process.myPid());
     }
 
     public Binder(final Looper looper) {
+        mRuntime = Runtime.getRuntime();
+        mId = mRuntime.attachBinder(this);
         mTarget = new Messenger(looper);
         setCallingPid(Process.myPid());
     }
 
     public Binder(final Executor executor) {
+        mRuntime = Runtime.getRuntime();
+        mId = mRuntime.attachBinder(this);
         mTarget = new ExecutorMessenger(executor);
         setCallingPid(Process.myPid());
     }
-    
+
+    public Binder(Binder binder) {
+        mRuntime = binder.mRuntime;
+        mId = binder.mId;
+        if (binder.mTarget instanceof Messenger) {
+            mTarget = new Messenger(((Messenger) binder.mTarget).mHandler.mLooper);
+        } else {
+            mTarget = binder.mTarget;
+        }
+        setCallingPid(Process.myPid());
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            mRuntime.detachBinder(mUri);
+            mRuntime.detachBinder(mId);
+        } finally {
+            super.finalize();
+        }
+    }
+
+    @Override
+    public final long getId() {
+        return mId & 0xFFFFFFFFL;
+    }
+
+    @Override
+    public final URI getUri() {
+        return mUri;
+    }
+
     /**
      * Convenience method for associating a specific interface with the Binder. After calling,
      * queryInterface() will be implemented for you to return the given owner IInterface when the
@@ -66,6 +112,16 @@ public class Binder implements IBinder {
     public void attachInterface(IInterface owner, String descriptor) {
         mOwner = owner;
         mDescriptor = descriptor;
+
+        try {
+            URI uri = new URI(mDescriptor);
+            int nodeId = (int) ((mId >> 32) & 0xFFFFFFFFL);
+            int id = (int) (mId & 0xFFFFFFFFL);
+            mUri = new URI(uri.getScheme(), String.valueOf(nodeId) + "." + String.valueOf(id), null, null, null);
+            mRuntime.attachBinder(mUri, this);
+        } catch (URISyntaxException e) {
+            Log.e(LOG_TAG, "Failed to attach interface to runtime system", e);
+        }
     }
 
     /**
@@ -86,6 +142,13 @@ public class Binder implements IBinder {
             return mOwner;
         }
         return null;
+    }
+
+    /**
+     * Returns true if the current thread is this binder's thread.
+     */
+    public final boolean isCurrentThread() {
+        return mTarget.isCurrentThread();
     }
 
     /**
@@ -121,7 +184,10 @@ public class Binder implements IBinder {
      * <p>
      * If you want to call this, call transact().
      */
-    protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
+    protected void onTransact(int what, Parcel data, Promise<Parcel> result) throws RemoteException {
+    }
+
+    protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
     }
 
     /**
@@ -129,64 +195,40 @@ public class Binder implements IBinder {
      * transact calls into the binder to do the IPC.
      */
     @Override
-    public final void transact(int what, Promise<?> promise, int flags) throws RemoteException {
+    public Promise<Parcel> transact(int what, Parcel data, int flags) throws RemoteException {
+        if (data != null) {
+            data.asInput();
+        }
+        Promise<Parcel> result;
+        if (flags == FLAG_ONEWAY) {
+            result = null;
+        } else {
+            result = new Promise<Parcel>(Executors.SYNCHRONOUS_EXECUTOR);
+            result.then(parcel -> {
+                parcel.asInput();
+            });
+        }
         Message message = Message.obtain();
-        message.what = what;
-        message.result = promise;
-        transact(message, flags);
+        message.what = TRANSACTION;
+        message.arg1 = what;
+        message.obj = data;
+        message.result = result;
+        message.sendingPid = Process.myPid();
+        if (!mTarget.send(message)) {
+            throw new RemoteException(EXCEPTION_MESSAGE);
+        }
+        return result;
     }
 
     @Override
-    public final void transact(int what, Object obj, Promise<?> promise, int flags) throws RemoteException {
+    public final void transact(int what, int num, Object obj, Bundle data, Promise<?> promise, int flags) throws RemoteException {
         Message message = Message.obtain();
-        message.what = what;
+        message.what = LIGHTWEIGHT_TRANSACTION;
+        message.arg1 = what;
+        message.arg2 = num;
         message.obj = obj;
-        message.result = promise;
-        transact(message, flags);
-    }
-
-    @Override
-    public final void transact(int what, int arg1, int arg2, Promise<?> promise, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        message.result = promise;
-        transact(message, flags);
-    }
-
-    @Override
-    public final void transact(int what, int arg1, int arg2, Object obj, Promise<?> promise, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        message.obj = obj;
-        message.result = promise;
-        transact(message, flags);
-    }
-
-    @Override
-    public final void transact(int what, Bundle data, Promise<?> promise, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
         message.setData(data);
         message.result = promise;
-        transact(message, flags);
-    }
-
-    @Override
-    public final void transact(int what, int arg1, int arg2, Bundle data, Promise<?> promise, int flags) throws RemoteException {
-        Message message = Message.obtain();
-        message.what = what;
-        message.arg1 = arg1;
-        message.arg2 = arg2;
-        message.setData(data);
-        message.result = promise;
-        transact(message, flags);
-    }
-
-    private final void transact(Message message, int flags) throws RemoteException {
         message.sendingPid = Process.myPid();
         if (!mTarget.send(message)) {
             throw new RemoteException(EXCEPTION_MESSAGE);
@@ -196,7 +238,16 @@ public class Binder implements IBinder {
     private final void onTransact(final Message message) {
         final int origPid = setCallingPid(message.sendingPid);
         try {
-            onTransact(message.what, message.arg1, message.arg2, message.obj, message.peekData(), message.result);
+            switch (message.what) {
+            case TRANSACTION:
+                onTransact(message.arg1, (Parcel) message.obj, (Promise<Parcel>) message.result);
+                break;
+            case LIGHTWEIGHT_TRANSACTION:
+                onTransact(message.arg1, message.arg2, message.obj, message.peekData(), message.result);
+                break;
+            default:
+                break;
+            }
         } catch (RemoteException e) {
             Throwable caughtException = checkException(e);
             if (message.result != null) {
@@ -215,11 +266,6 @@ public class Binder implements IBinder {
             message.result = null;
             setCallingPid(origPid);
         }
-    }
-
-    @Override
-    public final boolean runsOnSameThread() {
-        return mTarget.runsOnSameThread();
     }
 
     private final Throwable checkException(Exception e) throws RuntimeException {
@@ -244,8 +290,17 @@ public class Binder implements IBinder {
         return caughtException;
     }
 
+    @Override
+    public void link(Supervisor supervisor, int flags) throws RemoteException {
+    }
+
+    @Override
+    public boolean unlink(Supervisor supervisor, int flags) {
+        return true;
+    }
+
     private interface IMessenger {
-        public boolean runsOnSameThread();
+        public boolean isCurrentThread();
         public boolean send(final Message message);
     }
 
@@ -266,7 +321,7 @@ public class Binder implements IBinder {
         }
 
         @Override
-        public boolean runsOnSameThread() {
+        public boolean isCurrentThread() {
             return mHandler.getLooper().isCurrentThread();
         }
 
@@ -284,7 +339,7 @@ public class Binder implements IBinder {
         }
 
         @Override
-        public boolean runsOnSameThread() {
+        public boolean isCurrentThread() {
             return false;
         }
 
@@ -348,5 +403,107 @@ public class Binder implements IBinder {
             Thread.currentThread().interrupt();
             throw new RemoteException(EXCEPTION_MESSAGE);
         }
+    }
+
+    public static final class Proxy implements IBinder {
+        private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
+        private final Runtime mRuntime;
+        private final long mId;
+        private String mDescriptor;
+        private URI mUri;
+
+        public Proxy(URI uri) throws IllegalArgumentException {
+            if (uri == null) {
+                throw new IllegalArgumentException("Invalid URI: " + uri);
+            }
+            mRuntime = Runtime.getRuntime();
+            String authority = uri.getAuthority();
+            String[] parts = authority.split("\\.");
+            if (parts.length == 2) {
+                try {
+                    mId = ((long) Integer.valueOf(parts[0]) << 32) | ((long) Integer.valueOf(parts[1]) & 0xFFFFFFFFL);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid URI: " + uri.toString());
+                }
+            } else {
+                throw new IllegalArgumentException("Invalid URI: " + uri.toString());
+            }
+            String path = uri.getPath();
+            if (path != null && !path.isEmpty()) {
+                String[] pairs = path.substring(1).split(",");
+                for (String pair : pairs) {
+                    int i = pair.indexOf("=");
+                    if (i >= 0) {
+                        String key = pair.substring(0, i).trim();
+                        String value = pair.substring(i + 1).trim();
+                        if (key.equals("if")) {
+                            mDescriptor = uri.getScheme() + "://interfaces/" + value;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (mDescriptor == null) {
+                throw new IllegalArgumentException("Invalid URI: " + uri.toString());
+            }
+            mUri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
+            mRuntime.attachProxy(this);
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            try {
+                mRuntime.detachProxy(this);
+            } finally {
+                super.finalize();
+            }
+        }
+
+        @Override
+        public long getId() {
+            return mId;
+        }
+
+        @Override
+        public final URI getUri() {
+            return mUri;
+        }
+
+        @Override
+        public String getInterfaceDescriptor() {
+            return mDescriptor;
+        }
+
+        @Override
+        public IInterface queryLocalInterface(String descriptor) {
+            return null;
+        }
+
+        @Override
+        public Promise<Parcel> transact(int what, Parcel data, int flags) throws RemoteException {
+            return mRuntime.transact(this, what, data, flags);
+        }
+
+        public void transact(int what, int num, Object obj, Bundle data, Promise<?> promise, int flags) throws RemoteException {
+            throw new RemoteException(EXCEPTION_MESSAGE);
+        }
+
+        @Override
+        public void link(Supervisor supervisor, int flags) throws RemoteException {
+            mRuntime.link(this, supervisor, flags);
+        }
+
+        @Override
+        public boolean unlink(Supervisor supervisor, int flags) {
+            return mRuntime.unlink(this, supervisor, flags);
+        }
+    }
+
+    /**
+     * @hide
+     */
+    public void setId(long id) {
+        mId = id;
+        mUri = URI.create(mUri.getScheme() + "://" + String.valueOf((int) ((mId >> 32) & 0xFFFFFFFFL)) + "." + String.valueOf((int) (mId & 0xFFFFFFFFL)));
     }
 }

@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.kxml2.io.KXmlParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
 import mindroid.app.Service;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
@@ -82,8 +82,8 @@ public class PackageManagerService extends Service {
 
     @Override
     public void onDestroy() {
-        ServiceManager.removeService(Context.PACKAGE_INSTALLER);
-        ServiceManager.removeService(Context.PACKAGE_MANAGER);
+        ServiceManager.removeService(mInstaller);
+        ServiceManager.removeService(mManager);
     }
 
     @Override
@@ -360,10 +360,10 @@ public class PackageManagerService extends Service {
     }
 
     private static PackageInfo parseManifest(File app, InputStream input) throws XmlPullParserException, IOException {
-        KXmlParser parser;
-        parser = new KXmlParser();
+        XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        XmlPullParser parser = factory.newPullParser();
         parser.setInput((InputStream) input, UTF_8);
-        parser.setFeature(KXmlParser.FEATURE_PROCESS_NAMESPACES, true);
         parser.require(XmlPullParser.START_DOCUMENT, null, null);
         parser.nextTag();
         parser.require(XmlPullParser.START_TAG, null, MANIFEST_TAG);
@@ -399,7 +399,7 @@ public class PackageManagerService extends Service {
                 applicationTagDone = true;
             } else {
                 String tag = parser.getName();
-                parser.skipSubTree();
+                skipSubTree(parser);
                 parser.require(XmlPullParser.END_TAG, null, tag);
             }
         }
@@ -411,7 +411,7 @@ public class PackageManagerService extends Service {
         return pi;
     }
 
-    private static List<ServiceInfo> parseApplication(KXmlParser parser, PackageInfo pi) throws IOException, XmlPullParserException {
+    private static List<ServiceInfo> parseApplication(XmlPullParser parser, PackageInfo pi) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, APPLICATION_TAG);
 
         ApplicationInfo ai = pi.applicationInfo;
@@ -461,7 +461,7 @@ public class PackageManagerService extends Service {
                 }
             } else {
                 String tag = parser.getName();
-                parser.skipSubTree();
+                skipSubTree(parser);
                 parser.require(XmlPullParser.END_TAG, null, tag);
             }
         }
@@ -478,7 +478,7 @@ public class PackageManagerService extends Service {
         return services;
     }
 
-    private static String parseLibrary(KXmlParser parser) throws IOException, XmlPullParserException {
+    private static String parseLibrary(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, USES_LIBRARY_TAG);
 
         String name = null;
@@ -492,7 +492,7 @@ public class PackageManagerService extends Service {
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(USES_LIBRARY_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             String tag = parser.getName();
-            parser.skipSubTree();
+            skipSubTree(parser);
             parser.require(XmlPullParser.END_TAG, null, tag);
         }
 
@@ -505,7 +505,7 @@ public class PackageManagerService extends Service {
         }
     }
 
-    private static String parsePermission(KXmlParser parser) throws IOException, XmlPullParserException {
+    private static String parsePermission(XmlPullParser parser) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, USES_PERMISSION_TAG);
 
         String name = null;
@@ -519,7 +519,7 @@ public class PackageManagerService extends Service {
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(USES_PERMISSION_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             String tag = parser.getName();
-            parser.skipSubTree();
+            skipSubTree(parser);
             parser.require(XmlPullParser.END_TAG, null, tag);
         }
 
@@ -527,7 +527,7 @@ public class PackageManagerService extends Service {
         return name;
     }
 
-    private static ServiceInfo parseService(KXmlParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
+    private static ServiceInfo parseService(XmlPullParser parser, ApplicationInfo ai) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, null, SERVICE_TAG);
 
         String processName = ai.processName;
@@ -594,11 +594,24 @@ public class PackageManagerService extends Service {
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             String tag = parser.getName();
-            parser.skipSubTree();
+            skipSubTree(parser);
             parser.require(XmlPullParser.END_TAG, null, tag);
         }
 
         parser.require(XmlPullParser.END_TAG, null, SERVICE_TAG);
         return si;
+    }
+
+    private static void skipSubTree(XmlPullParser parser) throws XmlPullParserException, IOException {
+        parser.require(XmlPullParser.START_TAG, null, null);
+        int level = 1;
+        while (level > 0) {
+            int eventType = parser.next();
+            if (eventType == XmlPullParser.END_TAG) {
+                --level;
+            } else if (eventType == XmlPullParser.START_TAG) {
+                ++level;
+            }
+        }
     }
 }

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -125,7 +126,7 @@ public class ContextImpl extends Context {
     }
 
     @Override
-    public IBinder getSystemService(String name) {
+    public IBinder getSystemService(URI name) {
         if (name != null) {
             return ServiceManager.getSystemService(name);
         } else {

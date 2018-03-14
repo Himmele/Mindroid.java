@@ -36,13 +36,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.kxml2.io.KXmlParser;
-import org.kxml2.io.KXmlSerializer;
-import org.kxml2.kdom.Document;
-import org.kxml2.kdom.Element;
-import org.kxml2.kdom.Node;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+import org.xmlpull.v1.XmlSerializer;
 
 public final class SharedPreferencesImpl implements SharedPreferences {
     private static final String LOG_TAG = "SharedPreferences";
@@ -430,8 +427,9 @@ public final class SharedPreferencesImpl implements SharedPreferences {
     }
 
     private Map<String, Object> readMap(InputStream is) throws XmlPullParserException, IOException {
-        KXmlParser parser;
-        parser = new KXmlParser();
+        XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        XmlPullParser parser = factory.newPullParser();
         parser.setInput(is, UTF_8);
         parser.require(XmlPullParser.START_DOCUMENT, null, null);
         parser.nextTag();
@@ -453,7 +451,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
                 parseStringSet(parser, map);
             } else {
                 String tag = parser.getName();
-                parser.skipSubTree();
+                skipSubTree(parser);
                 parser.require(XmlPullParser.END_TAG, null, tag);
             }
         }
@@ -465,7 +463,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         return map;
     }
 
-    private static void parseBoolean(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseBoolean(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, BOOLEAN_TAG);
 
         String name = null;
@@ -492,7 +490,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseInt(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseInt(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, INT_TAG);
 
         String name = null;
@@ -518,7 +516,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseLong(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseLong(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, LONG_TAG);
 
         String name = null;
@@ -544,7 +542,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseFloat(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseFloat(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, FLOAT_TAG);
 
         String name = null;
@@ -570,7 +568,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseString(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseString(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, STRING_TAG);
 
         String name = null;
@@ -591,7 +589,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static void parseStringSet(KXmlParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
+    private static void parseStringSet(XmlPullParser parser, Map<String, Object> map) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, STRING_SET_TAG);
 
         String name = null;
@@ -612,7 +610,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
                 parser.require(XmlPullParser.END_TAG, null, STRING_TAG);
             } else {
                 String tag = parser.getName();
-                parser.skipSubTree();
+                skipSubTree(parser);
                 parser.require(XmlPullParser.END_TAG, null, tag);
             }
         }
@@ -628,28 +626,20 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         FileOutputStream os = null;
         try {
             os = new FileOutputStream(file);
-
-            Element rootTag = new Element();
-            rootTag.setName(MAP_TAG);
-
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlSerializer serializer = factory.newSerializer();
+            serializer.setOutput(os, UTF_8);
+            serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
+            serializer.startDocument(UTF_8, true);
+            serializer.startTag(null, MAP_TAG);
             Iterator<Map.Entry<String, Object>> itr = map.entrySet().iterator();
             while (itr.hasNext()) {
                 Map.Entry<String, Object> entry = itr.next();
-                Element e = writeValue(entry.getKey(), entry.getValue());
-                if (e != null) {
-                    rootTag.addChild(Node.ELEMENT, e);
-                }
+                writeValue(serializer, entry.getKey(), entry.getValue());
             }
-
-            Document doc = new Document();
-            doc.setEncoding(UTF_8);
-            doc.addChild(0, Node.ELEMENT, rootTag);
-
-            KXmlSerializer serializer = new KXmlSerializer();
-            serializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
-            serializer.setOutput(os, UTF_8);
-            doc.write(serializer);
-            serializer.flush();
+            serializer.endTag(null, MAP_TAG);
+            serializer.endDocument();
         } catch (FileNotFoundException e) {
             throw e;
         } catch (XmlPullParserException e) {
@@ -667,53 +657,59 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static final Element writeValue(String name, Object value) throws XmlPullParserException, java.io.IOException {
+    private static final void writeValue(XmlSerializer serializer, String name, Object value) throws XmlPullParserException, java.io.IOException {
         if (name == null || value == null) {
-            return null;
+            return;
         } else if (value instanceof Boolean) {
-            Element element = new Element();
-            element.setName(BOOLEAN_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, VALUE_ATTR, value.toString());
-            return element;
+            serializer.startTag(null, BOOLEAN_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
+            serializer.attribute(null, VALUE_ATTR, value.toString());
+            serializer.endTag(null, BOOLEAN_TAG);
         } else if (value instanceof Integer) {
-            Element element = new Element();
-            element.setName(INT_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, VALUE_ATTR, value.toString());
-            return element;
+            serializer.startTag(null, INT_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
+            serializer.attribute(null, VALUE_ATTR, value.toString());
+            serializer.endTag(null, INT_TAG);
         } else if (value instanceof Long) {
-            Element element = new Element();
-            element.setName(LONG_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, VALUE_ATTR, value.toString());
-            return element;
+            serializer.startTag(null, LONG_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
+            serializer.attribute(null, VALUE_ATTR, value.toString());
+            serializer.endTag(null, LONG_TAG);
         } else if (value instanceof Float) {
-            Element element = new Element();
-            element.setName(FLOAT_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, VALUE_ATTR, value.toString());
-            return element;
+            serializer.startTag(null, FLOAT_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
+            serializer.attribute(null, VALUE_ATTR, value.toString());
+            serializer.endTag(null, FLOAT_TAG);
         } else if (value instanceof String) {
-            Element element = new Element();
-            element.setName(STRING_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
-            element.addChild(Node.TEXT, value.toString());
-            return element;
+            serializer.startTag(null, STRING_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
+            serializer.text(value.toString());
+            serializer.endTag(null, STRING_TAG);
         } else if (value instanceof Set) {
-            Element element = new Element();
-            element.setName(STRING_SET_TAG);
-            element.setAttribute(KXmlParser.NO_NAMESPACE, NAME_ATTR, name);
+            serializer.startTag(null, STRING_SET_TAG);
+            serializer.attribute(null, NAME_ATTR, name);
             Iterator<String> itr = ((Set<String>) value).iterator();
             while (itr.hasNext()) {
-                Element childElement = new Element();
-                childElement.setName(STRING_TAG);
-                childElement.addChild(Node.TEXT, itr.next().toString());
-                element.addChild(Node.ELEMENT, childElement);
+                serializer.startTag(null, STRING_TAG);
+                serializer.text(itr.next().toString());
+                serializer.endTag(null, STRING_TAG);
             }
-            return element;
+            serializer.endTag(null, STRING_SET_TAG);
         } else {
             throw new RuntimeException("SharedPreferences.writeValue: Unable to write value " + value);
+        }
+    }
+
+    private static void skipSubTree(XmlPullParser parser) throws XmlPullParserException, IOException {
+        parser.require(XmlPullParser.START_TAG, null, null);
+        int level = 1;
+        while (level > 0) {
+            int eventType = parser.next();
+            if (eventType == XmlPullParser.END_TAG) {
+                --level;
+            } else if (eventType == XmlPullParser.START_TAG) {
+                ++level;
+            }
         }
     }
 

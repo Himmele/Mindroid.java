@@ -69,7 +69,7 @@ public final class Message {
 
     Message nextMessage;
 
-    private static final Object sMessagePoolSync = new Object();
+    private static final Object sMessagePoolLock = new Object();
     private static Message sMessagePool;
     private static int sMessagePoolSize = 0;
 
@@ -80,7 +80,7 @@ public final class Message {
      * in many cases.
      */
     public static Message obtain() {
-        synchronized (sMessagePoolSync) {
+        synchronized (sMessagePoolLock) {
             if (sMessagePool != null) {
                 Message message = sMessagePool;
                 sMessagePool = message.nextMessage;
@@ -242,7 +242,7 @@ public final class Message {
         result = null;
         sendingPid = -1;
 
-        synchronized (sMessagePoolSync) {
+        synchronized (sMessagePoolLock) {
             if (sMessagePoolSize < MAX_MESSAGE_POOL_SIZE) {
                 nextMessage = sMessagePool;
                 sMessagePool = this;

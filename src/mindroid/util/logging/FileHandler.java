@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import mindroid.content.SharedPreferences;
 import mindroid.os.Environment;
+import mindroid.util.Log;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
 /**
@@ -138,7 +139,7 @@ public class FileHandler extends Handler {
         try {
             mWriter = new Writer(mFiles[0], mAppend);
         } catch (IOException e) {
-            System.out.println("Error opening log file");
+            Log.println('E', "FileHandler", "Error opening log file");
         }
     }
 
@@ -352,7 +353,7 @@ public class FileHandler extends Handler {
         try {
             mWriter = new Writer(mFiles[0], mAppend);
         } catch (IOException e) {
-            System.out.println("Error opening log file");
+            Log.println('E', "FileHandler", "Error opening log file");
         }
     }
 
@@ -386,7 +387,7 @@ public class FileHandler extends Handler {
                 mFlushSize = 0;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.println('E', "FileHandler", e.getMessage(), e);
         }
     }
 
@@ -399,10 +400,10 @@ public class FileHandler extends Handler {
         try {
             tempFile.createNewFile();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            Log.println('E', "FileHandler", e.getMessage(), e);
             return false;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.println('E', "FileHandler", e.getMessage(), e);
             tempFile.delete();
             return false;
         }
@@ -432,11 +433,11 @@ public class FileHandler extends Handler {
                 }
             }
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            Log.println('E', "FileHandler", e.getMessage(), e);
             exception = e;
             return false;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.println('E', "FileHandler", e.getMessage(), e);
             exception = e;
             return false;
         } finally {

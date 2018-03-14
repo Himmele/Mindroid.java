@@ -13,8 +13,6 @@ See also: [Mindroid Developer Guide](http://esrlabs.com/Mindroid)
 * ant apps (Compile the example application and install into the apps directory)
 * ant docs (Build the SDK docs)
 * ant run
-* Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
-* Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
 
 The rootDir must point to the parent directory of the apps directory to enable the package manager to find and load the apps.
 When starting the Mindroid examples e.g. from out/pc rootDir has to point to ".".

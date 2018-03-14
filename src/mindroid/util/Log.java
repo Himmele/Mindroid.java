@@ -292,7 +292,11 @@ public final class Log {
             c = priority.charAt(0);
         }
 
-        switch (c) {
+        return parsePriority(c);
+    }
+
+    public static Integer parsePriority(char priority) {
+        switch (priority) {
         case 'V':
             return new Integer(Log.VERBOSE);
         case 'D':
@@ -319,6 +323,23 @@ public final class Log {
         }
     }
 
+    /** @hide */
+    public static int priority = DEBUG;
+
+    /** @hide */
+    public static void println(char priority, String tag, String msg) {
+        if (parsePriority(priority) >= Log.priority) {
+            System.out.println(priority + "/" + tag + ": " + msg);
+        }
+    }
+
+    /** @hide */
+    public static void println(char priority, String tag, String msg, Throwable tr) {
+        if (parsePriority(priority) >= Log.priority) {
+            System.out.println(priority + "/" + tag + ": " + msg + '\n' + getStackTraceString(tr));
+        }
+    }
+
     /**
      * Low-level logging call.
      * 
@@ -327,11 +348,14 @@ public final class Log {
      * activity where the log call occurs.
      * @param msg The message you would like logged.
      * @return The number of bytes written.
+     * 
+     * @hide
      */
     public static int println(int priority, String tag, String msg) {
         return println(LOG_ID_MAIN, priority, tag, msg);
     }
 
+    /** @hide */
     public static int println(int priority, String tag, String msg, Throwable tr) {
         return println(LOG_ID_MAIN, priority, tag, msg, tr);
     }

@@ -1,4 +1,20 @@
-package examples;
+/*
+ * Copyright (C) 2018 Daniel Himmelein
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package examples.concurrency;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,8 +27,8 @@ import mindroid.os.SystemClock;
 import mindroid.util.Log;
 import mindroid.util.concurrent.Promise;
 
-public class TestService3 extends Service {
-    private static final String LOG_TAG = "TestService3";
+public class PromiseExample extends Service {
+    private static final String LOG_TAG = "PromiseExample";
     ExecutorService mExecutorService = Executors.newSingleThreadExecutor();
     Promise<Integer> mPromise1 = new Promise<>();
     Promise<Integer> mPromise2 = new Promise<>();
@@ -41,7 +57,7 @@ public class TestService3 extends Service {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Log.e(LOG_TAG, e.getMessage(), e);
             }
             if (exception != null) {
                 Log.i(LOG_TAG, "Promise error stage 2: " + exception);
@@ -136,7 +152,7 @@ public class TestService3 extends Service {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Log.e(LOG_TAG, e.getMessage(), e);
         }
         Promise<Integer> promise = new Promise<>(value + 3);
         return promise;

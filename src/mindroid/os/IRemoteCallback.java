@@ -20,7 +20,7 @@ import mindroid.util.concurrent.Promise;
 
 public interface IRemoteCallback extends IInterface {
     public static abstract class Stub extends Binder implements IRemoteCallback {
-        private static final java.lang.String DESCRIPTOR = "mindroid.os.IRemoteCallback";
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/os/IRemoteCallback";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
@@ -30,7 +30,7 @@ public interface IRemoteCallback extends IInterface {
             if (binder == null) {
                 return null;
             }
-            return new IRemoteCallback.Stub.SmartProxy(binder);
+            return new IRemoteCallback.Proxy(binder);
         }
 
         @Override
@@ -38,14 +38,15 @@ public interface IRemoteCallback extends IInterface {
             return this;
         }
 
-        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
+        @Override
+        protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_SEND_RESULT: {
                 sendResult(data);
                 break;
             }
             default:
-                super.onTransact(what, arg1, arg2, obj, data, result);
+                super.onTransact(what, num, obj, data, result);
                 break;
             }
         }
@@ -66,8 +67,8 @@ public interface IRemoteCallback extends IInterface {
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
-                if (obj instanceof Proxy) {
-                    final Proxy that = (Proxy) obj;
+                if (obj instanceof Stub.Proxy) {
+                    final Stub.Proxy that = (Stub.Proxy) obj;
                     return this.mRemote.equals(that.mRemote);
                 }
                 return false;
@@ -80,53 +81,59 @@ public interface IRemoteCallback extends IInterface {
 
             @Override
             public void sendResult(Bundle data) throws RemoteException {
-                mRemote.transact(MSG_SEND_RESULT, data, null, FLAG_ONEWAY);
-            }
-        }
-
-        private static class SmartProxy implements IRemoteCallback {
-            private final IBinder mRemote;
-            private final IRemoteCallback mStub;
-            private final IRemoteCallback mProxy;
-
-            SmartProxy(IBinder remote) {
-                mRemote = remote;
-                mStub = (IRemoteCallback) remote.queryLocalInterface(DESCRIPTOR);
-                mProxy = new IRemoteCallback.Stub.Proxy(remote);
-            }
-
-            @Override
-            public IBinder asBinder() {
-                return mRemote;
-            }
-
-            @Override
-            public boolean equals(final Object obj) {
-                if (obj == null) return false;
-                if (obj == this) return true;
-                if (obj instanceof SmartProxy) {
-                    final SmartProxy that = (SmartProxy) obj;
-                    return this.mRemote.equals(that.mRemote);
-                }
-                return false;
-            }
-
-            @Override
-            public int hashCode() {
-                return mRemote.hashCode();
-            }
-
-            @Override
-            public void sendResult(Bundle data) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    mStub.sendResult(data);
-                } else {
-                    mProxy.sendResult(data);
-                }
+                mRemote.transact(MSG_SEND_RESULT, 0, null, data, null, FLAG_ONEWAY);
             }
         }
 
         static final int MSG_SEND_RESULT = 1;
+    }
+
+    static class Proxy implements IRemoteCallback {
+        private final IBinder mBinder;
+        private final Stub mStub;
+        private final IRemoteCallback mProxy;
+
+        Proxy(IBinder binder) {
+            mBinder = binder;
+            if (binder.getUri().getScheme().equals("mindroid")) {
+                mStub = (Stub) binder.queryLocalInterface(Stub.DESCRIPTOR);
+                mProxy = new Stub.Proxy(binder);
+            } else {
+                mindroid.runtime.system.Runtime runtime = mindroid.runtime.system.Runtime.getRuntime();
+                mStub = (Stub) runtime.getBinder(binder.getId());
+                mProxy = (IRemoteCallback) runtime.getProxy(binder);
+            }
+        }
+
+        @Override
+        public IBinder asBinder() {
+            return mBinder;
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == null) return false;
+            if (obj == this) return true;
+            if (obj instanceof Proxy) {
+                final Proxy that = (Proxy) obj;
+                return this.mBinder.equals(that.mBinder);
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return mBinder.hashCode();
+        }
+
+        @Override
+        public void sendResult(Bundle data) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                mStub.sendResult(data);
+            } else {
+                mProxy.sendResult(data);
+            }
+        }
     }
 
     public void sendResult(Bundle data) throws RemoteException;

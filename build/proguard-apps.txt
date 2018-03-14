@@ -1,4 +1,5 @@
 #-dontoptimize
+-forceprocessing
 -keep public class * extends mindroid.app.Service
 -assumenosideeffects class mindroid.util.Log {
     public static *** v(...);

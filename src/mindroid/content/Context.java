@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.URI;
 import mindroid.os.IBinder;
 import mindroid.os.Looper;
 import mindroid.content.SharedPreferences;
@@ -33,19 +34,19 @@ import mindroid.content.pm.PackageManager;
  * services, etc.
  */
 public abstract class Context {
-    public static final String SERVICE_MANAGER = "serviceManager";
-    public static final String PACKAGE_MANAGER = "packageManager";
-    public static final String PACKAGE_INSTALLER = "packageInstaller";
-    public static final String LOGGER_SERVICE = "logger";
-    public static final String CLOCK_SERVICE = "clockService";
-    public static final String ALARM_MANAGER = "alarmManager";
-    public static final String POWER_MANAGER = "powerManager";
-    public static final String TELEPHONY_SERVICE = "telephonyService";
-    public static final String CONNECTION_SERVICE = "connectionService";
-    public static final String LOCATION_SERVICE = "locationService";
-    public static final String MEDIA_PLAYER_SERVICE = "mediaPlayerService";
-    public static final String MESSAGE_BROKER = "messageBroker";
-    public static final String SUPERVISION_SERVICE = "supervisionService";
+    public static final URI SERVICE_MANAGER = URI.create("mindroid://serviceManager");
+    public static final URI PACKAGE_MANAGER = URI.create("mindroid://packageManager");
+    public static final URI PACKAGE_INSTALLER = URI.create("mindroid://packageInstaller");
+    public static final URI LOGGER_SERVICE = URI.create("mindroid://logger");
+    public static final URI CLOCK_SERVICE = URI.create("mindroid://clockService");
+    public static final URI ALARM_MANAGER = URI.create("mindroid://alarmManager");
+    public static final URI POWER_MANAGER = URI.create("mindroid://powerManager");
+    public static final URI TELEPHONY_SERVICE = URI.create("mindroid://telephonyService");
+    public static final URI CONNECTION_SERVICE = URI.create("mindroid://connectionService");
+    public static final URI LOCATION_SERVICE = URI.create("mindroid://locationService");
+    public static final URI MEDIA_PLAYER_SERVICE = URI.create("mindroid://mediaPlayerService");
+    public static final URI MESSAGE_BROKER = URI.create("mindroid://messageBroker");
+    public static final URI SUPERVISION_SERVICE = URI.create("mindroid://supervisionService");
 
     /**
      * File creation mode: the default mode.
@@ -159,7 +160,7 @@ public abstract class Context {
      * 
      * @param name Name of the system service.
      */
-    public abstract IBinder getSystemService(String name);
+    public abstract IBinder getSystemService(URI name);
 
     /**
      * Request that a given application service be started. The Intent must contain the complete

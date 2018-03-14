@@ -17,6 +17,7 @@
 
 package mindroid.os;
 
+import java.net.URI;
 import mindroid.util.concurrent.Promise;
 
 /**
@@ -36,9 +37,19 @@ public interface IBinder {
     public static final int FLAG_ONEWAY = 0x00000001;
 
     /**
+     * Returns the binder's id.
+     */
+    public long getId();
+
+    /**
+     * Returns the binder's URI.
+     */
+    public URI getUri();
+
+    /**
      * Get the canonical name of the interface supported by this binder.
      */
-    public String getInterfaceDescriptor() throws RemoteException;
+    public String getInterfaceDescriptor();
 
     /**
      * Attempt to retrieve a local implementation of an interface for this Binder object. If null is
@@ -55,17 +66,25 @@ public interface IBinder {
      * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}
      * for a one-way RPC.
      */
-    public void transact(int what, Promise<?> promise, int flags) throws RemoteException;
+    public Promise<Parcel> transact(int what, Parcel data, int flags) throws RemoteException;
 
-    public void transact(int what, Object obj, Promise<?> promise, int flags) throws RemoteException;
+    /**
+     * Perform a lightweight operation with the object.
+     *
+     * @param what The action to perform.
+     * @param num A number to send to the target.
+     * @param obj An object to send to the target.
+     * @param data data to send to the target.
+     * @param flags Additional operation flags. Either 0 for a normal RPC, or {@link #FLAG_ONEWAY}
+     * for a one-way RPC.
+     */
+    public void transact(int what, int num, Object obj, Bundle data, Promise<?> promise, int flags) throws RemoteException;
 
-    public void transact(int what, int arg1, int arg2, Promise<?> promise, int flags) throws RemoteException;
+    public interface Supervisor {
+        public void onExit(int reason);
+    }
 
-    public void transact(int what, int arg1, int arg2, Object obj, Promise<?> promise, int flags) throws RemoteException;
+    public void link(Supervisor supervisor, int flags) throws RemoteException;
 
-    public void transact(int what, Bundle data, Promise<?> promise, int flags) throws RemoteException;
-
-    public void transact(int what, int arg1, int arg2, Bundle data, Promise<?> promise, int flags) throws RemoteException;
-
-    public boolean runsOnSameThread();
+    public boolean unlink(Supervisor supervisor, int flags);
 }

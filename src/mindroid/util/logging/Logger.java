@@ -68,7 +68,7 @@ public class Logger extends Service {
                     mConsoleHandler.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
                 }
             } else {
-                System.out.println("D/" + LOG_TAG + ": Console logging: disabled");
+                Log.println('D', LOG_TAG, "Console logging: disabled");
             }
             boolean fileLogging = arguments.getBoolean("fileLogging", false);
             if (fileLogging) {
@@ -82,8 +82,7 @@ public class Logger extends Service {
                     mFileHandler = new FileHandler(directory + File.separator + fileName, fileLimit, fileCount, true,
                             bufferSize, dataVolumeLimit);
                 } catch (IOException e) {
-                    System.out.println("E/" + LOG_TAG + ": File logging error: " + e.getMessage());
-                    e.printStackTrace();
+                    Log.println('E', LOG_TAG, "File logging error: " + e.getMessage(), e);
                 }
             }
             final String customHandler = arguments.getString("customLogging", null);
@@ -92,11 +91,9 @@ public class Logger extends Service {
                     Class<?> clazz = Class.forName(customHandler);
                     mCustomHandler = (Handler) clazz.newInstance();
                 } catch (Exception e) {
-                    System.out.println("E/" + LOG_TAG + ": Cannot create custom handler \'" + customHandler + "\': " + e.getMessage());
-                    e.printStackTrace();
+                    Log.println('E', LOG_TAG, "Cannot create custom handler \'" + customHandler + "\': " + e.getMessage(), e);
                 } catch (LinkageError e) {
-                    System.out.println("E/" + LOG_TAG + ": Linkage error: " + e.getMessage());
-                    e.printStackTrace();
+                    Log.println('E', LOG_TAG, "Linkage error: " + e.getMessage(), e);
                 }
             }
 
@@ -157,7 +154,7 @@ public class Logger extends Service {
             try {
                 join(JOIN_TIMEOUT);
                 if (isAlive()) {
-                    System.out.println("E/" + LOG_TAG + ": Cannot join thread " + getName());
+                    Log.println('E', LOG_TAG, "Cannot join thread " + getName());
                     mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
                 }
             } catch (InterruptedException e) {
@@ -205,7 +202,7 @@ public class Logger extends Service {
     }
 
     public void onDestroy() {
-        System.out.println("D/" + LOG_TAG + ": Flushing logs");
+        Log.println('D', LOG_TAG, "Flushing logs");
         Iterator<Map.Entry<Integer, LogWorker>> itr = mLogWorkers.entrySet().iterator();
         while (itr.hasNext()) {
             Map.Entry<Integer, LogWorker> entry = itr.next();
@@ -224,18 +221,17 @@ public class Logger extends Service {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         final int threadPriority = arguments.getInt("threadPriority", Thread.MIN_PRIORITY);
         if (!mLogWorkers.containsKey(logBuffer)) {
-            System.out.println("D/" + LOG_TAG + ": Starting logging {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Starting logging {" + logBuffer + "}");
             try {
                 LogWorker logWorker = new LogWorker(arguments);
                 mLogWorkers.put(logBuffer, logWorker);
                 logWorker.setPriority(threadPriority);
                 logWorker.start();
-                System.out.println("D/" + LOG_TAG + ": Logging has been started {" + logBuffer + "}");
+                Log.println('D', LOG_TAG, "Logging has been started {" + logBuffer + "}");
             } catch (IllegalArgumentException e) {
-                System.out.println("D/" + LOG_TAG + ": Failed to start logging {" + logBuffer + "}");
-                e.printStackTrace();
+                Log.println('D', LOG_TAG, "Failed to start logging {" + logBuffer + "}", e);
             } catch (IllegalStateException e) {
-                System.out.println("D/" + LOG_TAG + ": Logging: disabled {" + logBuffer + "}");
+                Log.println('D', LOG_TAG, "Logging: disabled {" + logBuffer + "}");
             }
         }
     }
@@ -243,11 +239,11 @@ public class Logger extends Service {
     private void stopLogging(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         if (mLogWorkers.containsKey(logBuffer)) {
-            System.out.println("D/" + LOG_TAG + ": Stopping logging {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Stopping logging {" + logBuffer + "}");
             LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.quit();
             mLogWorkers.remove(logBuffer);
-            System.out.println("D/" + LOG_TAG + ": Logging has been stopped {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Logging has been stopped {" + logBuffer + "}");
         }
     }
 
@@ -256,14 +252,14 @@ public class Logger extends Service {
         final String fileName = arguments.getString("fileName");
         IRemoteCallback callback = IRemoteCallback.Stub.asInterface(arguments.getBinder("binder"));
         if (mLogWorkers.containsKey(logBuffer)) {
-            System.out.println("D/" + LOG_TAG + ": Dumping log to file " + fileName + " {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Dumping log to file " + fileName + " {" + logBuffer + "}");
             LogWorker logWorker = mLogWorkers.get(logBuffer);
             Bundle result = new Bundle();
             if (logWorker.dumpLog(fileName)) {
-                System.out.println("D/" + LOG_TAG + ": Log has been dumped to file " + fileName + " {" + logBuffer + "}");
+                Log.println('D', LOG_TAG, "Log has been dumped to file " + fileName + " {" + logBuffer + "}");
                 result.putBoolean("result", true);
             } else {
-                System.out.println("D/" + LOG_TAG + ": Failed to dump log to file " + fileName + " {" + logBuffer + "}");
+                Log.println('D', LOG_TAG, "Failed to dump log to file " + fileName + " {" + logBuffer + "}");
                 result.putBoolean("result", false);
             }
             if (callback != null) {
@@ -278,7 +274,7 @@ public class Logger extends Service {
     private void flushLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         if (mLogWorkers.containsKey(logBuffer)) {
-            System.out.println("D/" + LOG_TAG + ": Flushing log {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Flushing log {" + logBuffer + "}");
             LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.flush();
         }
@@ -287,7 +283,7 @@ public class Logger extends Service {
     private void clearLog(Bundle arguments) {
         final int logBuffer = arguments.getInt("logBuffer", Log.LOG_ID_MAIN);
         if (mLogWorkers.containsKey(logBuffer)) {
-            System.out.println("D/" + LOG_TAG + ": Clearing log {" + logBuffer + "}");
+            Log.println('D', LOG_TAG, "Clearing log {" + logBuffer + "}");
             LogWorker logWorker = mLogWorkers.get(logBuffer);
             logWorker.clear();
         }

@@ -26,11 +26,7 @@ import mindroid.util.concurrent.Promise;
 
 public interface IServiceManager extends IInterface {
     public static abstract class Stub extends Binder implements IServiceManager {
-        private static final java.lang.String DESCRIPTOR = "mindroid.os.IServiceManager";
-
-        public Stub() {
-            this.attachInterface(this, DESCRIPTOR);
-        }
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/os/IServiceManager";
 
         public Stub(Looper looper) {
             super(looper);
@@ -41,7 +37,7 @@ public interface IServiceManager extends IInterface {
             if (binder == null) {
                 return null;
             }
-            return new IServiceManager.Stub.SmartProxy(binder);
+            return new IServiceManager.Proxy(binder);
         }
 
         @Override
@@ -49,7 +45,8 @@ public interface IServiceManager extends IInterface {
             return this;
         }
 
-        protected void onTransact(int what, int arg1, int arg2, Object obj, Bundle data, Promise<?> result) throws RemoteException {
+        @Override
+        protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
             switch (what) {
             case MSG_START_SERVICE: {
                 Intent intent = (Intent) obj;
@@ -93,7 +90,7 @@ public interface IServiceManager extends IInterface {
                 break;
             }
             default:
-                super.onTransact(what, arg1, arg2, obj, data, result);
+                super.onTransact(what, num, obj, data, result);
                 break;
             }
         }
@@ -114,8 +111,8 @@ public interface IServiceManager extends IInterface {
             public boolean equals(final Object obj) {
                 if (obj == null) return false;
                 if (obj == this) return true;
-                if (obj instanceof Proxy) {
-                    final Proxy that = (Proxy) obj;
+                if (obj instanceof Stub.Proxy) {
+                    final Stub.Proxy that = (Stub.Proxy) obj;
                     return this.mRemote.equals(that.mRemote);
                 }
                 return false;
@@ -129,14 +126,14 @@ public interface IServiceManager extends IInterface {
             @Override
             public ComponentName startService(Intent intent) throws RemoteException {
                 Promise<ComponentName> promise = new Promise<>();
-                mRemote.transact(MSG_START_SERVICE, intent, promise, 0);
+                mRemote.transact(MSG_START_SERVICE, 0, intent, null, promise, 0);
                 return Binder.get(promise);
             }
 
             @Override
             public boolean stopService(Intent intent) throws RemoteException {
                 Promise<Boolean> promise = new Promise<>();
-                mRemote.transact(MSG_STOP_SERVICE, intent, promise, 0);
+                mRemote.transact(MSG_STOP_SERVICE, 0, intent, null, promise, 0);
                 return Binder.get(promise);
             }
 
@@ -148,7 +145,7 @@ public interface IServiceManager extends IInterface {
                 data.putInt("flags", flags);
                 data.putBinder("binder", callback.asBinder());
                 Promise<Boolean> promise = new Promise<>();
-                mRemote.transact(MSG_BIND_SERVICE, data, promise, 0);
+                mRemote.transact(MSG_BIND_SERVICE, 0, null, data, promise, 0);
                 return Binder.get(promise);
             }
 
@@ -157,7 +154,7 @@ public interface IServiceManager extends IInterface {
                 Bundle data = new Bundle();
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
-                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, 0, null, data, null, FLAG_ONEWAY);
             }
 
             @Override
@@ -166,117 +163,21 @@ public interface IServiceManager extends IInterface {
                 data.putObject("intent", intent);
                 data.putObject("conn", conn);
                 data.putBinder("binder", callback.asBinder());
-                mRemote.transact(MSG_UNBIND_SERVICE, data, null, FLAG_ONEWAY);
+                mRemote.transact(MSG_UNBIND_SERVICE, 0, null, data, null, FLAG_ONEWAY);
             }
 
             @Override
             public ComponentName startSystemService(Intent intent) throws RemoteException {
                 Promise<ComponentName> promise = new Promise<>();
-                mRemote.transact(MSG_START_SYSTEM_SERVICE, intent, promise, 0);
+                mRemote.transact(MSG_START_SYSTEM_SERVICE, 0, intent, null, promise, 0);
                 return Binder.get(promise);
             }
 
             @Override
             public boolean stopSystemService(Intent intent) throws RemoteException {
                 Promise<Boolean> promise = new Promise<>();
-                mRemote.transact(MSG_STOP_SYSTEM_SERVICE, intent, promise, 0);
+                mRemote.transact(MSG_STOP_SYSTEM_SERVICE, 0, intent, null, promise, 0);
                 return Binder.get(promise);
-            }
-        }
-
-        private static class SmartProxy implements IServiceManager {
-            private final IBinder mRemote;
-            private final IServiceManager mStub;
-            private final IServiceManager mProxy;
-
-            SmartProxy(IBinder remote) {
-                mRemote = remote;
-                mStub = (IServiceManager) remote.queryLocalInterface(DESCRIPTOR);
-                mProxy = new IServiceManager.Stub.Proxy(remote);
-            }
-
-            @Override
-            public IBinder asBinder() {
-                return mRemote;
-            }
-
-            @Override
-            public boolean equals(final Object obj) {
-                if (obj == null) return false;
-                if (obj == this) return true;
-                if (obj instanceof SmartProxy) {
-                    final SmartProxy that = (SmartProxy) obj;
-                    return this.mRemote.equals(that.mRemote);
-                }
-                return false;
-            }
-
-            @Override
-            public int hashCode() {
-                return mRemote.hashCode();
-            }
-
-            @Override
-            public ComponentName startService(Intent intent) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    return mStub.startService(intent);
-                } else {
-                    return mProxy.startService(intent);
-                }
-            }
-
-            @Override
-            public boolean stopService(Intent intent) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    return mStub.stopService(intent);
-                } else {
-                    return mProxy.stopService(intent);
-                }
-            }
-
-            @Override
-            public boolean bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    return mStub.bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(callback.asBinder()));
-                } else {
-                    return mProxy.bindService(intent, conn, flags, callback);
-                }
-            }
-
-            @Override
-            public void unbindService(Intent intent, ServiceConnection conn) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    mStub.unbindService(intent, conn);
-                } else {
-                    mProxy.unbindService(intent, conn);
-                }
-            }
-
-            @Override
-            public void unbindService(Intent intent, ServiceConnection conn, IRemoteCallback callback) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    mStub.unbindService(intent, conn, IRemoteCallback.Stub.asInterface(callback.asBinder()));
-                } else {
-                    mProxy.unbindService(intent, conn, callback);
-                }
-            }
-
-            @Override
-            public ComponentName startSystemService(Intent intent) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    return mStub.startSystemService(intent);
-                } else {
-                    return mProxy.startSystemService(intent);
-                }
-            }
-
-            @Override
-            public boolean stopSystemService(Intent intent) throws RemoteException {
-                if (mRemote.runsOnSameThread()) {
-                    return mStub.stopSystemService(intent);
-                } else {
-                    return mProxy.stopSystemService(intent);
-                }
             }
         }
 
@@ -288,17 +189,113 @@ public interface IServiceManager extends IInterface {
         static final int MSG_STOP_SYSTEM_SERVICE = 6;
     }
 
+    static class Proxy implements IServiceManager {
+        private final IBinder mBinder;
+        private final Stub mStub;
+        private final IServiceManager mProxy;
+
+        Proxy(IBinder binder) {
+            mBinder = binder;
+            if (binder.getUri().getScheme().equals("mindroid")) {
+                mStub = (Stub) binder.queryLocalInterface(Stub.DESCRIPTOR);
+                mProxy = new Stub.Proxy(binder);
+            } else {
+                mindroid.runtime.system.Runtime runtime = mindroid.runtime.system.Runtime.getRuntime();
+                mStub = (Stub) runtime.getBinder(binder.getId());
+                mProxy = (IServiceManager) runtime.getProxy(binder);
+            }
+        }
+
+        @Override
+        public IBinder asBinder() {
+            return mBinder;
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == null) return false;
+            if (obj == this) return true;
+            if (obj instanceof Proxy) {
+                final Proxy that = (Proxy) obj;
+                return this.mBinder.equals(that.mBinder);
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return mBinder.hashCode();
+        }
+
+        @Override
+        public ComponentName startService(Intent intent) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.startService(intent);
+            } else {
+                return mProxy.startService(intent);
+            }
+        }
+
+        @Override
+        public boolean stopService(Intent intent) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.stopService(intent);
+            } else {
+                return mProxy.stopService(intent);
+            }
+        }
+
+        @Override
+        public boolean bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.bindService(intent, conn, flags, IRemoteCallback.Stub.asInterface(callback.asBinder()));
+            } else {
+                return mProxy.bindService(intent, conn, flags, callback);
+            }
+        }
+
+        @Override
+        public void unbindService(Intent intent, ServiceConnection conn) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                mStub.unbindService(intent, conn);
+            } else {
+                mProxy.unbindService(intent, conn);
+            }
+        }
+
+        @Override
+        public void unbindService(Intent intent, ServiceConnection conn, IRemoteCallback callback) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                mStub.unbindService(intent, conn, IRemoteCallback.Stub.asInterface(callback.asBinder()));
+            } else {
+                mProxy.unbindService(intent, conn, callback);
+            }
+        }
+
+        @Override
+        public ComponentName startSystemService(Intent intent) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.startSystemService(intent);
+            } else {
+                return mProxy.startSystemService(intent);
+            }
+        }
+
+        @Override
+        public boolean stopSystemService(Intent intent) throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.stopSystemService(intent);
+            } else {
+                return mProxy.stopSystemService(intent);
+            }
+        }
+    }
+
     public ComponentName startService(Intent intent) throws RemoteException;
-
     public boolean stopService(Intent intent) throws RemoteException;
-
     public boolean bindService(Intent intent, ServiceConnection conn, int flags, IRemoteCallback callback) throws RemoteException;
-
     public void unbindService(Intent intent, ServiceConnection conn) throws RemoteException;
-
     public void unbindService(Intent intent, ServiceConnection conn, IRemoteCallback callback) throws RemoteException;
-
     public ComponentName startSystemService(Intent intent) throws RemoteException;
-
     public boolean stopSystemService(Intent intent) throws RemoteException;
 }
