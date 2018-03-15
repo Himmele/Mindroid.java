@@ -14,9 +14,6 @@ See also: [Mindroid Developer Guide](http://esrlabs.com/Mindroid)
 * ant docs (Build the SDK docs)
 * ant run
 
-The rootDir must point to the parent directory of the apps directory to enable the package manager to find and load the apps.
-When starting the Mindroid examples e.g. from out/pc rootDir has to point to ".".
-
 ## Why and How? ##
 
 ### Blog articles ###
