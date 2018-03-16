@@ -51,7 +51,7 @@ public class Runtime {
 
     private Runtime(int nodeId, File configuration) {
         mNodeId = nodeId;
-        Log.println('I', LOG_TAG, "Mindroid runtime system node ID: " + mNodeId);
+        Log.println('I', LOG_TAG, "Mindroid runtime system node id: " + mNodeId);
         if (configuration != null) {
             try {
                 mConfiguration = Configuration.read(configuration);

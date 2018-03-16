@@ -17,6 +17,7 @@
 
 package mindroid.content.pm;
 
+import java.util.ArrayList;
 import java.util.List;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -31,6 +32,7 @@ import mindroid.os.ServiceManager;
  */
 public class PackageManager {
     private IPackageManager mService;
+    private ArrayList<PackageManagerListener> mListeners = new ArrayList<>();
 
     /**
      * {@link PackageInfo} flag: return information about services in the package in
@@ -179,9 +181,17 @@ public class PackageManager {
         } catch (RemoteException e) {
             throw new RuntimeException("System failure", e);
         }
+        synchronized (mListeners) {
+            if (!mListeners.contains(listener)) {
+                mListeners.add(listener);
+            }
+        }
     }
 
     public void removeListener(PackageManagerListener listener) throws RemoteException {
+        synchronized (mListeners) {
+            mListeners.remove(listener);
+        }
         try {
             mService.removeListener(listener.asInterface());
         } catch (RemoteException e) {

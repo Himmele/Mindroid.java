@@ -629,15 +629,15 @@ public final class ServiceManager {
     /**
      * @hide
      */
-    public static void waitForSystemServiceShutdown(String name, long timeout) throws InterruptedException {
+    public static void waitForSystemServiceShutdown(URI name, long timeout) throws InterruptedException {
         synchronized (sSystemServices) {
             long start = SystemClock.uptimeMillis();
             long duration = timeout;
-            while (sSystemServices.containsKey(name) && (duration > 0)) {
+            while (sSystemServices.containsKey(name.toString()) && (duration > 0)) {
                 sSystemServices.wait(duration);
                 duration = start + timeout - SystemClock.uptimeMillis();
             }
-            if (sSystemServices.containsKey(name)) {
+            if (sSystemServices.containsKey(name.toString())) {
                 Log.w(LOG_TAG, "Failed to wait for " + name + " shutdown");
             }
         }
