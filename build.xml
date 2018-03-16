@@ -79,6 +79,7 @@
                 <compile-srcpath/>
                 <map from="${basedir}${file.separator}@{srcdir}/" to=''/>
             </pathconvert>
+            <!-- <echo>Compiling source files: ${includes}</echo> -->
 
             <javac bootclasspathref="${target.bootclasspath}" srcdir="@{srcdir}" destdir="@{destdir}" includes="${includes}"
                     debug="on" deprecation="on" optimize="on" listfiles="no" source="@{compile.source}" target="@{compile.target}"
@@ -119,7 +120,7 @@
                     <if>
                         <available file="@{resdir}" type="dir" />
                         <then>
-                            <copy todir="${out.target.dir}/@{name}/classes/res" >
+                            <copy todir="${out.target.dir}/@{name}/classes" >
                                 <fileset dir="@{resdir}" includes="**" excludes="**/*.java"/>
                             </copy>
                         </then>
@@ -235,24 +236,27 @@
 
     <target name="apps" depends="sdk">
         <antcall target="app">
-            <param name="app" value="ServicesExample"/>
-            <param name="srcdir" value="src/examples/services"/>
+            <param name="app" value="ServiceExample"/>
+            <param name="srcdir" value="examples/Services/src"/>
+            <param name="manifest-path" value="examples/Services"/>
         </antcall>
 
         <antcall target="app">
             <param name="app" value="ConcurrencyExample"/>
-            <param name="srcdir" value="src/examples/concurrency"/>
+            <param name="srcdir" value="examples/Concurrency/src"/>
+            <param name="manifest-path" value="examples/Concurrency"/>
         </antcall>
 
         <antcall target="app">
             <param name="app" value="Eliza"/>
-            <param name="srcdir" value="src/examples/eliza"/>
-            <param name="resdir" value="res/examples/eliza"/>
+            <param name="srcdir" value="examples/Eliza/src"/>
+            <param name="resdir" value="examples/Eliza/res"/>
+            <param name="manifest-path" value="examples/Eliza"/>
         </antcall>
     </target>
 
     <target name="app">
-        <build-module name="${app}" compile.source="${compile.source}" compile.target="${compile.target}" resdir="${resdir}" manifest-path="${srcdir}" jarfile="${app}.jar">
+        <build-module name="${app}" compile.source="${compile.source}" compile.target="${compile.target}" srcdir="${srcdir}" resdir="${resdir}" manifest-path="${manifest-path}" jarfile="${app}.jar">
             <module-srcpath>
                 <fileset dir="${srcdir}" includes="**/*.java" />
             </module-srcpath>

@@ -2,6 +2,10 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="res"/>
+	<classpathentry kind="src" path="examples/Services/src"/>
+	<classpathentry kind="src" path="examples/Concurrency/src"/>
+	<classpathentry kind="src" path="examples/Eliza/src"/>
+	<classpathentry kind="src" path="examples/Eliza/res"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

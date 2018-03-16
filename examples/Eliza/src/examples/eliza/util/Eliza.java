@@ -57,11 +57,11 @@ import mindroid.util.Log;
         try {
             InputStream inputStream = null;
             try {
-                inputStream = this.getClass().getResourceAsStream("/res/Eliza.cfg");
+                inputStream = this.getClass().getResourceAsStream("/examples/eliza/Eliza.cfg");
             } catch (Exception e) {
             }
             if (inputStream == null) {
-                inputStream = new FileInputStream("res/examples/eliza/Eliza.cfg");
+                inputStream = new FileInputStream("examples/Eliza/res/examples/eliza/Eliza.cfg");
             }
             reader = new BufferedReader(new InputStreamReader(inputStream));
             String line;
