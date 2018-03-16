@@ -44,7 +44,6 @@ public final class ServiceManager {
     private static IServiceManager.Stub sStub;
     private static final HashMap<String, IBinder> sSystemServices = new HashMap<>();
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
-    private static final Runtime sRuntime = Runtime.getRuntime();
     private final ProcessManager mProcessManager;
     private final HandlerThread mMainThread;
     private HashMap<String, ProcessRecord> mProcesses = new HashMap<>();
@@ -554,7 +553,7 @@ public final class ServiceManager {
      * @return a reference to the service, or <code>null</code> if the service doesn't exist
      */
     public static IBinder getSystemService(URI uri) {
-        IBinder service = sRuntime.getService(uri);
+        IBinder service = Runtime.getRuntime().getService(uri);
         return service;
     }
 
@@ -565,7 +564,7 @@ public final class ServiceManager {
         synchronized (sSystemServices) {
             if (!sSystemServices.containsKey(uri.toString())) {
                 sSystemServices.put(uri.toString(), service);
-                sRuntime.addService(uri, service);
+                Runtime.getRuntime().addService(uri, service);
                 sSystemServices.notifyAll();
             }
         }
@@ -576,8 +575,8 @@ public final class ServiceManager {
      */
     public static void removeService(IBinder service) {
         synchronized (sSystemServices) {
-            sRuntime.removeService(service);
-            sSystemServices.remove(service.getUri());
+            Runtime.getRuntime().removeService(service);
+            sSystemServices.values().remove(service);
             sSystemServices.notifyAll();
         }
     }
