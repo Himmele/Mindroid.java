@@ -50,6 +50,9 @@ public class Runtime {
     private Configuration mConfiguration;
 
     private Runtime(int nodeId, File configuration) {
+        if (nodeId == 0) {
+            throw new IllegalArgumentException("Mindroid runtime system node id must not be 0");
+        }
         mNodeId = nodeId;
         Log.println('I', LOG_TAG, "Mindroid runtime system node id: " + mNodeId);
         if (configuration != null) {
