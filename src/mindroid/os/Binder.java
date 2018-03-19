@@ -199,25 +199,26 @@ public class Binder implements IBinder {
         if (data != null) {
             data.asInput();
         }
-        Promise<Parcel> result;
-        if (flags == FLAG_ONEWAY) {
-            result = null;
-        } else {
-            result = new Promise<Parcel>(Executors.SYNCHRONOUS_EXECUTOR);
-            result.then(parcel -> {
-                parcel.asInput();
-            });
-        }
         Message message = Message.obtain();
         message.what = TRANSACTION;
         message.arg1 = what;
         message.obj = data;
-        message.result = result;
         message.sendingPid = Process.myPid();
+        Promise<Parcel> promise;
+        if (flags == FLAG_ONEWAY) {
+            promise = null;
+            message.result = null;
+        } else {
+            promise = new Promise<Parcel>(Executors.SYNCHRONOUS_EXECUTOR);
+            message.result = promise;
+            promise = promise.then(parcel -> {
+                parcel.asInput();
+            });
+        }
         if (!mTarget.send(message)) {
             throw new RemoteException(EXCEPTION_MESSAGE);
         }
-        return result;
+        return promise;
     }
 
     @Override

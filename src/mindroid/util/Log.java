@@ -284,7 +284,7 @@ public final class Log {
         }
     }
 
-    public static Integer parsePriority(String priority) {
+    public static int parsePriority(String priority) {
         char c;
         if (priority.length() > 1 && priority.toUpperCase().equals("WTF")) {
             c = 'A';
@@ -295,22 +295,22 @@ public final class Log {
         return parsePriority(c);
     }
 
-    public static Integer parsePriority(char priority) {
+    public static int parsePriority(char priority) {
         switch (priority) {
         case 'V':
-            return new Integer(Log.VERBOSE);
+            return Log.VERBOSE;
         case 'D':
-            return new Integer(Log.DEBUG);
+            return Log.DEBUG;
         case 'I':
-            return new Integer(Log.INFO);
+            return Log.INFO;
         case 'W':
-            return new Integer(Log.WARN);
+            return Log.WARN;
         case 'E':
-            return new Integer(Log.ERROR);
+            return Log.ERROR;
         case 'A':
-            return new Integer(Log.WTF);
+            return Log.WTF;
         default:
-            return null;
+            return Integer.MAX_VALUE;
         }
     }
 
