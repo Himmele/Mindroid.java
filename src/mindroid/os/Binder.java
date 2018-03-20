@@ -73,6 +73,7 @@ public class Binder implements IBinder {
         setCallingPid(Process.myPid());
     }
 
+    /** @hide */
     public Binder(Binder binder) {
         mRuntime = binder.mRuntime;
         mId = binder.mId;
@@ -206,12 +207,12 @@ public class Binder implements IBinder {
         message.sendingPid = Process.myPid();
         Promise<Parcel> promise;
         if (flags == FLAG_ONEWAY) {
-            promise = null;
             message.result = null;
+            promise = null;
         } else {
-            promise = new Promise<Parcel>(Executors.SYNCHRONOUS_EXECUTOR);
-            message.result = promise;
-            promise = promise.then(parcel -> {
+            Promise<Parcel> p = new Promise<Parcel>(Executors.SYNCHRONOUS_EXECUTOR);
+            message.result = p;
+            promise = p.then(parcel -> {
                 parcel.asInput();
             });
         }
@@ -500,9 +501,7 @@ public class Binder implements IBinder {
         }
     }
 
-    /**
-     * @hide
-     */
+    /** @hide */
     public void setId(long id) {
         mId = id;
         mUri = URI.create(mUri.getScheme() + "://" + String.valueOf((int) ((mId >> 32) & 0xFFFFFFFFL)) + "." + String.valueOf((int) (mId & 0xFFFFFFFFL)));

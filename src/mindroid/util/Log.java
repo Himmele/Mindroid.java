@@ -284,6 +284,7 @@ public final class Log {
         }
     }
 
+    /** @hide */
     public static int parsePriority(String priority) {
         char c;
         if (priority.length() > 1 && priority.toUpperCase().equals("WTF")) {
@@ -295,6 +296,7 @@ public final class Log {
         return parsePriority(c);
     }
 
+    /** @hide */
     public static int parsePriority(char priority) {
         switch (priority) {
         case 'V':
@@ -314,6 +316,7 @@ public final class Log {
         }
     }
 
+    /** @hide */
     public static String toPriority(int priority) {
         String[] logLevels = { "V", "D", "I", "W", "E", "A" };
         if (priority >= 0 && priority < logLevels.length) {
