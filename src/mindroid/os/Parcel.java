@@ -528,7 +528,6 @@ public final class Parcel {
          *
          * @return this stream's current contents as a string.
          */
-
         @Override
         public String toString() {
             return new String(mBuffer, 0, mCount);
@@ -547,7 +546,7 @@ public final class Parcel {
          *            the buffer to be written.
          * @param offset
          *            the initial position in {@code buffer} to retrieve bytes.
-         * @param size
+         * @param count
          *            the number of bytes of {@code buffer} to write.
          * @throws NullPointerException
          *             if {@code buffer} is {@code null}.
@@ -557,16 +556,16 @@ public final class Parcel {
          *             {@code buffer}.
          */
         @Override
-        public void write(byte[] buffer, int offset, int size) {
-            if ((offset < 0) || (size < 0) || ((offset + size) > buffer.length)) {
+        public void write(byte[] buffer, int offset, int count) {
+            if ((offset < 0) || (count < 0) || ((offset + count) > buffer.length)) {
                 throw new IndexOutOfBoundsException();
             }
-            if (size == 0) {
+            if (count == 0) {
                 return;
             }
-            expand(size);
-            System.arraycopy(buffer, offset, mBuffer, mCount, size);
-            mCount += size;
+            expand(count);
+            System.arraycopy(buffer, offset, mBuffer, mCount, count);
+            mCount += count;
         }
 
         /**
@@ -644,14 +643,14 @@ public final class Parcel {
          *            the byte array to stream over.
          * @param offset
          *            the initial position in {@code buf} to start streaming from.
-         * @param size
+         * @param count
          *            the number of bytes available for streaming.
          */
-        public ByteArrayInputStream(byte[] buffer, int offset, int size) {
+        public ByteArrayInputStream(byte[] buffer, int offset, int count) {
             mBuffer = buffer;
             mPosition = offset;
             mMark = offset;
-            mCount = offset + size > buffer.length ? buffer.length : offset + size;
+            mCount = offset + count > buffer.length ? buffer.length : offset + count;
         }
 
         /**
@@ -721,24 +720,24 @@ public final class Parcel {
         }
 
         @Override
-        public int read(byte[] buffer, int offset, int size) {
+        public int read(byte[] buffer, int offset, int count) {
             if (buffer == null) {
                 throw new NullPointerException();
-            } else if ((offset < 0) || (size < 0) || ((offset + size) > buffer.length)) {
+            } else if ((offset < 0) || (count < 0) || ((offset + count) > buffer.length)) {
                 throw new IndexOutOfBoundsException();
             }
 
             if (mPosition >= mCount) {
                 return -1;
             }
-            if (size == 0) {
+            if (count == 0) {
                 return 0;
             }
 
-            size = mCount - mPosition < size ? mCount - mPosition : size;
-            System.arraycopy(mBuffer, mPosition, buffer, offset, size);
-            mPosition += size;
-            return size;
+            count = mCount - mPosition < count ? mCount - mPosition : count;
+            System.arraycopy(mBuffer, mPosition, buffer, offset, count);
+            mPosition += count;
+            return count;
         }
 
         /**
@@ -762,12 +761,12 @@ public final class Parcel {
          * @return the number of bytes actually skipped.
          */
         @Override
-        public long skip(long size) {
-            if (size <= 0) {
+        public long skip(long count) {
+            if (count <= 0) {
                 return 0;
             }
             int position = mPosition;
-            mPosition = mCount - mPosition < size ? mCount : (int) (mPosition + size);
+            mPosition = mCount - mPosition < count ? mCount : (int) (mPosition + count);
             return mPosition - position;
         }
     }
@@ -1099,8 +1098,8 @@ public final class Parcel {
         }
 
         @Override
-        public final int read(byte[] buffer, int offset, int size) throws IOException {
-            return mInputStream.read(buffer, offset, size);
+        public final int read(byte[] buffer, int offset, int count) throws IOException {
+            return mInputStream.read(buffer, offset, count);
         }
 
         /**
@@ -1132,8 +1131,8 @@ public final class Parcel {
          * @see #reset()
          */
         @Override
-        public long skip(long size) throws IOException {
-            return mInputStream.skip(size);
+        public long skip(long count) throws IOException {
+            return mInputStream.skip(count);
         }
 
         public final boolean readBoolean() throws IOException {
