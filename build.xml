@@ -317,6 +317,8 @@
                     <include name="mindroid/content/pm/PackageListener.java"/>
                     <include name="mindroid/content/pm/ResolveInfo.java"/>
                     <include name="mindroid/content/pm/ServiceInfo.java"/>
+                    <include name="mindroid/io/ByteArrayInputStream.java"/>
+                    <include name="mindroid/io/ByteArrayOutputStream.java"/>
                     <include name="mindroid/lang/Runtime.java"/>
                     <include name="mindroid/os/AsyncTask.java"/>
                     <include name="mindroid/os/Binder.java"/>
@@ -329,6 +331,7 @@
                     <include name="mindroid/os/Looper.java"/>
                     <include name="mindroid/os/Message.java"/>
                     <include name="mindroid/os/MessageQueue.java"/>
+                    <include name="mindroid/os/Parcel.java"/>
                     <include name="mindroid/os/RemoteException.java"/>
                     <include name="mindroid/os/SystemClock.java"/>
                     <include name="mindroid/util/Base64.java"/>
