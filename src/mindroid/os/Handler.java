@@ -219,20 +219,20 @@ public class Handler {
     }
 
     /**
-     * Causes the Runnable r to be added to the message queue. The runnable will be run on the
+     * Causes the Runnable runnable to be added to the message queue. The runnable will be run on the
      * thread to which this handler is attached.
      * 
      * @param runnable The Runnable that will be executed.
      * 
-     * @return Returns true if the Runnable was successfully placed in to the message queue. Returns
-     * false on failure, usually because the looper processing the message queue is exiting.
+     * @return Returns the Runnable if the Runnable was successfully placed in to the message queue.
+     * Returns null on failure, usually because the looper processing the message queue is exiting.
      */
-    public final boolean post(Runnable runnable) {
-        return sendMessageDelayed(getPostMessage(runnable), 0);
+    public final Runnable post(Runnable runnable) {
+        return sendMessageDelayed(getPostMessage(runnable), 0) ? runnable : null;
     }
 
     /**
-     * Causes the Runnable r to be added to the message queue, to be run at a specific time given by
+     * Causes the Runnable runnable to be added to the message queue, to be run at a specific time given by
      * <var>uptimeMillis</var>. <b>The time-base is {@link mindroid.os.SystemClock#uptimeMillis}
      * .</b> The runnable will be run on the thread to which this handler is attached.
      * 
@@ -240,17 +240,17 @@ public class Handler {
      * @param uptimeMillis The absolute time at which the callback should run, using the
      * {@link mindroid.os.SystemClock#uptimeMillis} time-base.
      * 
-     * @return Returns true if the Runnable was successfully placed in to the message queue. Returns
-     * false on failure, usually because the looper processing the message queue is exiting. Note
-     * that a result of true does not mean the Runnable will be processed -- if the looper is quit
+     * @return Returns the Runnable if the Runnable was successfully placed in to the message queue.
+     * Returns null on failure, usually because the looper processing the message queue is exiting.
+     * Note that a result of true does not mean the Runnable will be processed -- if the looper is quit
      * before the delivery time of the message occurs then the message will be dropped.
      */
-    public final boolean postAtTime(Runnable runnable, long uptimeMillis) {
-        return sendMessageAtTime(getPostMessage(runnable), uptimeMillis);
+    public final Runnable postAtTime(Runnable runnable, long uptimeMillis) {
+        return sendMessageAtTime(getPostMessage(runnable), uptimeMillis) ? runnable : null;
     }
 
     /**
-     * Causes the Runnable r to be added to the message queue, to be run at a specific time given by
+     * Causes the Runnable runnable to be added to the message queue, to be run at a specific time given by
      * <var>uptimeMillis</var>. <b>The time-base is {@link mindroid.os.SystemClock#uptimeMillis}
      * .</b> The runnable will be run on the thread to which this handler is attached.
      * 
@@ -258,31 +258,31 @@ public class Handler {
      * @param uptimeMillis The absolute time at which the callback should run, using the
      * {@link mindroid.os.SystemClock#uptimeMillis} time-base.
      * 
-     * @return Returns true if the Runnable was successfully placed in to the message queue. Returns
-     * false on failure, usually because the looper processing the message queue is exiting. Note
-     * that a result of true does not mean the Runnable will be processed -- if the looper is quit
+     * @return Returns The Runnable if the Runnable was successfully placed in to the message queue.
+     * Returns null on failure, usually because the looper processing the message queue is exiting.
+     * Note that a result of true does not mean the Runnable will be processed -- if the looper is quit
      * before the delivery time of the message occurs then the message will be dropped.
      * 
      * @see mindroid.os.SystemClock#uptimeMillis
      */
-    public final boolean postAtTime(Runnable runnable, Object token, long uptimeMillis) {
-        return sendMessageAtTime(getPostMessage(runnable, token), uptimeMillis);
+    public final Runnable postAtTime(Runnable runnable, Object token, long uptimeMillis) {
+        return sendMessageAtTime(getPostMessage(runnable, token), uptimeMillis) ? runnable : null;
     }
 
     /**
-     * Causes the Runnable r to be added to the message queue, to be run after the specified amount
+     * Causes the Runnable runnable to be added to the message queue, to be run after the specified amount
      * of time elapses. The runnable will be run on the thread to which this handler is attached.
      * 
      * @param runnable The Runnable that will be executed.
      * @param delayMillis The delay (in milliseconds) until the Runnable will be executed.
      * 
-     * @return Returns true if the Runnable was successfully placed in to the message queue. Returns
-     * false on failure, usually because the looper processing the message queue is exiting. Note
-     * that a result of true does not mean the Runnable will be processed -- if the looper is quit
+     * @return Returns the Runnable if the Runnable was successfully placed in to the message queue.
+     * Returns null on failure, usually because the looper processing the message queue is exiting.
+     * Note that a result of true does not mean the Runnable will be processed -- if the looper is quit
      * before the delivery time of the message occurs then the message will be dropped.
      */
-    public final boolean postDelayed(Runnable runnable, long delayMillis) {
-        return sendMessageDelayed(getPostMessage(runnable), delayMillis);
+    public final Runnable postDelayed(Runnable runnable, long delayMillis) {
+        return sendMessageDelayed(getPostMessage(runnable), delayMillis) ? runnable : null;
     }
 
     /**
@@ -462,7 +462,7 @@ public class Handler {
                 if (command == null) {
                     throw new NullPointerException("Runnable must not be null");
                 }
-                if (!post(command)) {
+                if (post(command) == null) {
                     throw new RejectedExecutionException("Runnable has been rejected by Handler");
                 }
             }
