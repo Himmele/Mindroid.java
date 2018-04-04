@@ -434,7 +434,7 @@ public class Mindroid extends Plugin {
             };
 
             private class Writer extends Thread {
-            	private final LinkedList<Message> mQueue = new LinkedList<>();
+                private final LinkedList<Message> mQueue = new LinkedList<>();
                 private final DataOutputStream mOutputStream;
 
                 public Writer(String name, OutputStream outputStream) {
@@ -727,7 +727,7 @@ public class Mindroid extends Plugin {
             };
 
             private class Writer extends Thread {
-            	private final LinkedList<Message> mQueue = new LinkedList<>();
+                private final LinkedList<Message> mQueue = new LinkedList<>();
                 private DataOutputStream mOutputStream;
 
                 public void start(String name, OutputStream outputStream) {
