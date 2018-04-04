@@ -278,7 +278,6 @@ public class Mindroid extends Plugin {
             private final Socket mSocket;
             private Reader mReader;
             private Writer mWriter;
-            private final LinkedList<Message> mQueue = new LinkedList<>();
 
             public Connection(Socket socket) {
                 mSocket = socket;
@@ -435,6 +434,7 @@ public class Mindroid extends Plugin {
             };
 
             private class Writer extends Thread {
+            	private final LinkedList<Message> mQueue = new LinkedList<>();
                 private final DataOutputStream mOutputStream;
 
                 public Writer(String name, OutputStream outputStream) {
@@ -591,7 +591,6 @@ public class Mindroid extends Plugin {
             private Socket mSocket;
             private Reader mReader;
             private Writer mWriter;
-            private final LinkedList<Message> mQueue = new LinkedList<>();
 
             public Connection() {
                 mReader = new Reader();
@@ -728,6 +727,7 @@ public class Mindroid extends Plugin {
             };
 
             private class Writer extends Thread {
+            	private final LinkedList<Message> mQueue = new LinkedList<>();
                 private DataOutputStream mOutputStream;
 
                 public void start(String name, OutputStream outputStream) {
