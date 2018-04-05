@@ -31,10 +31,10 @@ public class Key {
     /** The list of decompositions */
     DecompositionList decompositions;
 
-    Key(String key, int rank, DecompositionList decomp) {
+    Key(String key, int rank, DecompositionList decompositions) {
         this.key = key;
         this.rank = rank;
-        this.decompositions = decomp;
+        this.decompositions = decompositions;
     }
 
     Key() {

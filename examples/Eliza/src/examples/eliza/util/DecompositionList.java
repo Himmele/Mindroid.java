@@ -25,8 +25,8 @@ import java.util.ArrayList;
  *  Eliza decomposition list.
  */
 public class DecompositionList extends ArrayList<Decomposition> {
-    public boolean add(String word, boolean memory, ReassemblyList reasmb) {
-        return super.add(new Decomposition(word, memory, reasmb));
+    public boolean add(String word, boolean memory, ReassemblyList reassemblyList) {
+        return super.add(new Decomposition(word, memory, reassemblyList));
     }
 
     public void print(int indent) {

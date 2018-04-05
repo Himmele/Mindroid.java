@@ -58,7 +58,7 @@ public class KeyStack {
         }
         int i;
         for (i = top; i > 0; i--) {
-            if (key.rank > stack[i - 1].rank) {
+            if (key.rank() > stack[i - 1].rank()) {
                 stack[i] = stack[i - 1];
             } else {
                 break;

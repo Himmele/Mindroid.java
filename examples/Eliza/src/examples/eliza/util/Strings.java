@@ -73,8 +73,9 @@ public class Strings {
     public static int findNumbers(String s) {
         int count = 0;
         for (int i = 0; i < s.length(); i++) {
-            if (NUMBERS.indexOf(s.charAt(i)) == -1)
+            if (NUMBERS.indexOf(s.charAt(i)) == -1) {
                 return count;
+            }
             count++;
         }
         return count;
@@ -169,8 +170,8 @@ public class Strings {
         return false;
     }
 
-    public static boolean match(String str, String pat, String matches[]) {
-        return matchA(str, pat, matches);
+    public static boolean match(String s, String pattern, String matches[]) {
+        return matchA(s, pattern, matches);
     }
 
     /**

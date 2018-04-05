@@ -27,7 +27,7 @@ import mindroid.util.Log;
  *  Eliza main class.
  *  Performs the input transformations.
  */
- public class Eliza {
+public class Eliza {
     private static final String LOG_TAG = "Eliza";
 
     /** The key list */
@@ -87,8 +87,7 @@ import mindroid.util.Log;
                 return;
             }
             reassemblyList.add(lines[1]);
-        }
-        else if (Strings.match(s, "*decomp: *", lines)) {
+        } else if (Strings.match(s, "*decomp: *", lines)) {
             if (decompositionList == null) {
                 System.out.println("Error: no decomposition list");
                 return;
@@ -100,8 +99,7 @@ import mindroid.util.Log;
             } else {
                 decompositionList.add(tmp, false, reassemblyList);
             }
-        }
-        else if (Strings.match(s, "*key: * #*", lines)) {
+        } else if (Strings.match(s, "*key: * #*", lines)) {
             decompositionList = new DecompositionList();
             reassemblyList = null;
             int n = 0;
@@ -113,13 +111,11 @@ import mindroid.util.Log;
                 }
             }
             keys.add(lines[1], n, decompositionList);
-        }
-        else if (Strings.match(s, "*key: *", lines)) {
+        } else if (Strings.match(s, "*key: *", lines)) {
             decompositionList = new DecompositionList();
             reassemblyList = null;
             keys.add(lines[1], 0, decompositionList);
-        }
-        else if (Strings.match(s, "*synon: * *", lines)) {
+        } else if (Strings.match(s, "*synon: * *", lines)) {
             WordList words = new WordList();
             words.add(lines[1]);
             s = lines[2];
@@ -129,23 +125,17 @@ import mindroid.util.Log;
             }
             words.add(s);
             synonyms.add(words);
-        }
-        else if (Strings.match(s, "*pre: * *", lines)) {
+        } else if (Strings.match(s, "*pre: * *", lines)) {
             preList.add(lines[1], lines[2]);
-        }
-        else if (Strings.match(s, "*post: * *", lines)) {
+        } else if (Strings.match(s, "*post: * *", lines)) {
             postList.add(lines[1], lines[2]);
-        }
-        else if (Strings.match(s, "*initial: *", lines)) {
+        } else if (Strings.match(s, "*initial: *", lines)) {
             welcome = lines[1];
-        }
-        else if (Strings.match(s, "*final: *", lines)) {
+        } else if (Strings.match(s, "*final: *", lines)) {
             goodbye = lines[1];
-        }
-        else if (Strings.match(s, "*quit: *", lines)) {
+        } else if (Strings.match(s, "*quit: *", lines)) {
             quit.add(" " + lines[1] + " ");
-        }
-        else {
+        } else {
             System.out.println("Unrecognized input: " + s);
         }
     }
@@ -236,7 +226,7 @@ import mindroid.util.Log;
     private String decompose(Key key, String s, Key gotoKey) {
         String reply[] = new String[10];
         for (int i = 0; i < key.decompositions().size(); i++) {
-            Decomposition d = (Decomposition)key.decompositions().get(i);
+            Decomposition d = key.decompositions().get(i);
             String pattern = d.pattern();
             if (synonyms.matchDecomposition(s, pattern, reply)) {
                 String rep = assemble(d, reply, gotoKey);

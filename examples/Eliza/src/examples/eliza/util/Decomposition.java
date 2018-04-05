@@ -25,7 +25,7 @@ import java.lang.Math;
  *  Eliza decomposition rule
  */
 public class Decomposition {
-    /** The decomp pattern */
+    /** The decomposition pattern */
     String pattern;
     /** The memory flag */
     boolean memory;
