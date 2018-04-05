@@ -44,7 +44,7 @@ public class Eliza {
 
         @Override
         public void onReply(String reply) throws RemoteException {
-            mListeners.remove(mListener);
+            mListeners.remove(this);
             mListener.onReply(reply);
         }
     }

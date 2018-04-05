@@ -58,13 +58,17 @@ public interface IEliza extends IInterface {
             case MSG_ASK2: {
                 String question = data.getString();
                 Future<String> reply = ask2(question);
-                reply.then(value -> {
-                    Parcel parcel = Parcel.obtain();
-                    try {
-                        parcel.putString(reply.get());
-                        result.complete(parcel);
-                    } catch (Exception e) {
-                        result.completeWith(e);
+                reply.then((value, exception) -> {
+                    if (exception == null) {
+                        Parcel parcel = Parcel.obtain();
+                        try {
+                            parcel.putString(reply.get());
+                            result.complete(parcel);
+                        } catch (Exception e) {
+                            result.completeWith(e);
+                        }
+                    } else {
+                        result.completeWith(exception);
                     }
                 });
                 break;

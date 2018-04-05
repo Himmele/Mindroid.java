@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -228,7 +229,13 @@ public class Mindroid extends Plugin {
             try {
                 URI url = new URI(uri);
                 if ("tcp".equals(url.getScheme())) {
-                    mServerSocket = new ServerSocket(url.getPort());
+                    try {
+                        mServerSocket = new ServerSocket();
+                        mServerSocket.setReuseAddress(true);
+                        mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "Cannot bind to server socket on port " + url.getPort());
+                    }
                 } else {
                     throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
                 }
@@ -611,10 +618,12 @@ public class Mindroid extends Plugin {
             }
 
             void shutdown() {
-                try {
-                    mSocket.close();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot close socket", e);
+                if (mSocket != null) {
+                    try {
+                        mSocket.close();
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "Cannot close socket", e);
+                    }
                 }
                 if (mReader != null) {
                     try {
@@ -657,9 +666,11 @@ public class Mindroid extends Plugin {
                 void shutdown() {
                     interrupt();
                     try {
-                        try {
-                            mInputStream.close();
-                        } catch (IOException ignore) {
+                        if (mInputStream != null) {
+                            try {
+                                mInputStream.close();
+                            } catch (IOException ignore) {
+                            }
                         }
                         join(SHUTDOWN_TIMEOUT);
                         if (isAlive()) {
@@ -739,9 +750,11 @@ public class Mindroid extends Plugin {
                 public void shutdown() throws IOException {
                     interrupt();
                     try {
-                        try {
-                            mOutputStream.close();
-                        } catch (IOException ignore) {
+                        if (mOutputStream != null) {
+                            try {
+                                mOutputStream.close();
+                            } catch (IOException ignore) {
+                            }
                         }
                         join(SHUTDOWN_TIMEOUT);
                         if (isAlive()) {
