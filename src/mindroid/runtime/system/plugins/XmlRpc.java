@@ -243,38 +243,40 @@ public class XmlRpc extends Plugin {
         private Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
 
         public Server(String uri) throws IOException {
+            URI url;
             try {
-                URI url = new URI(uri);
-                if ("tcp".equals(url.getScheme())) {
-                    try {
-                        mServerSocket = new ServerSocket();
-                        mServerSocket.setReuseAddress(true);
-                        mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Cannot bind to server socket on port " + url.getPort());
-                    }
-                } else {
-                    throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
-                }
-
-                mThread = new Thread("Server [" + mServerSocket.getLocalSocketAddress() + "]") {
-                    public void run() {
-                        while (!isInterrupted()) {
-                            try {
-                                Socket socket = mServerSocket.accept();
-                                if (DEBUG) {
-                                    Log.d(LOG_TAG, "New connection from " + socket.getRemoteSocketAddress());
-                                }
-                                mConnections.add(new Connection(socket));
-                            } catch (IOException e) {
-                                Log.e(LOG_TAG, e.getMessage(), e);
-                            }
-                        }
-                    }
-                };
-                mThread.start();
+                url = new URI(uri);
             } catch (URISyntaxException e) {
                 throw new IOException("Invalid URI: " + uri);
+            }
+
+            if ("tcp".equals(url.getScheme())) {
+                try {
+                    mServerSocket = new ServerSocket();
+                    mServerSocket.setReuseAddress(true);
+                    mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
+
+                    mThread = new Thread("Server [" + mServerSocket.getLocalSocketAddress() + "]") {
+                        public void run() {
+                            while (!isInterrupted()) {
+                                try {
+                                    Socket socket = mServerSocket.accept();
+                                    if (DEBUG) {
+                                        Log.d(LOG_TAG, "New connection from " + socket.getRemoteSocketAddress());
+                                    }
+                                    mConnections.add(new Connection(socket));
+                                } catch (IOException e) {
+                                    Log.e(LOG_TAG, e.getMessage(), e);
+                                }
+                            }
+                        }
+                    };
+                    mThread.start();
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Cannot bind to server socket on port " + url.getPort());
+                }
+            } else {
+                throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
             }
         }
 

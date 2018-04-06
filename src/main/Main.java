@@ -52,13 +52,13 @@ public class Main {
             String arg = args[i];
             if (arg.startsWith(ID_ARG)) {
                 try {
-                    nodeId = Integer.valueOf(args[i].substring(ID_ARG.length()));
+                    nodeId = Integer.valueOf(arg.substring(ID_ARG.length()));
                 } catch (NumberFormatException e) {
-                    Log.println('E', LOG_TAG, "Invalid node id: " + args[i]);
+                    Log.println('E', LOG_TAG, "Invalid node id: " + arg);
                     System.exit(-1);
                 }
             } else if (arg.startsWith(ROOT_DIR_ARG)) {
-                rootDir = args[i].substring(ROOT_DIR_ARG.length());
+                rootDir = arg.substring(ROOT_DIR_ARG.length());
             }
         }
 
