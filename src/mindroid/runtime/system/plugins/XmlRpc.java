@@ -115,7 +115,7 @@ public class XmlRpc extends Plugin {
 
     @Override
     public synchronized void detachProxy(long proxyId, long binderId) {
-        // TODO: Lazy connection shutdown to clients without proxies.
+        // TODO: Lazy connection shutdown for clients without proxies.
 //        int nodeId = (int) ((binderId >> 32) & 0xFFFFFFFFL);
 //        if (mProxies.containsKey(nodeId)) {
 //            Map<Long, WeakReference<IBinder>> proxies = mProxies.get(nodeId);
