@@ -379,7 +379,7 @@ public class Mindroid extends Plugin {
                             int what = mInputStream.readInt();
                             int size = mInputStream.readInt();
                             byte[] data = new byte[size];
-                            readFully(data, 0, size);
+                            mInputStream.readFully(data, 0, size);
 
                             if (type == Message.MESSAGE_TYPE_TRANSACTION) {
                                 try {
@@ -419,26 +419,6 @@ public class Mindroid extends Plugin {
 
                     if (DEBUG) {
                         Log.d(LOG_TAG, "Reader is terminating");
-                    }
-                }
-
-                private final void readFully(byte[] buffer, int offset, int size) throws IOException {
-                    if (size == 0) {
-                        return;
-                    }
-                    if (buffer == null) {
-                        throw new NullPointerException("buffer == null");
-                    }
-                    if ((offset < 0) || (size < 0) || ((offset + size) > buffer.length)) {
-                        throw new IndexOutOfBoundsException();
-                    }
-                    while (size > 0) {
-                        int count = mInputStream.read(buffer, offset, size);
-                        if (count < 0) {
-                            throw new EOFException();
-                        }
-                        offset += count;
-                        size -= count;
                     }
                 }
             };
@@ -692,7 +672,7 @@ public class Mindroid extends Plugin {
                             int what = mInputStream.readInt();
                             int size = mInputStream.readInt();
                             byte[] data = new byte[size];
-                            readFully(data, 0, size);
+                            mInputStream.readFully(data, 0, size);
 
                             final Promise<Parcel> promise = mTransactions.get(transactionId);
                             if (promise != null) {
@@ -716,26 +696,6 @@ public class Mindroid extends Plugin {
 
                     if (DEBUG) {
                         Log.d(LOG_TAG, "Reader is terminating");
-                    }
-                }
-
-                private final void readFully(byte[] buffer, int offset, int size) throws IOException {
-                    if (size == 0) {
-                        return;
-                    }
-                    if (buffer == null) {
-                        throw new NullPointerException("buffer == null");
-                    }
-                    if ((offset < 0) || (size < 0) || ((offset + size) > buffer.length)) {
-                        throw new IndexOutOfBoundsException();
-                    }
-                    while (size > 0) {
-                        int count = mInputStream.read(buffer, offset, size);
-                        if (count < 0) {
-                            throw new EOFException();
-                        }
-                        offset += count;
-                        size -= count;
                     }
                 }
             };
