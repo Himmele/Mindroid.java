@@ -101,39 +101,40 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
-    public void detachBinder(Binder binder) {
+    public void detachBinder(long id) {
     }
 
     @Override
-    public synchronized void attachProxy(IBinder binder) {
-        int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
+    public synchronized void attachProxy(long proxyId, Binder.Proxy proxy) {
+        int nodeId = (int) ((proxy.getId() >> 32) & 0xFFFFFFFFL);
         if (!mProxies.containsKey(nodeId)) {
             mProxies.put(nodeId, new HashMap<>());
         }
-        mProxies.get(nodeId).put(binder.getId(), new WeakReference<>(binder));
+        mProxies.get(nodeId).put(proxyId, new WeakReference<>(proxy));
     }
 
     @Override
-    public synchronized void detachProxy(IBinder binder) {
-        int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
-        if (mProxies.containsKey(nodeId)) {
-            Map<Long, WeakReference<IBinder>> proxies = mProxies.get(nodeId);
-            proxies.remove(binder.getId());
-            if (proxies.isEmpty()) {
-                mProxies.remove(nodeId);
-                Client client = mClients.get(nodeId);
-                if (client != null) {
-                    client.shutdown();
-                    mClients.remove(nodeId);
-                }
-            }
-        } else {
-            Client client = mClients.get(nodeId);
-            if (client != null) {
-                client.shutdown();
-                mClients.remove(nodeId);
-            }
-        }
+    public synchronized void detachProxy(long proxyId, long binderId) {
+        // TODO: Lazy connection shutdown to clients without proxies.
+//        int nodeId = (int) ((binderId >> 32) & 0xFFFFFFFFL);
+//        if (mProxies.containsKey(nodeId)) {
+//            Map<Long, WeakReference<IBinder>> proxies = mProxies.get(nodeId);
+//            proxies.remove(proxyId);
+//            if (proxies.isEmpty()) {
+//                mProxies.remove(nodeId);
+//                Client client = mClients.get(nodeId);
+//                if (client != null) {
+//                    client.shutdown();
+//                    mClients.remove(nodeId);
+//                }
+//            }
+//        } else {
+//            Client client = mClients.get(nodeId);
+//            if (client != null) {
+//                client.shutdown();
+//                mClients.remove(nodeId);
+//            }
+//        }
     }
 
     @Override

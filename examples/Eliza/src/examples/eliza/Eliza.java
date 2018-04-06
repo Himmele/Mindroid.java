@@ -92,30 +92,34 @@ public class Eliza {
         mService = IEliza.Stub.asInterface(context.getSystemService(uri));
     }
 
-    public String ask1(String question) {
-        try {
-            return mService.ask1(question);
-        } catch (RemoteException e) {
-            throw new RuntimeException("System failure", e);
+    public String ask1(String question) throws RemoteException {
+        if (mService == null) {
+            throw new RemoteException();
         }
+
+        return mService.ask1(question);
     }
 
-    public Future<String> ask2(String question) {
-        try {
-            return mService.ask2(question);
-        } catch (RemoteException e) {
-            throw new RuntimeException("System failure", e);
+    public Future<String> ask2(String question) throws RemoteException {
+        if (mService == null) {
+            throw new RemoteException();
         }
+
+        return mService.ask2(question);
     }
 
-    public void ask3(String question, Listener listener) {
+    public void ask3(String question, Listener listener) throws RemoteException {
+        if (mService == null) {
+            throw new RemoteException();
+        }
+
         ListenerWrapper wrapper = new ListenerWrapper(listener);
         mListeners.add(wrapper);
         try {
             mService.ask3(question, wrapper);
         } catch (RemoteException e) {
             mListeners.remove(wrapper);
-            throw new RuntimeException("System failure", e);
+            throw e;
         }
     }
 }

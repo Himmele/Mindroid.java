@@ -21,7 +21,6 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,8 @@ public class Runtime {
     private final Map<String, WeakReference<Binder>> mBinderUris = new ConcurrentHashMap<>();
     private final Map<String, IBinder> mServices = new HashMap<>();
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
-    private final Set<Long> mIds = new HashSet<>();
+    private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
+    private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
     private Configuration mConfiguration;
 
     private Runtime(int nodeId, File configuration) {
@@ -144,25 +144,6 @@ public class Runtime {
         return id;
     }
 
-    public final Binder getBinder(long id) {
-        int nodeId = (int) ((id >> 32) & 0xFFFFFFFFL);
-        if (nodeId == 0 || mNodeId == nodeId) {
-            WeakReference<Binder> binder = mBinderIds.get(((long) mNodeId << 32) | id);
-            if (binder != null) {
-                return binder.get();
-            } else {
-                return null;
-            }
-        } else {
-            return null;
-        }
-    }
-
-    public final void detachBinder(long id) {
-        mIds.remove(id);
-        mBinderIds.remove(id);
-    }
-
     public final void attachBinder(URI uri, Binder binder) {
         if (uri == null || binder == null) {
             throw new NullPointerException();
@@ -179,15 +160,31 @@ public class Runtime {
         }
     }
 
-    public final void detachBinder(URI uri) {
+    public final void detachBinder(long id, URI uri) {
+        mIds.remove(id);
+        mBinderIds.remove(id);
         if (uri != null) {
-            WeakReference<Binder> binder = mBinderUris.remove(uri.toString());
+            mBinderUris.remove(uri.toString());
             Plugin plugin = mPlugins.get(uri.getScheme());
             if (plugin != null) {
-                plugin.detachBinder(binder.get());
+                plugin.detachBinder(id);
             }
         }
-    } 
+    }
+
+    public final Binder getBinder(long id) {
+        int nodeId = (int) ((id >> 32) & 0xFFFFFFFFL);
+        if (nodeId == 0 || mNodeId == nodeId) {
+            WeakReference<Binder> binder = mBinderIds.get(((long) mNodeId << 32) | id);
+            if (binder != null) {
+                return binder.get();
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
 
     public final IBinder getBinder(URI uri) {
         if (uri != null) {
@@ -328,17 +325,19 @@ public class Runtime {
         }
     }
 
-    public final void attachProxy(IBinder binder) {
-        Plugin plugin = mPlugins.get(binder.getUri().getScheme());
+    public final long attachProxy(Binder.Proxy proxy) {
+        long proxyId = mProxyIdGenerator.getAndIncrement();
+        Plugin plugin = mPlugins.get(proxy.getUri().getScheme());
         if (plugin != null) {
-            plugin.attachProxy(binder);
+            plugin.attachProxy(proxyId, proxy);
         }
+        return proxyId;
     }
 
-    public final void detachProxy(IBinder binder) {
-        Plugin plugin = mPlugins.get(binder.getUri().getScheme());
+    public final void detachProxy(long id, URI uri, long proxyId) {
+        Plugin plugin = mPlugins.get(uri.getScheme());
         if (plugin != null) {
-            plugin.detachProxy(binder);
+            plugin.detachProxy(proxyId, id);
         }
     }
 

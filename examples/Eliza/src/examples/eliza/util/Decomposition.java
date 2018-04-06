@@ -72,7 +72,7 @@ public class Decomposition {
     public void stepReassemblyRule() {
         int size = reassemblyList.size();
         if (memory) {
-            reassemblyIndex = (int)(Math.random() * size);
+            reassemblyIndex = ((int) (Math.random() * 1000)) % size;
         }
         reassemblyIndex++;
         if (reassemblyIndex >= size) {

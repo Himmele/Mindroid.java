@@ -20,6 +20,7 @@ import mindroid.app.Service;
 import mindroid.content.Intent;
 import mindroid.os.Bundle;
 import mindroid.os.IBinder;
+import mindroid.os.RemoteException;
 import mindroid.util.Log;
 
 public class You extends Service {
@@ -32,20 +33,28 @@ public class You extends Service {
 
         Eliza eliza = new Eliza(this, extras);
         Log.d(LOG_TAG, "You: Hello");
-        Log.d(LOG_TAG, "Eliza: " + eliza.ask1("Hello"));
+        try {
+            Log.d(LOG_TAG, "Eliza: " + eliza.ask1("Hello"));
 
-        Log.d(LOG_TAG, "You: Well...");
-        eliza.ask2("Well...").then(reply -> {
-             Log.d(LOG_TAG, "Eliza: " + reply);
+            Log.d(LOG_TAG, "You: Well...");
+            eliza.ask2("Well...").then(reply -> {
+                Log.d(LOG_TAG, "Eliza: " + reply);
 
-             Log.d(LOG_TAG, "You: What is 1 + 1?");
-             eliza.ask3("What is 1 + 1?", new Eliza.Listener() {
-                 @Override
-                 public void onReply(String reply) {
-                     Log.d(LOG_TAG, "Eliza: " + reply);
-                 }
-             });
-        });
+                Log.d(LOG_TAG, "You: What is 1 + 1?");
+                try {
+                    eliza.ask3("What is 1 + 1?", new Eliza.Listener() {
+                        @Override
+                        public void onReply(String reply) {
+                            Log.d(LOG_TAG, "Eliza: " + reply);
+                        }
+                    });
+                } catch (RemoteException e) {
+                    Log.e(LOG_TAG, "You: Cannot talk to Eliza");
+                }
+            });
+        } catch (RemoteException e) {
+            Log.e(LOG_TAG, "You: Cannot talk to Eliza");
+        }
     }
 
     @Override

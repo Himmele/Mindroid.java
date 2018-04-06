@@ -38,9 +38,9 @@ public abstract class Plugin {
     public abstract void stop();
 
     public abstract void attachBinder(Binder binder);
-    public abstract void detachBinder(Binder binder);
-    public abstract void attachProxy(IBinder binder);
-    public abstract void detachProxy(IBinder binder);
+    public abstract void detachBinder(long id);
+    public abstract void attachProxy(long proxyId, Binder.Proxy proxy);
+    public abstract void detachProxy(long proxyId, long binderId);
 
     public abstract Binder getStub(Binder binder);
     public abstract IInterface getProxy(IBinder binder);

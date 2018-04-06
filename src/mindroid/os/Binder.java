@@ -88,8 +88,7 @@ public class Binder implements IBinder {
     @Override
     protected void finalize() throws Throwable {
         try {
-            mRuntime.detachBinder(mUri);
-            mRuntime.detachBinder(mId);
+            mRuntime.detachBinder(mId, mUri);
         } finally {
             super.finalize();
         }
@@ -410,6 +409,7 @@ public class Binder implements IBinder {
     public static final class Proxy implements IBinder {
         private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
         private final Runtime mRuntime;
+        private final long mProxyId;
         private final long mId;
         private String mDescriptor;
         private URI mUri;
@@ -449,13 +449,13 @@ public class Binder implements IBinder {
                 throw new IllegalArgumentException("Invalid URI: " + uri.toString());
             }
             mUri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
-            mRuntime.attachProxy(this);
+            mProxyId = mRuntime.attachProxy(this);
         }
 
         @Override
         protected void finalize() throws Throwable {
             try {
-                mRuntime.detachProxy(this);
+                mRuntime.detachProxy(mId, mUri, mProxyId);
             } finally {
                 super.finalize();
             }
