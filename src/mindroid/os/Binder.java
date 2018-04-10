@@ -115,6 +115,9 @@ public class Binder implements IBinder {
 
         try {
             URI uri = new URI(mDescriptor);
+            if (uri.getScheme() == null) {
+                throw new URISyntaxException(mDescriptor, "Scheme must not be null");
+            }
             int nodeId = (int) ((mId >> 32) & 0xFFFFFFFFL);
             int id = (int) (mId & 0xFFFFFFFFL);
             mUri = new URI(uri.getScheme(), String.valueOf(nodeId) + "." + String.valueOf(id), null, null, null);

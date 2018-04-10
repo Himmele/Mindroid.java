@@ -148,6 +148,9 @@ public class Runtime {
         if (uri == null || binder == null) {
             throw new NullPointerException();
         }
+        if (binder.getUri() == null) {
+            throw new IllegalArgumentException("Binder URI must not be null");
+        }
         if (!mBinderUris.containsKey(uri.toString())) {
             mBinderUris.put(uri.toString(), new WeakReference<Binder>(binder));
 
@@ -246,8 +249,11 @@ public class Runtime {
         if (uri == null || service == null) {
             throw new NullPointerException();
         }
-        if (!uri.getScheme().equals(service.getUri().getScheme())) {
-            throw new IllegalStateException("Binder scheme mismatch: " + uri + " != " + service.getUri());
+        if (service.getUri() == null) {
+            throw new IllegalArgumentException("Service URI must not be null");
+        }
+        if (uri.getScheme() == null || !uri.getScheme().equals(service.getUri().getScheme())) {
+            throw new IllegalArgumentException("Binder scheme mismatch: " + uri + " != " + service.getUri());
         }
         if (!mServices.containsKey(uri.toString())) {
             if (service instanceof Binder) {
