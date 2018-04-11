@@ -632,6 +632,8 @@ public interface Future<T> {
      */
     public Future<T> completeOnTimeout(T value, long timeout);
 
+    public Future<T> await(long delay);
+
     /**
      * Returns a {@link Promise} maintaining the same
      * completion properties as this Future. If this Future is already a

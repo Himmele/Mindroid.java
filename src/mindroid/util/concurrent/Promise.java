@@ -955,6 +955,21 @@ public class Promise<T> implements Future<T> {
         return this;
     }
 
+    @Override
+    public Promise<T> await(long delay) {
+        if (delay < 0) {
+            throw new IllegalArgumentException("Delay < 0");
+        }
+        Promise<T> p = new Promise<>(mExecutor);
+        Action<?, ?> a = new DelayAction<>(this, p, delay);
+        if (mResult != null) {
+            a.tryRun();
+        } else {
+            addAction(a);
+        }
+        return p;
+    }
+
     private static abstract class Action<T, U> implements Runnable {
         protected Executor mExecutor;
         protected Promise<T> mSupplier;
@@ -1332,6 +1347,36 @@ public class Promise<T> implements Future<T> {
             }
 
             mConsumer.onComplete();
+        }
+    }
+
+    private static final class DelayAction<T> extends Action<T, T> {
+        private long mDelay;
+
+        DelayAction(Promise<T> supplier, Promise<T> consumer, long delay) {
+            super(null, supplier, consumer);
+            mDelay = delay;
+        }
+
+        @Override
+        final void tryRun() {
+            if (claim()) {
+                run();
+            }
+        }
+
+        @Override
+        public final void run() {
+            if (!(mSupplier.mResult instanceof Promise.Error)) {
+                try {
+                    @SuppressWarnings("unchecked") T result = (T) mSupplier.mResult;
+                    mConsumer.completeOnTimeout(result != NULL ? result : null, mDelay);
+                } catch (Throwable e) {
+                    mConsumer.setResult(toCompletionException(e));
+                }
+            } else {
+                mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
+            }
         }
     }
 
