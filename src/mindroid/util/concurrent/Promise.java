@@ -942,7 +942,7 @@ public class Promise<T> implements Future<T> {
     @Override
     public Promise<T> orTimeout(long timeout) {
         if (mResult == null) {
-            then(Timeout.add(new Timeout.Exception(this), timeout));
+            return then(Timeout.add(new Timeout.Exception(this), timeout));
         }
         return this;
     }
@@ -950,7 +950,7 @@ public class Promise<T> implements Future<T> {
     @Override
     public Promise<T> completeOnTimeout(T value, long timeout) {
         if (mResult == null) {
-            then(Timeout.add(new Timeout.Completion<T>(this, value), timeout));
+            return then(Timeout.add(new Timeout.Completion<T>(this, value), timeout));
         }
         return this;
     }

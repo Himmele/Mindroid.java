@@ -168,16 +168,26 @@ public interface IServiceManager extends IInterface {
 
             @Override
             public ComponentName startSystemService(Intent intent) throws RemoteException {
+                final long timeout = intent.getLongExtra("timeout", -1);
                 Promise<ComponentName> promise = new Promise<>();
                 mRemote.transact(MSG_START_SYSTEM_SERVICE, 0, intent, null, promise, 0);
-                return Binder.get(promise);
+                if (timeout < 0) {
+                    return Binder.get(promise);
+                } else {
+                    return Binder.get(promise, timeout);
+                }
             }
 
             @Override
             public boolean stopSystemService(Intent intent) throws RemoteException {
+                final long timeout = intent.getLongExtra("timeout", -1);
                 Promise<Boolean> promise = new Promise<>();
                 mRemote.transact(MSG_STOP_SYSTEM_SERVICE, 0, intent, null, promise, 0);
-                return Binder.get(promise);
+                if (timeout < 0) {
+                    return Binder.get(promise);
+                } else {
+                    return Binder.get(promise, timeout);
+                }
             }
         }
 
