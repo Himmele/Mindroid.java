@@ -632,7 +632,7 @@ public interface Future<T> {
      */
     public Future<T> completeOnTimeout(T value, long timeout);
 
-    public Future<T> await(long delay);
+    public Future<T> delay(long delay);
 
     /**
      * Returns a {@link Promise} maintaining the same

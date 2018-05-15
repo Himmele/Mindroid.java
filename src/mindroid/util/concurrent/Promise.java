@@ -956,7 +956,7 @@ public class Promise<T> implements Future<T> {
     }
 
     @Override
-    public Promise<T> await(long delay) {
+    public Promise<T> delay(long delay) {
         if (delay < 0) {
             throw new IllegalArgumentException("Delay < 0");
         }
