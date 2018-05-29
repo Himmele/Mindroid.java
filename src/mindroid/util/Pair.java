@@ -49,7 +49,8 @@ public class Pair<F, S> {
             return false;
         }
         Pair<?, ?> p = (Pair<?, ?>) o;
-        return first.equals(p.first) && second.equals(p.second);
+        return ((first == p.first) || (first != null && first.equals(p.first)))
+                && ((second == p.second) || (second != null && second.equals(p.second)));
     }
 
     /**
