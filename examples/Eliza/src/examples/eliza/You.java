@@ -51,6 +51,8 @@ public class You extends Service {
                 } catch (RemoteException e) {
                     Log.e(LOG_TAG, "You: Cannot talk to Eliza");
                 }
+            }).catchException(exception -> {
+                Log.e(LOG_TAG, "You: Cannot talk to Eliza");
             });
         } catch (RemoteException e) {
             Log.e(LOG_TAG, "You: Cannot talk to Eliza");
