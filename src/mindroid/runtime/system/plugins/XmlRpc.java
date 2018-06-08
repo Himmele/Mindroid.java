@@ -18,7 +18,6 @@ package mindroid.runtime.system.plugins;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,6 +51,7 @@ import mindroid.util.concurrent.Promise;
 
 public class XmlRpc extends Plugin {
     private static final String LOG_TAG = "XmlRpc";
+    private static final long BINDER_TRANSACTION_TIMEOUT = 10000;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
     private Configuration.Plugin mConfiguration;
@@ -583,7 +583,16 @@ public class XmlRpc extends Plugin {
                 result = null;
             } else {
                 result = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
-                mTransactions.put(transactionId, result);
+                final Promise<Parcel> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
+                promise.orTimeout(BINDER_TRANSACTION_TIMEOUT).then((value, exception) -> {
+                    mTransactions.remove(transactionId);
+                    if (exception == null) {
+                        result.complete(value);
+                    } else {
+                        result.completeWith(exception);
+                    }
+                });
+                mTransactions.put(transactionId, promise);
             }
             mConnection.mWriter.write(Message.newMessage(binder.getUri().toString(), transactionId, what, data.toByteArray()));
             return result;
@@ -692,12 +701,12 @@ public class XmlRpc extends Plugin {
 
                             final Promise<Parcel> promise = mTransactions.get(transactionId);
                             if (promise != null) {
+                                mTransactions.remove(transactionId);
                                 if (type == Message.MESSAGE_TYPE_TRANSACTION) {
                                     promise.complete(Parcel.obtain(data).asInput());
                                 } else {
                                     promise.completeWith(new RemoteException());
                                 }
-                                mTransactions.remove(transactionId);
                             } else {
                                 Log.e(LOG_TAG, "Invalid transaction id: " + transactionId);
                             }
