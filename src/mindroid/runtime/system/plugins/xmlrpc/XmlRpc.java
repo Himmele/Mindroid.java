@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mindroid.runtime.system.plugins;
+package mindroid.runtime.system.plugins.xmlrpc;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -51,7 +51,8 @@ import mindroid.util.concurrent.Promise;
 
 public class XmlRpc extends Plugin {
     private static final String LOG_TAG = "XmlRpc";
-    private static final long BINDER_TRANSACTION_TIMEOUT = 10000;
+    private static final String TIMEOUT = "timeout";
+    private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
     private Configuration.Plugin mConfiguration;
@@ -582,15 +583,10 @@ public class XmlRpc extends Plugin {
             if (flags == Binder.FLAG_ONEWAY) {
                 result = null;
             } else {
-                result = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
                 final Promise<Parcel> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
-                promise.orTimeout(BINDER_TRANSACTION_TIMEOUT).then((value, exception) -> {
+                result = promise.orTimeout(data.getLongExtra(TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT))
+                .then((value, exception) -> {
                     mTransactions.remove(transactionId);
-                    if (exception == null) {
-                        result.complete(value);
-                    } else {
-                        result.completeWith(exception);
-                    }
                 });
                 mTransactions.put(transactionId, promise);
             }

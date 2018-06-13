@@ -20,6 +20,7 @@ package mindroid.os;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import mindroid.io.ByteArrayInputStream;
 import mindroid.io.ByteArrayOutputStream;
 import mindroid.io.DataInputStream;
@@ -31,6 +32,7 @@ public final class Parcel {
     private ByteArrayInputStream mInputStream;
     private DataOutputStream mDataOutputStream;
     private DataInputStream mDataInputStream;
+    private Bundle mExtras;
 
     private Parcel() {
         mOutputStream = new ByteArrayOutputStream();
@@ -411,5 +413,796 @@ public final class Parcel {
 
     public static final IBinder fromUri(URI uri) throws RemoteException {
         return Runtime.getRuntime().getBinder(uri);
+    }
+    
+    /**
+     * Returns true if an extra value is associated with the given name.
+     * 
+     * @param name the extra's name
+     * @return true if the given extra is present.
+     */
+    public boolean hasExtra(String name) {
+        return mExtras != null && mExtras.containsKey(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, boolean)
+     */
+    public boolean getBooleanExtra(String name, boolean defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getBoolean(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, byte)
+     */
+    public byte getByteExtra(String name, byte defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getByte(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, short)
+     */
+    public short getShortExtra(String name, short defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getShort(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, char)
+     */
+    public char getCharExtra(String name, char defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getChar(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, int)
+     */
+    public int getIntExtra(String name, int defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getInt(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, long)
+     */
+    public long getLongExtra(String name, long defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getLong(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra(), or the default value if
+     * no such item is present
+     * 
+     * @see #putExtra(String, float)
+     */
+    public float getFloatExtra(String name, float defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getFloat(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * @param defaultValue the value to be returned if no value of the desired type is stored with
+     * the given name.
+     * 
+     * @return the value of an item that previously added with putExtra() or the default value if
+     * none was found.
+     * 
+     * @see #putExtra(String, double)
+     */
+    public double getDoubleExtra(String name, double defaultValue) {
+        return mExtras == null ? defaultValue : mExtras.getDouble(name, defaultValue);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no String value
+     * was found.
+     * 
+     * @see #putExtra(String, String)
+     */
+    public String getStringExtra(String name) {
+        return mExtras == null ? null : mExtras.getString(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no boolean
+     * array value was found.
+     * 
+     * @see #putExtra(String, boolean[])
+     */
+    public boolean[] getBooleanArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getBooleanArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no byte array
+     * value was found.
+     * 
+     * @see #putExtra(String, byte[])
+     */
+    public byte[] getByteArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getByteArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no short array
+     * value was found.
+     * 
+     * @see #putExtra(String, short[])
+     */
+    public short[] getShortArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getShortArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no char array
+     * value was found.
+     * 
+     * @see #putExtra(String, char[])
+     */
+    public char[] getCharArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getCharArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no int array
+     * value was found.
+     * 
+     * @see #putExtra(String, int[])
+     */
+    public int[] getIntArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getIntArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no long array
+     * value was found.
+     * 
+     * @see #putExtra(String, long[])
+     */
+    public long[] getLongArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getLongArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no float array
+     * value was found.
+     * 
+     * @see #putExtra(String, float[])
+     */
+    public float[] getFloatArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getFloatArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no double array
+     * value was found.
+     * 
+     * @see #putExtra(String, double[])
+     */
+    public double[] getDoubleArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getDoubleArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no String array
+     * value was found.
+     * 
+     * @see #putExtra(String, String[])
+     */
+    public String[] getStringArrayExtra(String name) {
+        return mExtras == null ? null : mExtras.getStringArray(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no
+     * ArrayList<Integer> value was found.
+     * 
+     * @see #putIntegerArrayListExtra(String, ArrayList)
+     */
+    public ArrayList<Integer> getIntegerArrayListExtra(String name) {
+        return mExtras == null ? null : mExtras.getIntegerArrayList(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no
+     * ArrayList<String> value was found.
+     * 
+     * @see #putStringArrayListExtra(String, ArrayList)
+     */
+    public ArrayList<String> getStringArrayListExtra(String name) {
+        return mExtras == null ? null : mExtras.getStringArrayList(name);
+    }
+
+    /**
+     * Retrieve extended data from the parcel.
+     * 
+     * @param name The name of the desired item.
+     * 
+     * @return the value of an item that previously added with putExtra() or null if no Bundle value
+     * was found.
+     * 
+     * @see #putExtra(String, Bundle)
+     */
+    public Bundle getBundleExtra(String name) {
+        return mExtras == null ? null : mExtras.getBundle(name);
+    }
+
+    /**
+     * Retrieves a map of extended data from the parcel.
+     * 
+     * @return the map of all extras previously added with putExtra(), or null if none have been
+     * added.
+     */
+    public Bundle getExtras() {
+        return (mExtras != null) ? new Bundle(mExtras) : null;
+    }
+    
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The boolean data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getBooleanExtra(String, boolean)
+     */
+    public Parcel putExtra(String name, boolean value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putBoolean(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The byte data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getByteExtra(String, byte)
+     */
+    public Parcel putExtra(String name, byte value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putByte(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The char data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getCharExtra(String, char)
+     */
+    public Parcel putExtra(String name, char value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putChar(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The short data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getShortExtra(String, short)
+     */
+    public Parcel putExtra(String name, short value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putShort(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The integer data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getIntExtra(String, int)
+     */
+    public Parcel putExtra(String name, int value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putInt(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The long data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getLongExtra(String, long)
+     */
+    public Parcel putExtra(String name, long value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putLong(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The float data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getFloatExtra(String, float)
+     */
+    public Parcel putExtra(String name, float value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putFloat(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The double data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getDoubleExtra(String, double)
+     */
+    public Parcel putExtra(String name, double value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putDouble(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The String data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getStringExtra(String)
+     */
+    public Parcel putExtra(String name, String value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putString(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The boolean array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getBooleanArrayExtra(String)
+     */
+    public Parcel putExtra(String name, boolean[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putBooleanArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The byte array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getByteArrayExtra(String)
+     */
+    public Parcel putExtra(String name, byte[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putByteArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The short array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getShortArrayExtra(String)
+     */
+    public Parcel putExtra(String name, short[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putShortArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The char array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getCharArrayExtra(String)
+     */
+    public Parcel putExtra(String name, char[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putCharArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The int array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getIntArrayExtra(String)
+     */
+    public Parcel putExtra(String name, int[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putIntArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The byte array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getLongArrayExtra(String)
+     */
+    public Parcel putExtra(String name, long[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putLongArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The float array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getFloatArrayExtra(String)
+     */
+    public Parcel putExtra(String name, float[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putFloatArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The double array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getDoubleArrayExtra(String)
+     */
+    public Parcel putExtra(String name, double[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putDoubleArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The String array data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getStringArrayExtra(String)
+     */
+    public Parcel putExtra(String name, String[] value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putStringArray(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The ArrayList<Integer> data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getIntegerArrayListExtra(String)
+     */
+    public Parcel putIntegerArrayListExtra(String name, ArrayList<Integer> value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putIntegerArrayList(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel.
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The ArrayList<String> data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getStringArrayListExtra(String)
+     */
+    public Parcel putStringArrayListExtra(String name, ArrayList<String> value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putStringArrayList(name, value);
+        return this;
+    }
+
+    /**
+     * Add extended data to the parcel. The name must include a package prefix, for example the app
+     * com.android.contacts would use names like "com.android.contacts.ShowAll".
+     * 
+     * @param name The name of the extra data, with package prefix.
+     * @param value The Bundle data value.
+     * 
+     * @return Returns the same Parcel object, for chaining multiple calls into a single statement.
+     * 
+     * @see #putExtras
+     * @see #removeExtra
+     * @see #getBundleExtra(String)
+     */
+    public Parcel putExtra(String name, Bundle value) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putBundle(name, value);
+        return this;
+    }
+
+    /**
+     * Add a set of extended data to the parcel.
+     * 
+     * @param extras The Bundle of extras to add to this parcel.
+     * 
+     * @see #putExtra
+     * @see #removeExtra
+     */
+    public Parcel putExtras(Bundle extras) {
+        if (mExtras == null) {
+            mExtras = new Bundle();
+        }
+        mExtras.putAll(extras);
+        return this;
+    }
+
+    /**
+     * Completely replace the extras in the Parcel with the given Bundle of extras.
+     * 
+     * @param extras The new set of extras in the Parcel, or null to erase all extras.
+     */
+    public Parcel replaceExtras(Bundle extras) {
+        mExtras = extras != null ? new Bundle(extras) : null;
+        return this;
+    }
+
+    /**
+     * Remove extended data from the parcel.
+     * 
+     * @see #putExtra
+     */
+    public void removeExtra(String name) {
+        if (mExtras != null) {
+            mExtras.remove(name);
+            if (mExtras.size() == 0) {
+                mExtras = null;
+            }
+        }
     }
 }
