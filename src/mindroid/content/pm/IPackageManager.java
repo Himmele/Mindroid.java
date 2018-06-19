@@ -78,16 +78,6 @@ public interface IPackageManager extends IInterface {
                 ((Promise<String[]>) result).complete(permissions);
                 break;
             }
-            case MSG_ADD_LISTENER: {
-                IBinder binder = data.getBinder("binder");
-                addListener(IPackageManagerListener.Stub.asInterface(binder));
-                break;
-            }
-            case MSG_REMOVE_LISTENER: {
-                IBinder binder = data.getBinder("binder");
-                removeListener(IPackageManagerListener.Stub.asInterface(binder));
-                break;
-            }
             default:
                 super.onTransact(what, num, obj, data, result);
                 break;
@@ -163,20 +153,6 @@ public interface IPackageManager extends IInterface {
                 mRemote.transact(MSG_GET_PERMISSIONS, pid, null, null, promise, 0);
                 return Binder.get(promise);
             }
-
-            @Override
-            public void addListener(IPackageManagerListener listener) throws RemoteException {
-                Bundle data = new Bundle();
-                data.putBinder("binder", listener.asBinder());
-                mRemote.transact(MSG_ADD_LISTENER, 0, null, data, null, FLAG_ONEWAY);
-            }
-
-            @Override
-            public void removeListener(IPackageManagerListener listener) throws RemoteException {
-                Bundle data = new Bundle();
-                data.putBinder("binder", listener.asBinder());
-                mRemote.transact(MSG_REMOVE_LISTENER, 0, null, data, null, FLAG_ONEWAY);
-            }
         }
 
         static final int MSG_GET_INSTALLED_PACKAGES = 1;
@@ -185,8 +161,6 @@ public interface IPackageManager extends IInterface {
         static final int MSG_RESOLVE_SERVICE = 4;
         static final int MSG_CHECK_PERMISSION = 5;
         static final int MSG_GET_PERMISSIONS = 6;
-        static final int MSG_ADD_LISTENER = 7;
-        static final int MSG_REMOVE_LISTENER = 8;
     }
 
     static class Proxy implements IPackageManager {
@@ -280,24 +254,6 @@ public interface IPackageManager extends IInterface {
                 return mProxy.getPermissions(pid);
             }
         }
-
-        @Override
-        public void addListener(IPackageManagerListener listener) throws RemoteException {
-            if (mStub != null && mStub.isCurrentThread()) {
-                mStub.addListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
-            } else {
-                mProxy.addListener(listener);
-            }
-        }
-
-        @Override
-        public void removeListener(IPackageManagerListener listener) throws RemoteException {
-            if (mStub != null && mStub.isCurrentThread()) {
-                mStub.removeListener(IPackageManagerListener.Stub.asInterface(listener.asBinder()));
-            } else {
-                mProxy.removeListener(listener);
-            }
-        }
     }
 
     public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException;
@@ -306,6 +262,4 @@ public interface IPackageManager extends IInterface {
     public ResolveInfo resolveService(Intent intent, int flags) throws RemoteException;
     public int checkPermission(String permissionName, int pid) throws RemoteException;
     public String[] getPermissions(int pid) throws RemoteException;
-    public void addListener(IPackageManagerListener listener) throws RemoteException;
-    public void removeListener(IPackageManagerListener listener) throws RemoteException;
 }

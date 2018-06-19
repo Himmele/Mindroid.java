@@ -17,7 +17,6 @@
 
 package mindroid.content.pm;
 
-import java.util.ArrayList;
 import java.util.List;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -32,7 +31,9 @@ import mindroid.os.ServiceManager;
  */
 public class PackageManager {
     private IPackageManager mService;
-    private ArrayList<PackageManagerListener> mListeners = new ArrayList<>();
+
+    public static final String ACTION_START_APPLICATIONS = "mindroid.content.pm.START_APPLICATIONS";
+    public static final String ACTION_SHUTDOWN_APPLICATIONS = "mindroid.content.pm.SHUTDOWN_APPLICATIONS";
 
     /**
      * {@link PackageInfo} flag: return information about services in the package in
@@ -170,30 +171,6 @@ public class PackageManager {
     public String[] getPermissions(int pid) {
         try {
             return mService.getPermissions(pid);
-        } catch (RemoteException e) {
-            throw new RuntimeException("System failure", e);
-        }
-    }
-
-    public void addListener(PackageManagerListener listener) throws RemoteException {
-        try {
-            mService.addListener(listener.asInterface());
-        } catch (RemoteException e) {
-            throw new RuntimeException("System failure", e);
-        }
-        synchronized (mListeners) {
-            if (!mListeners.contains(listener)) {
-                mListeners.add(listener);
-            }
-        }
-    }
-
-    public void removeListener(PackageManagerListener listener) throws RemoteException {
-        synchronized (mListeners) {
-            mListeners.remove(listener);
-        }
-        try {
-            mService.removeListener(listener.asInterface());
         } catch (RemoteException e) {
             throw new RuntimeException("System failure", e);
         }

@@ -38,6 +38,7 @@ public abstract class Context {
     public static final URI PACKAGE_MANAGER = URI.create("mindroid://packageManager");
     public static final URI PACKAGE_INSTALLER = URI.create("mindroid://packageInstaller");
     public static final URI LOGGER_SERVICE = URI.create("mindroid://logger");
+    public static final URI CONSOLE_SERVICE = URI.create("mindroid://console");
     public static final URI CLOCK_SERVICE = URI.create("mindroid://clockService");
     public static final URI ALARM_MANAGER = URI.create("mindroid://alarmManager");
     public static final URI POWER_MANAGER = URI.create("mindroid://powerManager");

@@ -32,17 +32,9 @@ public class PackageInstaller {
         mService = IPackageInstaller.Stub.asInterface(context.getSystemService(Context.PACKAGE_INSTALLER));
     }
 
-    public void install(File app) {
+    public void install(File file) {
         try {
-            mService.install(app);
-        } catch (RemoteException e) {
-            throw new RuntimeException("System failure", e);
-        }
-    }
-
-    public void install(String packageName, String[] classNames) {
-        try {
-            mService.install(packageName, classNames);
+            mService.install(file);
         } catch (RemoteException e) {
             throw new RuntimeException("System failure", e);
         }

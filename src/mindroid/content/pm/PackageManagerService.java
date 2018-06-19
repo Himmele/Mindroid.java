@@ -40,9 +40,8 @@ import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
 import mindroid.os.Environment;
-import mindroid.os.Handler;
 import mindroid.os.IBinder;
-import mindroid.os.Message;
+import mindroid.os.IServiceManager;
 import mindroid.os.Process;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
@@ -55,15 +54,10 @@ public class PackageManagerService extends Service {
     private static final String USES_LIBRARY_TAG = "uses-library";
     private static final String USES_PERMISSION_TAG = "uses-permission";
     private static final String SERVICE_TAG = "service";
-    private static final int MSG_ADD_PACKAGE = 1;
-    private static final int MSG_BOOT_COMPLETED = 2;
     private static final String UTF_8 = "UTF-8";
-    private Thread mThread = null;
     private Map<String, PackageInfo> mPackages = new LinkedHashMap<>();
     private Map<ComponentName, ComponentInfo> mComponents = new HashMap<>();
     private Map<String, Set<String>> mPermissions = new HashMap<>();
-    private List<IPackageManagerListener> mListeners = new ArrayList<>();
-    private boolean mBootCompleted = false;
 
     @Override
     public void onCreate() {
@@ -73,10 +67,55 @@ public class PackageManagerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mThread == null) {
-            mThread = new Thread(mScanner, LOG_TAG);
-            mThread.start();
+        String action = intent.getAction();
+        if (PackageManager.ACTION_START_APPLICATIONS.equals(action)) {
+            install(Environment.getAppsDirectory());
+            List packages = getInstalledPackages(PackageManager.GET_SERVICES);
+            if (packages != null) {
+                IServiceManager serviceManager = ServiceManager.getServiceManager();
+                for (Iterator itr = packages.iterator(); itr.hasNext();) {
+                    PackageInfo p = (PackageInfo) itr.next();
+                    if (p.services != null) {
+                        ServiceInfo[] services = p.services;
+                        for (int i = 0; i < services.length; i++) {
+                            ServiceInfo serviceInfo = services[i];
+                            if (serviceInfo.isEnabled() && serviceInfo.hasFlag(ServiceInfo.FLAG_AUTO_START)) {
+                                Intent service = new Intent();
+                                service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
+                                try {
+                                    serviceManager.startService(service);
+                                } catch (RemoteException e) {
+                                    throw new RuntimeException("System failure");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (PackageManager.ACTION_SHUTDOWN_APPLICATIONS.equals(action)) {
+            List packages = getInstalledPackages(PackageManager.GET_SERVICES);
+            if (packages != null) {
+                IServiceManager serviceManager = ServiceManager.getServiceManager();
+                for (Iterator itr = packages.iterator(); itr.hasNext();) {
+                    PackageInfo p = (PackageInfo) itr.next();
+                    if (p.services != null) {
+                        ServiceInfo[] services = p.services;
+                        for (int i = 0; i < services.length; i++) {
+                            ServiceInfo serviceInfo = services[i];
+                            if (serviceInfo.isEnabled()) {
+                                Intent service = new Intent();
+                                service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
+                                try {
+                                    serviceManager.stopService(service);
+                                } catch (RemoteException ignore) {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
         return 0;
     }
 
@@ -94,18 +133,7 @@ public class PackageManagerService extends Service {
     private final IPackageManager.Stub mManager = new IPackageManager.Stub() {
         @Override
         public List<PackageInfo> getInstalledPackages(int flags) throws RemoteException {
-            if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
-                ArrayList<PackageInfo> packages = new ArrayList<>();
-                Iterator<Map.Entry<String, PackageInfo>> itr = mPackages.entrySet().iterator();
-                while (itr.hasNext()) {
-                    Map.Entry<String, PackageInfo> entry = itr.next();
-                    PackageInfo p = entry.getValue();
-                    packages.add(p);
-                }
-                return packages.isEmpty() ? null : packages;
-            } else {
-                return null;
-            }
+            return PackageManagerService.this.getInstalledPackages(flags);
         }
 
         @Override
@@ -164,31 +192,57 @@ public class PackageManagerService extends Service {
             }
             return new String[] {};
         }
-
-        @Override
-        public void addListener(IPackageManagerListener listener) {
-            if (!mListeners.contains(listener)) {
-                mListeners.add(listener);
-
-                if (mBootCompleted) {
-                    try {
-                        listener.onBootCompleted();
-                    } catch (RemoteException e) {
-                        removeListener(listener);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void removeListener(IPackageManagerListener listener) {
-            mListeners.remove(listener);
-        }
     };
 
     private final IPackageInstaller.Stub mInstaller = new IPackageInstaller.Stub() {
         @Override
-        public void install(File app) throws RemoteException {
+        public void install(File file) throws RemoteException {
+            PackageManagerService.this.install(file);
+        }
+
+        @Override
+        public void uninstall(String packageName) throws RemoteException {
+            removePackage(packageName);
+        }
+    };
+
+    private List<PackageInfo> getInstalledPackages(int flags) {
+        if ((flags & PackageManager.GET_SERVICES) == PackageManager.GET_SERVICES) {
+            ArrayList<PackageInfo> packages = new ArrayList<>();
+            Iterator<Map.Entry<String, PackageInfo>> itr = mPackages.entrySet().iterator();
+            while (itr.hasNext()) {
+                Map.Entry<String, PackageInfo> entry = itr.next();
+                PackageInfo p = entry.getValue();
+                packages.add(p);
+            }
+            return packages.isEmpty() ? null : packages;
+        } else {
+            return null;
+        }
+    }
+
+    private void install(File file) {
+        if (file.isDirectory()) {
+            final File directiry = file;
+            File[] apps = directiry.listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return name.toLowerCase().endsWith(".jar");
+                }
+            });
+
+            if (apps != null) {
+                Arrays.sort(apps);
+                for (int i = 0; i < apps.length; i++) {
+                    PackageInfo packageInfo = loadPackage(apps[i]);
+                    if (packageInfo != null) {
+                        if (!mPackages.containsKey(packageInfo.packageName)) {
+                            addPackage(packageInfo);
+                        }
+                    }
+                }
+            }
+        } else {
+            final File app = file;
             if (app.exists()) {
                 PackageInfo packageInfo = loadPackage(app);
                 if (packageInfo != null) {
@@ -198,56 +252,7 @@ public class PackageManagerService extends Service {
                 }
             }
         }
-
-        @Override
-        public void install(String packageName, String[] classNames) throws RemoteException {
-            PackageInfo packageInfo = new PackageInfo();
-            ApplicationInfo applicationInfo = new ApplicationInfo();
-
-            packageInfo.packageName = packageName;
-            packageInfo.applicationInfo = applicationInfo;
-            applicationInfo.packageName = packageInfo.packageName;
-            applicationInfo.processName = applicationInfo.packageName;
-            applicationInfo.enabled = true;
-            List<ServiceInfo> services = new ArrayList<>();
-            for (String className : classNames) {
-                ServiceInfo serviceInfo = new ServiceInfo();
-                serviceInfo.packageName = applicationInfo.packageName;
-                serviceInfo.name = className;
-                serviceInfo.applicationInfo = applicationInfo;
-                serviceInfo.processName = applicationInfo.processName;
-                serviceInfo.enabled = true;
-                services.add(serviceInfo);
-            }
-            packageInfo.services = (ServiceInfo[]) services.toArray(new ServiceInfo[services.size()]);
-
-            if (!mPackages.containsKey(packageName)) {
-                addPackage(packageInfo);
-            }
-        }
-
-        @Override
-        public void uninstall(String packageName) throws RemoteException {
-            removePackage(packageName);
-        }
-    };
-
-    private Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-            case MSG_ADD_PACKAGE:
-                PackageInfo packageInfo = (PackageInfo) msg.obj;
-                addPackage(packageInfo);
-                break;
-            case MSG_BOOT_COMPLETED:
-                onBootCompleted();
-                break;
-            default:
-                super.handleMessage(msg);
-            }
-        }
-    };
+    }
 
     private void addPackage(PackageInfo packageInfo) {
         mPackages.put(packageInfo.packageName, packageInfo);
@@ -286,48 +291,6 @@ public class PackageManagerService extends Service {
             }
         }
     }
-
-    private void bootCompleted() {
-        Message msg = mHandler.obtainMessage(MSG_BOOT_COMPLETED);
-        msg.sendToTarget();
-    }
-
-    private void onBootCompleted() {
-        mBootCompleted = true;
-
-        for (Iterator<IPackageManagerListener> itr = mListeners.iterator(); itr.hasNext();) {
-            IPackageManagerListener listener = itr.next();
-            try {
-                listener.onBootCompleted();
-            } catch (RemoteException e) {
-                itr.remove();
-            }
-        }
-    }
-
-    private Runnable mScanner = new Runnable() {
-        @Override
-        public void run() {
-            File[] apps = Environment.getAppsDirectory().listFiles(new FilenameFilter() {
-                public boolean accept(File dir, String name) {
-                    return name.toLowerCase().endsWith(".jar");
-                }
-            });
-
-            if (apps != null) {
-                Arrays.sort(apps);
-                for (int i = 0; i < apps.length; i++) {
-                    PackageInfo packageInfo = loadPackage(apps[i]);
-                    if (packageInfo != null) {
-                        mHandler.obtainMessage(MSG_ADD_PACKAGE, packageInfo).sendToTarget();
-                    }
-                }
-            }
-
-            bootCompleted();
-            mThread = null;
-        }
-    };
 
     private static PackageInfo loadPackage(File app) {
         ZipInputStream inputStream = null;

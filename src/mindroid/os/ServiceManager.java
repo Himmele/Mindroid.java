@@ -240,25 +240,25 @@ public final class ServiceManager {
         }
 
         @Override
-        public ComponentName startService(Intent intent) {
+        public Promise<ComponentName> startService(Intent intent) {
             intent.putExtra(SYSTEM_SERVICE, false);
             return ServiceManager.this.startService(intent);
         }
 
         @Override
-        public boolean stopService(Intent service) {
+        public Promise<Boolean> stopService(Intent service) {
             if (mServices.containsKey(service.getComponent())) {
                 final ServiceRecord serviceRecord = mServices.get(service.getComponent());
                 final ProcessRecord processRecord = serviceRecord.processRecord;
                 final IProcess process = processRecord.process;
 
                 if (!serviceRecord.alive) {
-                    return false;
+                    return new Promise<>(false);
                 }
 
                 if (serviceRecord.getNumServiceConnections() != 0) {
                     Log.d(LOG_TAG, "Cannot stop service " + service.getComponent().toShortString() + " due to active bindings");
-                    return false;
+                    return new Promise<>(false);
                 }
 
                 RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
@@ -290,19 +290,19 @@ public final class ServiceManager {
                     }
                 }
 
-                return true;
+                return new Promise<>(true);
             } else {
                 Log.d(LOG_TAG, "Cannot find and stop service " + service.getComponent().toShortString());
-                return false;
+                return new Promise<>(false);
             }
         }
 
         @Override
-        public boolean bindService(final Intent intent, final ServiceConnection conn, int flags, IRemoteCallback callback) {
+        public Promise<Boolean> bindService(final Intent intent, final ServiceConnection conn, int flags, IRemoteCallback callback) {
             intent.putExtra(SYSTEM_SERVICE, false);
 
             if (!prepareService(intent)) {
-                return false;
+                return new Promise<>(false);
             }
 
             if (mServices.containsKey(intent.getComponent())) {
@@ -319,10 +319,10 @@ public final class ServiceManager {
                     Log.d(LOG_TAG, "Bound to service " + serviceRecord.name + " in process " + serviceRecord.processRecord.name);
                 }
 
-                return true;
+                return new Promise<>(true);
             } else {
                 Log.d(LOG_TAG, "Cannot find and bind service " + intent.getComponent().toShortString());
-                return false;
+                return new Promise<>(false);
             }
         }
 
@@ -359,7 +359,7 @@ public final class ServiceManager {
         }
 
         @Override
-        public ComponentName startSystemService(Intent service) {
+        public Promise<ComponentName> startSystemService(Intent service) {
             if (!service.hasExtra("name")) {
                 service.putExtra("name", service.getComponent().getClassName());
             }
@@ -371,7 +371,7 @@ public final class ServiceManager {
         }
 
         @Override
-        public boolean stopSystemService(Intent service) {
+        public Promise<Boolean> stopSystemService(Intent service) {
             service.putExtra(SYSTEM_SERVICE, true);
             return stopService(service);
         }
@@ -480,9 +480,9 @@ public final class ServiceManager {
         return true;
     }
 
-    private ComponentName startService(final Intent service) {
+    private Promise<ComponentName> startService(final Intent service) {
         if (!prepareService(service)) {
-            return null;
+            return new Promise<>((ComponentName) null);
         }
 
         final ServiceRecord serviceRecord = mServices.get(service.getComponent());
@@ -505,7 +505,7 @@ public final class ServiceManager {
             throw new RuntimeException("System failure", e);
         }
 
-        return service.getComponent();
+        return new Promise<>(service.getComponent());
     }
 
     private boolean cleanupService(Intent service) {

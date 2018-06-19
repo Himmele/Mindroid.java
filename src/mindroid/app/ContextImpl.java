@@ -42,6 +42,8 @@ import mindroid.os.RemoteCallback;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
+import mindroid.util.concurrent.CancellationException;
+import mindroid.util.concurrent.ExecutionException;
 
 /**
  * Common implementation of Context API, which provides the base
@@ -138,8 +140,8 @@ public class ContextImpl extends Context {
     public ComponentName startService(Intent service) {
         if (service != null) {
             try {
-                return mServiceManager.startService(service);
-            } catch (RemoteException e) {
+                return mServiceManager.startService(service).get();
+            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {
@@ -151,8 +153,8 @@ public class ContextImpl extends Context {
     public boolean stopService(Intent service) {
         if (service != null) {
             try {
-                return mServiceManager.stopService(service);
-            } catch (RemoteException e) {
+                return mServiceManager.stopService(service).get();
+            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {
@@ -179,8 +181,8 @@ public class ContextImpl extends Context {
                 }
             }, mHandler);
             try {
-                return mServiceManager.bindService(service, conn, flags, callback.asInterface());
-            } catch (RemoteException e) {
+                return mServiceManager.bindService(service, conn, flags, callback.asInterface()).get();
+            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {

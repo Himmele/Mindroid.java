@@ -14,62 +14,49 @@
  * limitations under the License.
  */
 
-package main;
+package mindroid.testing;
 
 import java.io.File;
+import java.util.Iterator;
+import java.util.List;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
+import mindroid.content.pm.PackageInfo;
+import mindroid.content.pm.PackageInstaller;
 import mindroid.content.pm.PackageManager;
+import mindroid.content.pm.ServiceInfo;
 import mindroid.os.Environment;
 import mindroid.os.IServiceManager;
-import mindroid.os.Looper;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
+import mindroid.util.concurrent.CancellationException;
+import mindroid.util.concurrent.ExecutionException;
+import mindroid.util.concurrent.TimeoutException;
 import mindroid.util.logging.Logger;
 import mindroid.runtime.system.Runtime;
 
-public class Main {
+public class IntegrationTest {
     private static final String LOG_TAG = "Mindroid";
-    private static final String ID_ARG = "id=";
-    private static final String ROOT_DIR_ARG = "rootDir=";
-
     private static final ComponentName SERVICE_MANAGER = new ComponentName("mindroid.os", "ServiceManager");
     private static final ComponentName PACKAGE_MANAGER = new ComponentName("mindroid.content.pm", "PackageManagerService");
     private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "Logger");
     private static final ComponentName CONSOLE_SERVICE = new ComponentName("mindroid.testing.console", "ConsoleService");
 
-    /**
-     * Linux: java -classpath Mindroid.jar:Main.jar main.Main rootDir=.
-     * Microsoft Windows: java -classpath Mindroid.jar;Main.jar main.Main rootDir=.
-     */
-    public static void main(String[] args) {
-        int nodeId = 1;
-        String rootDir = ".";
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            if (arg.startsWith(ID_ARG)) {
-                try {
-                    nodeId = Integer.valueOf(arg.substring(ID_ARG.length()));
-                } catch (NumberFormatException e) {
-                    Log.println('E', LOG_TAG, "Invalid node id: " + arg);
-                    System.exit(-1);
-                }
-            } else if (arg.startsWith(ROOT_DIR_ARG)) {
-                rootDir = arg.substring(ROOT_DIR_ARG.length());
-            }
-        }
+    private static ServiceManager sServiceManager;
 
-        Looper.prepare();
+    public static void setUp() {
+        final int nodeId = 1;
+        final String rootDir = ".";
 
         Environment.setRootDirectory(rootDir);
 
         File file = new File(Environment.getRootDirectory(), "res/MindroidRuntimeSystem.xml");
         Runtime.start(nodeId, file.exists() ? file : null);
 
-        ServiceManager serviceManager = new ServiceManager();
-        serviceManager.start();
+        sServiceManager = new ServiceManager();
+        sServiceManager.start();
 
         try {
             startSystemServices();
@@ -82,8 +69,25 @@ public class Main {
         } catch (Exception e) {
             throw new RuntimeException("System failure");
         }
+    }
 
-        Looper.loop();
+    public static void tearDown() {
+        try {
+            shutdownServices();
+        } catch (Exception e) {
+            throw new RuntimeException("System failure");
+        }
+
+        try {
+            shutdownSystemServices();
+        } catch (Exception e) {
+            throw new RuntimeException("System failure");
+        }
+
+        sServiceManager.shutdown();
+        sServiceManager = null;
+
+        Runtime.shutdown();
     }
 
     public static void startSystemServices() throws InterruptedException, RemoteException {
@@ -119,15 +123,56 @@ public class Main {
     }
 
     private static void startServices() throws InterruptedException, RemoteException {
-        IServiceManager serviceManager = ServiceManager.getServiceManager();
-        serviceManager.startSystemService(new Intent(PackageManager.ACTION_START_APPLICATIONS)
-                .setComponent(PACKAGE_MANAGER));
+        PackageManager packageManager = new PackageManager();
+        PackageInstaller packageInstaller = new PackageInstaller();
+        packageInstaller.install(Environment.getAppsDirectory());
+        List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
+        if (packages != null) {
+            IServiceManager serviceManager = ServiceManager.getServiceManager();
+            for (Iterator itr = packages.iterator(); itr.hasNext();) {
+                PackageInfo p = (PackageInfo) itr.next();
+                if (p.services != null) {
+                    ServiceInfo[] services = p.services;
+                    for (int i = 0; i < services.length; i++) {
+                        ServiceInfo serviceInfo = services[i];
+                        if (serviceInfo.isEnabled() && serviceInfo.hasFlag(ServiceInfo.FLAG_AUTO_START)) {
+                            Intent service = new Intent();
+                            service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
+                            try {
+                                serviceManager.startService(service).get(10000);
+                            } catch (CancellationException | ExecutionException | TimeoutException | RemoteException e) {
+                                throw new RuntimeException("System failure");
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static void shutdownServices() throws RemoteException, InterruptedException {
-        IServiceManager serviceManager = ServiceManager.getServiceManager();
-        serviceManager.startSystemService(new Intent(PackageManager.ACTION_SHUTDOWN_APPLICATIONS)
-                .setComponent(PACKAGE_MANAGER));
+        PackageManager packageManager = new PackageManager();
+        List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
+        if (packages != null) {
+            IServiceManager serviceManager = ServiceManager.getServiceManager();
+            for (Iterator itr = packages.iterator(); itr.hasNext();) {
+                PackageInfo p = (PackageInfo) itr.next();
+                if (p.services != null) {
+                    ServiceInfo[] services = p.services;
+                    for (int i = 0; i < services.length; i++) {
+                        ServiceInfo serviceInfo = services[i];
+                        if (serviceInfo.isEnabled()) {
+                            Intent service = new Intent();
+                            service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
+                            try {
+                                serviceManager.stopService(service).get(10000);
+                            } catch (CancellationException | ExecutionException | TimeoutException | RemoteException ignore) {
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static void shutdownSystemServices() throws RemoteException, InterruptedException {

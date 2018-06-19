@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2013 Daniel Himmelein
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright (c) 2018 E.S.R.Labs. All rights reserved.
+ * 
+ * NOTICE:  All information contained herein is, and remains
+ * the property of E.S.R.Labs and its suppliers, if any.
+ * The intellectual and technical concepts contained herein are
+ * proprietary to E.S.R.Labs and its suppliers and may be covered
+ * by German and Foreign Patents, patents in process, and are protected
+ * by trade secret or copyright law.
+ * Dissemination of this information or reproduction of this material
+ * is strictly forbidden unless prior written permission is obtained
+ * from E.S.R.Labs.
  */
 
-package mindroid.content.pm;
+package mindroid.testing.console;
 
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
@@ -23,31 +21,31 @@ import mindroid.os.Binder;
 import mindroid.os.RemoteException;
 import mindroid.util.concurrent.Promise;
 
-public interface IPackageManagerListener extends IInterface {
-    public static abstract class Stub extends Binder implements IPackageManagerListener {
-        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/content/pm/IPackageManagerListener";
+public interface ICommandHandler extends IInterface {
+    public static abstract class Stub extends Binder implements ICommandHandler {
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/testing/console/ICommandHandler";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
         }
 
-        public static mindroid.content.pm.IPackageManagerListener asInterface(IBinder binder) {
+        public static ICommandHandler asInterface(IBinder binder) {
             if (binder == null) {
                 return null;
             }
-            return new IPackageManagerListener.Proxy(binder);
+            return new ICommandHandler.Proxy(binder);
         }
 
-        @Override
         public IBinder asBinder() {
             return this;
         }
 
         @Override
-        protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
+        protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result)
+                throws RemoteException {
             switch (what) {
-            case MSG_NOTIFY_BOOT_COMPLETED: {
-                onBootCompleted();
+            case MSG_EXECUTE: {
+                ((Promise<String>) result).completeWith(execute((String[]) obj));
                 break;
             }
             default:
@@ -56,22 +54,22 @@ public interface IPackageManagerListener extends IInterface {
             }
         }
 
-        private static class Proxy implements IPackageManagerListener {
+        private static class Proxy implements ICommandHandler {
             private final IBinder mRemote;
 
             Proxy(IBinder remote) {
                 mRemote = remote;
             }
 
-            @Override
             public IBinder asBinder() {
                 return mRemote;
             }
 
-            @Override
             public boolean equals(final Object obj) {
-                if (obj == null) return false;
-                if (obj == this) return true;
+                if (obj == null)
+                    return false;
+                if (obj == this)
+                    return true;
                 if (obj instanceof Stub.Proxy) {
                     final Stub.Proxy that = (Stub.Proxy) obj;
                     return this.mRemote.equals(that.mRemote);
@@ -79,24 +77,24 @@ public interface IPackageManagerListener extends IInterface {
                 return false;
             }
 
-            @Override
             public int hashCode() {
                 return mRemote.hashCode();
             }
 
-            @Override
-            public void onBootCompleted() throws RemoteException {
-                mRemote.transact(MSG_NOTIFY_BOOT_COMPLETED, 0, null, null, null, FLAG_ONEWAY);
+            public Promise<String> execute(String... arguments) throws RemoteException {
+                Promise<String> promise = new Promise<>();
+                mRemote.transact(MSG_EXECUTE, 0, arguments, null, promise, 0);
+                return promise;
             }
         }
 
-        static final int MSG_NOTIFY_BOOT_COMPLETED = 1;
+        static final int MSG_EXECUTE = 1;
     }
 
-    static class Proxy implements IPackageManagerListener {
+    static class Proxy implements ICommandHandler {
         private final IBinder mBinder;
         private final Stub mStub;
-        private final IPackageManagerListener mProxy;
+        private final ICommandHandler mProxy;
 
         Proxy(IBinder binder) {
             mBinder = binder;
@@ -106,19 +104,19 @@ public interface IPackageManagerListener extends IInterface {
             } else {
                 mindroid.runtime.system.Runtime runtime = mindroid.runtime.system.Runtime.getRuntime();
                 mStub = (Stub) runtime.getBinder(binder.getId());
-                mProxy = (IPackageManagerListener) runtime.getProxy(binder);
+                mProxy = (ICommandHandler) runtime.getProxy(binder);
             }
         }
 
-        @Override
         public IBinder asBinder() {
             return mBinder;
         }
 
-        @Override
         public boolean equals(final Object obj) {
-            if (obj == null) return false;
-            if (obj == this) return true;
+            if (obj == null)
+                return false;
+            if (obj == this)
+                return true;
             if (obj instanceof Proxy) {
                 final Proxy that = (Proxy) obj;
                 return this.mBinder.equals(that.mBinder);
@@ -126,20 +124,18 @@ public interface IPackageManagerListener extends IInterface {
             return false;
         }
 
-        @Override
         public int hashCode() {
             return mBinder.hashCode();
         }
 
-        @Override
-        public void onBootCompleted() throws RemoteException {
+        public Promise<String> execute(String... arguments) throws RemoteException {
             if (mStub != null && mStub.isCurrentThread()) {
-                mStub.onBootCompleted();
+                return mStub.execute(arguments);
             } else {
-                mProxy.onBootCompleted();
+                return mProxy.execute(arguments);
             }
         }
     }
 
-    public void onBootCompleted() throws RemoteException;
+    public Promise<String> execute(String... arguments) throws RemoteException;
 }
