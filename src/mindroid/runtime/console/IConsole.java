@@ -25,7 +25,7 @@ import mindroid.util.concurrent.Promise;
 
 public interface IConsole extends IInterface {
     public static abstract class Stub extends Binder implements IConsole {
-        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/testing/console/IConsole";
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/runtime/console/IConsole";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
