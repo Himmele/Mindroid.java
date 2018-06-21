@@ -93,7 +93,7 @@ public interface IServiceManager extends IInterface {
             }
         }
 
-        public static class Proxy implements IServiceManager {
+        private static class Proxy implements IServiceManager {
             private final IBinder mRemote;
 
             Proxy(IBinder remote) {
