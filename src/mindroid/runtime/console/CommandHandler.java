@@ -12,7 +12,7 @@
  * from E.S.R.Labs.
  */
 
-package mindroid.testing.console;
+package mindroid.runtime.console;
 
 import mindroid.util.concurrent.Promise;
 
