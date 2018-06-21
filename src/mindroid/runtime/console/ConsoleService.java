@@ -1,15 +1,17 @@
 /*
- * Copyright (c) 2018 E.S.R.Labs. All rights reserved.
+ * Copyright (C) 2018 E.S.R.Labs
  *
- * NOTICE:  All information contained herein is, and remains
- * the property of E.S.R.Labs and its suppliers, if any.
- * The intellectual and technical concepts contained herein are
- * proprietary to E.S.R.Labs and its suppliers and may be covered
- * by German and Foreign Patents, patents in process, and are protected
- * by trade secret or copyright law.
- * Dissemination of this information or reproduction of this material
- * is strictly forbidden unless prior written permission is obtained
- * from E.S.R.Labs.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package mindroid.runtime.console;
@@ -45,7 +47,7 @@ public class ConsoleService extends Service {
             this.commandHandler = commandHandler;
         }
 
-        Promise<String> execute(String... arguments) {
+        Promise<String> execute(String[] arguments) {
             return commandHandler.apply(arguments);
         }
     }
@@ -83,7 +85,7 @@ public class ConsoleService extends Service {
             return mCommands.remove(command) != null;
         }
 
-        public Promise<String> executeCommand(String command, String... arguments) throws RemoteException {
+        public Promise<String> executeCommand(String command, String[] arguments) throws RemoteException {
             Promise<String> result = new Promise<>();
             Command c = mCommands.get(command);
             if (c != null) {
