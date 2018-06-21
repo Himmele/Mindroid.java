@@ -109,11 +109,11 @@ public class ConsoleService extends Service {
 
     private void addCommands() {
         addCommand("help", "Print commands", (args) ->
-                mCommands.entrySet()
-                    .stream()
-                    .sorted(Comparator.comparing(Map.Entry<String, Command>::getKey))
-                    .map((entry) -> entry.getKey() + ": " + entry.getValue().description)
-                    .collect(Collectors.joining(System.lineSeparator())));
+            mCommands.entrySet()
+                .stream()
+                .sorted(Comparator.comparing(Map.Entry<String, Command>::getKey))
+                .map((entry) -> entry.getKey() + ": " + entry.getValue().description)
+                .collect(Collectors.joining(System.lineSeparator())));
 
         addCommand("dump threads", "Print stack traces of all threads", (args) -> {
             StringWriter sw = new StringWriter();
