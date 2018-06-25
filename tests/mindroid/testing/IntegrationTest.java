@@ -19,6 +19,8 @@ package mindroid.testing;
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -46,6 +48,7 @@ public class IntegrationTest {
 
     private static ServiceManager sServiceManager;
 
+    @BeforeAll
     public static void setUp() {
         final int nodeId = 1;
         final String rootDir = ".";
@@ -71,6 +74,7 @@ public class IntegrationTest {
         }
     }
 
+    @AfterAll
     public static void tearDown() {
         try {
             shutdownServices();

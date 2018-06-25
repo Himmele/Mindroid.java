@@ -16,8 +16,6 @@
 
 package mindroid.tests;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import mindroid.app.Service;
@@ -36,17 +34,7 @@ import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
 import mindroid.util.concurrent.TimeoutException;
 
-public class Services {
-    @BeforeAll
-    public static void beforeAll() {
-        IntegrationTest.setUp();
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        IntegrationTest.tearDown();
-    }
-
+public class Services extends IntegrationTest {
     @Test
     void test() {
         Promise<Boolean> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
