@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mindroid.runtime.console;
+package mindroid.runtime.inspection;
 
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
@@ -25,7 +25,7 @@ import mindroid.util.concurrent.Promise;
 
 public interface IConsole extends IInterface {
     public static abstract class Stub extends Binder implements IConsole {
-        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/runtime/console/IConsole";
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/runtime/inspection/IConsole";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);

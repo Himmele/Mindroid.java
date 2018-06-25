@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mindroid.runtime.console;
+package mindroid.runtime.inspection;
 
 import mindroid.util.concurrent.Promise;
 

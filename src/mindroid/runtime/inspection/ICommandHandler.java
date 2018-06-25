@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mindroid.runtime.console;
+package mindroid.runtime.inspection;
 
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
@@ -25,7 +25,7 @@ import mindroid.util.concurrent.Promise;
 
 public interface ICommandHandler extends IInterface {
     public static abstract class Stub extends Binder implements ICommandHandler {
-        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/runtime/console/ICommandHandler";
+        private static final String DESCRIPTOR = "mindroid://interfaces/mindroid/runtime/inspection/ICommandHandler";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
