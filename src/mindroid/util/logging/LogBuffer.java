@@ -17,37 +17,35 @@
 package mindroid.util.logging;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
+import mindroid.util.concurrent.Promise;
 
 public class LogBuffer {
     private static final int TIMESTAMP_SIZE = 8;
-    private static final int PRIO_SIZE = 4;
-    private static final int THREAD_ID_SIZE = 4;
+    private static final int PRIORITY_SIZE = 4;
+    private static final int THREAD_ID_SIZE = 8;
     private static final int TAG_SIZE = 4;
     private static final int MESSAGE_SIZE = 4;
-    private static final String[] sLogLevels = { "V", "D", "I", "W", "E", "A" };
 
-    private final int ID;
-    private final int SIZE;
+    private final int mId;
+    private final int mSize;
+    private final byte[] mBuffer;
     private int mReadIndex;
     private int mWriteIndex;
-    private byte[] mData;
     private final GregorianCalendar mCalendar = new GregorianCalendar();
     private final SimpleDateFormat mFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-    private boolean mQuitting = false;
+    private Promise<LogRecord> mPromise = null;
 
     public class LogRecord {
-        private int mLogId;
         private long mTimestamp;
-        private int mThreadId;
+        private long mThreadId;
         private int mPriority;
         private String mTag;
         private String mMessage;
 
-        public LogRecord(final int logId, final long timestamp, final int threadId, final int priority, final String tag, final String message) {
-            mLogId = logId;
+        public LogRecord(final long timestamp, final long threadId, final int priority, final String tag, final String message) {
             mTimestamp = timestamp;
             mThreadId = threadId;
             mPriority = priority;
@@ -55,24 +53,20 @@ public class LogBuffer {
             mMessage = message;
         }
 
-        public String toShortString() {
-            return sLogLevels[mPriority] + "/" + mTag + "(" + toHexString(mThreadId) + "): " + mMessage;
-        }
-
         public String toString() {
             mCalendar.setTimeInMillis(mTimestamp);
-            return mFormatter.format(mCalendar.getTime()) + "  " + toHexString(mThreadId) + "  " + sLogLevels[mPriority] + ' ' + mTag + ": " + mMessage;
+            return mFormatter.format(mCalendar.getTime()) + "  " + String.format("%016X", mThreadId) + "  " + Logger.LOG_LEVELS[mPriority] + ' ' + mTag + ": " + mMessage;
         }
 
-        public int getLogId() {
-            return mLogId;
+        public String toShortString() {
+            return Logger.LOG_LEVELS[mPriority] + "/" + mTag + "(" + String.format("%016X", mThreadId) + "): " + mMessage;
         }
 
         public long getTimestamp() {
             return mTimestamp;
         }
 
-        public int getThreadId() {
+        public long getThreadId() {
             return mThreadId;
         }
 
@@ -87,235 +81,157 @@ public class LogBuffer {
         public String getMessage() {
             return mMessage;
         }
-
-        private String toHexString(int value) {
-            String hexString = Integer.toHexString(value);
-            switch (hexString.length()) {
-            case 1:
-                return "0000000" + hexString;
-            case 2:
-                return "000000" + hexString;
-            case 3:
-                return "00000" + hexString;
-            case 4:
-                return "0000" + hexString;
-            case 5:
-                return "000" + hexString;
-            case 6:
-                return "00" + hexString;
-            case 7:
-                return "0" + hexString;
-            case 8:
-                return hexString;
-            case 0:
-            default:
-                return "00000000";
-            }
-        }
     }
 
     public LogBuffer(final int id, final int size) {
-        ID = id;
-        SIZE = size;
-        mData = new byte[SIZE];
-        reset();
+        mId = id;
+        mSize = size;
+        mBuffer = new byte[mSize];
+        mReadIndex = 0;
+        mWriteIndex = 0;
     }
 
-    public boolean offer(final int priority, final String tag, final String message) {
-        return offer(System.currentTimeMillis(), Thread.currentThread().hashCode(), priority, tag, message);
+    public int getId() {
+        return mId;
     }
 
-    public boolean offer(final long timestamp, final int threadId, final int priority, final String tag, final String message) {
+    public synchronized void reset() {
+        mReadIndex = 0;
+        mWriteIndex = 0;
+        if (mPromise != null) {
+            mPromise.complete(null);
+            mPromise = null;
+        }
+    }
+
+    public boolean put(final int priority, final String tag, final String message) {
+        return put(System.currentTimeMillis(), Thread.currentThread().getId(), priority, tag, message);
+    }
+
+    public boolean put(final long timestamp, final long threadId, final int priority, final String tag, final String message) {
         if (tag == null) {
             return false;
         }
         if (message == null) {
             return false;
         }
-        byte[] tagData = null;
-        byte[] messageData = null;
+        byte[] tagBuffer = null;
+        byte[] messageBuffer = null;
         try {
-            tagData = tag.getBytes("UTF-8");
-            messageData = message.getBytes("UTF-8");
+            tagBuffer = tag.getBytes("UTF-8");
+            messageBuffer = message.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
             return false;
         }
-        int size = TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagData.length + MESSAGE_SIZE + messageData.length;
-        if ((size + 4) > SIZE) {
+        final int size = TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIORITY_SIZE + TAG_SIZE + tagBuffer.length + MESSAGE_SIZE + messageBuffer.length;
+        if ((size + 4) > mSize) {
             return false;
         }
 
-        byte[] logMessageSize = new byte[4];
-        intToByteArray(size, logMessageSize);
-        byte[] logMessage = new byte[size];
-        longToByteArray(timestamp, logMessage);
-        intToByteArray(threadId, logMessage, TIMESTAMP_SIZE);
-        intToByteArray(priority, logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE);
-        intToByteArray(tagData.length, logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
-        System.arraycopy(tagData, 0, logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagData.length);
-        intToByteArray(messageData.length, logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagData.length);
-        System.arraycopy(messageData, 0, logMessage, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagData.length + MESSAGE_SIZE, messageData.length);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size + 4);
+        byteBuffer.putInt(size);
+        byteBuffer.putLong(timestamp);
+        byteBuffer.putLong(threadId);
+        byteBuffer.putInt(priority);
+        byteBuffer.putInt(tagBuffer.length);
+        byteBuffer.put(tagBuffer);
+        byteBuffer.putInt(messageBuffer.length);
+        byteBuffer.put(messageBuffer);
 
         synchronized (this) {
-            free(logMessageSize.length + logMessage.length);
-            write(logMessageSize);
-            write(logMessage);
-            notify();
+            if (mPromise != null) {
+                mPromise.complete(new LogRecord(timestamp, threadId, priority, tag, message));
+                mPromise = null;
+            } else {
+                writeByteArray(byteBuffer.array());
+            }
         }
 
         return true;
     }
 
-    public LogRecord take(final int minPriority) throws InterruptedException {
-        while (true) {
-            byte[] record;
-            synchronized (this) {
-                while (isEmpty()) {
-                    wait();
-                    if (mQuitting) {
-                        mQuitting = false;
-                        return null;
-                    }
+    public Promise<LogRecord> get() {
+        byte[] buffer;
+        synchronized (this) {
+            if (mPromise == null) {
+                if (!isEmpty()) {
+                    final int size = intFromByteArray(readByteArray(4));
+                    buffer = readByteArray(size);
+                } else {
+                    mPromise = new Promise<>();
+                    return mPromise;
                 }
-                int size = intFromByteArray(read(4));
-                record = read(size);
-            }
-            long timestamp = longFromByteArray(record);
-            int threadId = intFromByteArray(record, TIMESTAMP_SIZE);
-            int priority = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE);
-            int tagSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
-            String tag = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
-            int messageSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
-            String message = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
-            if (priority >= minPriority) {
-                return new LogRecord(ID, timestamp, threadId, priority, tag, message);
+            } else {
+                return mPromise;
             }
         }
+
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+        long timestamp = byteBuffer.getLong();
+        long threadId = byteBuffer.getLong();
+        int priority = byteBuffer.getInt();
+        int tagSize = byteBuffer.getInt();
+        byte[] tagData = new byte[tagSize];
+        byteBuffer.get(tagData);
+        String tag = new String(tagData);
+        int messageSize = byteBuffer.getInt();
+        byte[] messageData = new byte[messageSize];
+        byteBuffer.get(messageData);
+        String message = new String(messageData);
+        return new Promise<>(new LogRecord(timestamp, threadId, priority, tag, message));
     }
 
-    public LogRecord poll(final int minPriority) {
-        while (true) {
-            byte[] record;
-            synchronized (this) {
-                while (isEmpty()) {
-                    return null;
-                }
-                int size = intFromByteArray(read(4));
-                record = read(size);
-            }
-            long timestamp = longFromByteArray(record);
-            int threadId = intFromByteArray(record, TIMESTAMP_SIZE);
-            int priority = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE);
-            int tagSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE);
-            String tag = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE, tagSize);
-            int messageSize = intFromByteArray(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize);
-            String message = new String(record, TIMESTAMP_SIZE + THREAD_ID_SIZE + PRIO_SIZE + TAG_SIZE + tagSize + MESSAGE_SIZE, messageSize);
-            if (priority >= minPriority) {
-                return new LogRecord(ID, timestamp, threadId, priority, tag, message);
-            }
-        }
-    }
-
-    public synchronized void quit() {
-        mQuitting = true;
-        notify();
-    }
-
-    public synchronized boolean isEmpty() {
+    private boolean isEmpty() {
         return mReadIndex == mWriteIndex;
     }
 
-    public synchronized boolean isFull() {
-        return (mWriteIndex + 1) % SIZE == mReadIndex;
+    @SuppressWarnings("unused")
+    private boolean isFull() {
+        return (mWriteIndex + 1) % mSize == mReadIndex;
     }
 
     private int remainingCapacity() {
         if (mWriteIndex >= mReadIndex) {
-            return (SIZE - (mWriteIndex - mReadIndex));
+            return (mSize - (mWriteIndex - mReadIndex));
         } else {
             return (mReadIndex - mWriteIndex);
         }
     }
 
-    private void free(final int size) {
+    private void writeByteArray(final byte[] data) {
         int remainingCapacity = remainingCapacity();
-        while (remainingCapacity < size) {
-            int curSize = intFromByteArray(read(4));
-            mReadIndex = (mReadIndex + curSize) % SIZE;
-            remainingCapacity += (curSize + 4);
+        while (remainingCapacity < data.length) {
+            int size = intFromByteArray(readByteArray(4));
+            mReadIndex = (mReadIndex + size) % mSize;
+            remainingCapacity += (size + 4);
         }
-    }
 
-    public synchronized void reset() {
-        mReadIndex = 0;
-        mWriteIndex = 0;
-    }
-
-    public int getId() {
-        return ID;
-    }
-
-    private void write(final byte[] data) {
-        if (mWriteIndex + data.length < SIZE) {
-            System.arraycopy(data, 0, mData, mWriteIndex, data.length);
-            mWriteIndex = (mWriteIndex + data.length) % SIZE;
+        if (mWriteIndex + data.length < mSize) {
+            System.arraycopy(data, 0, mBuffer, mWriteIndex, data.length);
+            mWriteIndex = (mWriteIndex + data.length) % mSize;
         } else {
-            int partialSize = (SIZE - mWriteIndex);
-            System.arraycopy(data, 0, mData, mWriteIndex, partialSize);
-            System.arraycopy(data, partialSize, mData, 0, data.length - partialSize);
-            mWriteIndex = (mWriteIndex + data.length) % SIZE;
+            int partialSize = (mSize - mWriteIndex);
+            System.arraycopy(data, 0, mBuffer, mWriteIndex, partialSize);
+            System.arraycopy(data, partialSize, mBuffer, 0, data.length - partialSize);
+            mWriteIndex = (mWriteIndex + data.length) % mSize;
         }
     }
 
-    private byte[] read(final int size) {
+    private byte[] readByteArray(final int size) {
         byte[] data = new byte[size];
-        if (mReadIndex + size < SIZE) {
-            System.arraycopy(mData, mReadIndex, data, 0, data.length);
-            mReadIndex = (mReadIndex + data.length) % SIZE;
+        if (mReadIndex + size < mSize) {
+            System.arraycopy(mBuffer, mReadIndex, data, 0, data.length);
+            mReadIndex = (mReadIndex + data.length) % mSize;
         } else {
-            int partialSize = (SIZE - mReadIndex);
-            System.arraycopy(mData, mReadIndex, data, 0, partialSize);
-            System.arraycopy(mData, 0, data, partialSize, data.length - partialSize);
-            mReadIndex = (mReadIndex + data.length) % SIZE;
+            int partialSize = (mSize - mReadIndex);
+            System.arraycopy(mBuffer, mReadIndex, data, 0, partialSize);
+            System.arraycopy(mBuffer, 0, data, partialSize, data.length - partialSize);
+            mReadIndex = (mReadIndex + data.length) % mSize;
         }
         return data;
     }
 
-    private static void intToByteArray(final int i, final byte[] dest) {
-        dest[0] = (byte) (i >> 24);
-        dest[1] = (byte) (i >> 16);
-        dest[2] = (byte) (i >> 8);
-        dest[3] = (byte) (i);
-    }
-
-    private static void intToByteArray(final int i, final byte[] dest, final int destPos) {
-        dest[destPos + 0] = (byte) (i >> 24);
-        dest[destPos + 1] = (byte) (i >> 16);
-        dest[destPos + 2] = (byte) (i >> 8);
-        dest[destPos + 3] = (byte) (i);
-    }
-
-    private static void longToByteArray(final long l, final byte[] dest) {
-        dest[0] = (byte) (l >> 56);
-        dest[1] = (byte) (l >> 48);
-        dest[2] = (byte) (l >> 40);
-        dest[3] = (byte) (l >> 32);
-        dest[4] = (byte) (l >> 24);
-        dest[5] = (byte) (l >> 16);
-        dest[6] = (byte) (l >> 8);
-        dest[7] = (byte) (l);
-    }
-
-    private static int intFromByteArray(final byte[] src) {
-        return src[0] << 24 | (src[1] & 0xFF) << 16 | (src[2] & 0xFF) << 8 | (src[3] & 0xFF);
-    }
-
-    private static int intFromByteArray(final byte[] src, final int srcPos) {
-        return src[srcPos + 0] << 24 | (src[srcPos + 1] & 0xFF) << 16 | (src[srcPos + 2] & 0xFF) << 8 | (src[srcPos + 3] & 0xFF);
-    }
-
-    private static long longFromByteArray(final byte[] src) {
-        return ((long) src[0]) << 56 | ((long) (src[1] & 0xFF)) << 48 | ((long) (src[2] & 0xFF)) << 40 | ((long) (src[3] & 0xFF)) << 32
-                | ((long) (src[4] & 0xFF)) << 24 | ((long) (src[5] & 0xFF)) << 16 | ((long) (src[6] & 0xFF)) << 8 | ((long) (src[7] & 0xFF));
+    private static int intFromByteArray(final byte[] data) {
+        return data[0] << 24 | (data[1] & 0xFF) << 16 | (data[2] & 0xFF) << 8 | (data[3] & 0xFF);
     }
 }

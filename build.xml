@@ -338,6 +338,7 @@
                     <include name="mindroid/util/EventLog.java"/>
                     <include name="mindroid/util/Log.java"/>
                     <include name="mindroid/util/Pair.java"/>
+                    <include name="mindroid/util/concurrent/AsyncAwait.java"/>
                     <include name="mindroid/util/concurrent/CancellationException.java"/>
                     <include name="mindroid/util/concurrent/CompletionException.java"/>
                     <include name="mindroid/util/concurrent/ExecutionException.java"/>

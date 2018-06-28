@@ -37,7 +37,7 @@ public class Main {
 
     private static final ComponentName SERVICE_MANAGER = new ComponentName("mindroid.os", "ServiceManager");
     private static final ComponentName PACKAGE_MANAGER = new ComponentName("mindroid.content.pm", "PackageManagerService");
-    private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "Logger");
+    private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "LoggerService");
     private static final ComponentName CONSOLE_SERVICE = new ComponentName("mindroid.runtime.inspection", "ConsoleService");
 
     /**

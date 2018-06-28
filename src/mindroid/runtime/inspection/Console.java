@@ -51,7 +51,7 @@ public class Console {
                     return false;
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return false;
@@ -90,7 +90,7 @@ public class Console {
                     return false;
                 }
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return false;
@@ -102,7 +102,7 @@ public class Console {
             try {
                 return mConsole.executeCommand(command, arguments);
             } catch (RemoteException e) {
-                throw new RuntimeException("System failure");
+                throw new RuntimeException("System failure", e);
             }
         } else {
             return new Promise<>(new ExecutionException());

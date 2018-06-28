@@ -184,9 +184,6 @@ public class Promise<T> implements Future<T> {
     }
 
     public Promise(final Executor executor) {
-        if (executor == null) {
-            throw new NullPointerException();
-        }
         mExecutor = executor;
     }
 

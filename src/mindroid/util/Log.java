@@ -17,6 +17,7 @@
 
 package mindroid.util;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.UnknownHostException;
@@ -64,7 +65,21 @@ public final class Log {
     public static final int ERROR = 4;
     public static final int WTF = 5;
 
+    /** @hide */
+    public static final int LOG_ID_MAIN = 0;
+    /** @hide */
+    public static final int LOG_ID_EVENTS = 1;
+    /** @hide */
+    public static final int LOG_ID_TEST = 2;
+
     private static final int MAX_STACK_TRACE_SIZE = 4096;
+
+    private static final LogBuffer MAIN_LOG_BUFFER = new LogBuffer(LOG_ID_MAIN, 262144); // 256KB
+    private static final LogBuffer EVENT_LOG_BUFFER = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
+    private static final LogBuffer TEST_LOG_BUFFER = new LogBuffer(LOG_ID_TEST, 262144); // 256KB
+
+    private static PrintStream sPrintStream = System.out;
+    private static boolean sIntegrationTesting = false;
 
     private Log() {
     }
@@ -256,30 +271,30 @@ public final class Log {
     }
 
     /** @hide */
-    public static LogBuffer getLogBuffer(int logId) {
-        switch (logId) {
+    public static LogBuffer getLogBuffer(int id) {
+        switch (id) {
         case LOG_ID_MAIN:
-            return sMainLogBuffer;
+            return MAIN_LOG_BUFFER;
         case LOG_ID_EVENTS:
-            return sEventLogBuffer;
-        case LOG_ID_DEBUG:
-            return sDebugLogBuffer;
+            return EVENT_LOG_BUFFER;
+        case LOG_ID_TEST:
+            return TEST_LOG_BUFFER;
         default:
             return null;
         }
     }
 
     /** @hide */
-    public static void reset(int logId) {
-        switch (logId) {
+    public static void reset(int id) {
+        switch (id) {
         case LOG_ID_MAIN:
-            sMainLogBuffer.reset();
+            MAIN_LOG_BUFFER.reset();
             break;
         case LOG_ID_EVENTS:
-            sEventLogBuffer.reset();
+            EVENT_LOG_BUFFER.reset();
             break;
-        case LOG_ID_DEBUG:
-            sDebugLogBuffer.reset();
+        case LOG_ID_TEST:
+            TEST_LOG_BUFFER.reset();
             break;
         }
     }
@@ -327,19 +342,16 @@ public final class Log {
     }
 
     /** @hide */
-    public static int priority = DEBUG;
-
-    /** @hide */
     public static void println(char priority, String tag, String msg) {
-        if (parsePriority(priority) >= Log.priority) {
-            System.out.println(priority + "/" + tag + ": " + msg);
+        if (sPrintStream != null) {
+            sPrintStream.println(priority + "/" + tag + ": " + msg);
         }
     }
 
     /** @hide */
     public static void println(char priority, String tag, String msg, Throwable tr) {
-        if (parsePriority(priority) >= Log.priority) {
-            System.out.println(priority + "/" + tag + ": " + msg + '\n' + getStackTraceString(tr));
+        if (sPrintStream != null) {
+            sPrintStream.println(priority + "/" + tag + ": " + msg + '\n' + getStackTraceString(tr));
         }
     }
 
@@ -376,13 +388,21 @@ public final class Log {
 
         switch (logId) {
         case LOG_ID_MAIN:
-            sMainLogBuffer.offer(priority, tag, msg);
+            MAIN_LOG_BUFFER.put(priority, tag, msg);
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(priority, tag, msg);
+            }
             return 0;
         case LOG_ID_EVENTS:
-            sEventLogBuffer.offer(priority, tag, msg);
+            EVENT_LOG_BUFFER.put(priority, tag, msg);
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(priority, tag, msg);
+            }
             return 0;
-        case LOG_ID_DEBUG:
-            sDebugLogBuffer.offer(priority, tag, msg);
+        case LOG_ID_TEST:
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(priority, tag, msg);
+            }
             return 0;
         default:
             return -1;
@@ -393,27 +413,51 @@ public final class Log {
     public static int println(int logId, long timestamp, int threadId, int priority, String tag, String msg) {
         switch (logId) {
         case LOG_ID_MAIN:
-            sMainLogBuffer.offer(timestamp, threadId, priority, tag, msg);
+            MAIN_LOG_BUFFER.put(timestamp, threadId, priority, tag, msg);
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(timestamp, threadId, priority, tag, msg);
+            }
             return 0;
         case LOG_ID_EVENTS:
-            sEventLogBuffer.offer(timestamp, threadId, priority, tag, msg);
+            EVENT_LOG_BUFFER.put(timestamp, threadId, priority, tag, msg);
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(timestamp, threadId, priority, tag, msg);
+            }
             return 0;
-        case LOG_ID_DEBUG:
-            sDebugLogBuffer.offer(timestamp, threadId, priority, tag, msg);
+        case LOG_ID_TEST:
+            if (sIntegrationTesting) {
+                TEST_LOG_BUFFER.put(timestamp, threadId, priority, tag, msg);
+            }
             return 0;
         default:
             return -1;
         }
     }
 
-    /** @hide */
-    public static final int LOG_ID_MAIN = 0;
-    /** @hide */
-    public static final int LOG_ID_EVENTS = 1;
-    /** @hide */
-    public static final int LOG_ID_DEBUG = 2;
+    /**
+     * Integration testing.
+     *
+     * @hide
+     */
+    public static void setPrintStream(PrintStream printStream) {
+        sPrintStream = printStream;
+    }
 
-    private static final LogBuffer sMainLogBuffer = new LogBuffer(LOG_ID_MAIN, 262144); // 256KB
-    private static final LogBuffer sEventLogBuffer = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
-    private static final LogBuffer sDebugLogBuffer = new LogBuffer(LOG_ID_DEBUG, 262144); // 256KB
+    /**
+     * Integration testing.
+     *
+     * @hide
+     */
+    public static synchronized void setIntegrationTesting(boolean integrationTesting) {
+        sIntegrationTesting = integrationTesting;
+    }
+
+    /**
+     * Integration testing.
+     *
+     * @hide
+     */
+    public static synchronized boolean getIntegrationTesting() {
+        return sIntegrationTesting;
+    }
 }

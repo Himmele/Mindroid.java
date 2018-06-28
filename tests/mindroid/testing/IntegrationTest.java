@@ -43,7 +43,7 @@ public class IntegrationTest {
     private static final String LOG_TAG = "Mindroid";
     private static final ComponentName SERVICE_MANAGER = new ComponentName("mindroid.os", "ServiceManager");
     private static final ComponentName PACKAGE_MANAGER = new ComponentName("mindroid.content.pm", "PackageManagerService");
-    private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "Logger");
+    private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "LoggerService");
     private static final ComponentName CONSOLE_SERVICE = new ComponentName("mindroid.runtime.inspection", "ConsoleService");
 
     private static ServiceManager sServiceManager;
@@ -52,6 +52,8 @@ public class IntegrationTest {
     public static void setUp() {
         final int nodeId = 1;
         final String rootDir = ".";
+
+        Log.setIntegrationTesting(true);
 
         Environment.setRootDirectory(rootDir);
 
@@ -94,7 +96,7 @@ public class IntegrationTest {
         Runtime.shutdown();
     }
 
-    public static void startSystemServices() throws InterruptedException, RemoteException {
+    private static void startSystemServices() throws InterruptedException, RemoteException {
         IServiceManager serviceManager = ServiceManager.getServiceManager();
 
         serviceManager.startSystemService(new Intent()
@@ -130,11 +132,11 @@ public class IntegrationTest {
         PackageManager packageManager = new PackageManager();
         PackageInstaller packageInstaller = new PackageInstaller();
         packageInstaller.install(Environment.getAppsDirectory());
-        List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
+        List<PackageInfo> packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
         if (packages != null) {
             IServiceManager serviceManager = ServiceManager.getServiceManager();
-            for (Iterator itr = packages.iterator(); itr.hasNext();) {
-                PackageInfo p = (PackageInfo) itr.next();
+            for (Iterator<PackageInfo> itr = packages.iterator(); itr.hasNext();) {
+                PackageInfo p = itr.next();
                 if (p.services != null) {
                     ServiceInfo[] services = p.services;
                     for (int i = 0; i < services.length; i++) {
@@ -154,13 +156,13 @@ public class IntegrationTest {
         }
     }
 
-    public static void shutdownServices() throws RemoteException, InterruptedException {
+    private static void shutdownServices() throws RemoteException, InterruptedException {
         PackageManager packageManager = new PackageManager();
-        List packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
+        List<PackageInfo> packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
         if (packages != null) {
             IServiceManager serviceManager = ServiceManager.getServiceManager();
-            for (Iterator itr = packages.iterator(); itr.hasNext();) {
-                PackageInfo p = (PackageInfo) itr.next();
+            for (Iterator<PackageInfo> itr = packages.iterator(); itr.hasNext();) {
+                PackageInfo p = itr.next();
                 if (p.services != null) {
                     ServiceInfo[] services = p.services;
                     for (int i = 0; i < services.length; i++) {
@@ -179,7 +181,7 @@ public class IntegrationTest {
         }
     }
 
-    public static void shutdownSystemServices() throws RemoteException, InterruptedException {
+    private static void shutdownSystemServices() throws RemoteException, InterruptedException {
         IServiceManager serviceManager = ServiceManager.getServiceManager();
 
         serviceManager.stopSystemService(new Intent().setComponent(PACKAGE_MANAGER));

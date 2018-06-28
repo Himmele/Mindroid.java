@@ -16,58 +16,87 @@
 
 package mindroid.tests;
 
-import org.junit.jupiter.api.Test;
+import static mindroid.util.concurrent.AsyncAwait.*;
 import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 import mindroid.app.Service;
 import mindroid.content.ComponentName;
 import mindroid.content.Intent;
-import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IServiceManager;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.testing.IntegrationTest;
 import mindroid.util.Log;
-import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
-import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
-import mindroid.util.concurrent.TimeoutException;
+import mindroid.util.logging.Logger;
 
 public class Services extends IntegrationTest {
     @Test
-    void test() {
-        Promise<Boolean> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
+    void test1() {
+        Logger logger = new Logger();
 
+        Promise<?> p = async()
+        .thenCompose(value -> {
+            return startService();
+        })
+        .thenCompose(value -> {
+            return logger.assumeThat("ServiceManager", "Service Services\\$TestService has been created in process mindroid.tests", 10000);
+        })
+        .thenCompose(value -> {
+            return logger.assumeThat("TestService", "onStartCommand", 10000);
+        })
+        .thenCompose(value -> {
+            return stopService();
+        })
+        .thenCompose(value -> {
+            return logger.assumeThat("ServiceManager", "Service Services\\$TestService has been stopped", 10000);
+        });
+
+        try {
+            await(p, 10000);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void test2() {
+        try {
+            Logger logger = new Logger();
+
+            startService().get(10000);
+            logger.assumeThat("ServiceManager", "Service Services\\$TestService has been created in process mindroid.tests", 10000).get(10000);
+            logger.assumeThat("TestService", "onStartCommand", 10000).get(10000);
+            stopService().get(10000);
+            logger.assumeThat("ServiceManager", "Service Services\\$TestService has been stopped", 10000).get(10000);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+    }
+
+    private Promise<ComponentName> startService() {
         IServiceManager serviceManager = ServiceManager.getServiceManager();
         Intent intent = new Intent();
         intent.setComponent(new ComponentName("mindroid.tests", "Services$TestService"));
-        Bundle test = new Bundle();
-        test.putObject("promise", promise);
-        intent.putExtra("test", test);
         try {
-            serviceManager.startSystemService(intent).get(10000);
-        } catch (CancellationException | ExecutionException | TimeoutException | InterruptedException | RemoteException e) {
+            return serviceManager.startSystemService(intent);
+        } catch (RemoteException e) {
             fail(e.getMessage());
+            return new Promise<>(new ExecutionException());
         }
+    }
 
-        // FIXME: Wait for onStartCommand log.
+    private Promise<Boolean> stopService() {
+        IServiceManager serviceManager = ServiceManager.getServiceManager();
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName("mindroid.tests", "Services$TestService"));
         try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
+            return serviceManager.stopSystemService(intent);
+        } catch (RemoteException e) {
             fail(e.getMessage());
-        }
-
-        try {
-            serviceManager.stopSystemService(intent).get(10000);
-        } catch (CancellationException | ExecutionException | TimeoutException | InterruptedException | RemoteException e) {
-            fail(e.getMessage());
-        }
-
-        try {
-            Promise.allOf(Executors.SYNCHRONOUS_EXECUTOR, promise).orTimeout(10000).get();
-        } catch (Exception e) {
-            fail(e.getMessage());
+            return new Promise<>(new ExecutionException());
         }
     }
 
@@ -82,12 +111,6 @@ public class Services extends IntegrationTest {
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
             Log.d(TAG, "onStartCommand");
-
-            Bundle test = intent.getBundleExtra("test");
-            if (test != null && test.containsKey("promise")) {
-                Promise<Boolean> promise = (Promise<Boolean>) test.getObject("promise");
-                promise.complete(true);
-            }
             return 0;
         }
 
