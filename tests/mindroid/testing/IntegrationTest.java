@@ -103,6 +103,7 @@ public class IntegrationTest {
                 .setComponent(LOGGER_SERVICE)
                 .putExtra("name", Context.LOGGER_SERVICE.toString())
                 .putExtra("process", "main"));
+        ServiceManager.waitForSystemService(Context.LOGGER_SERVICE);
 
         serviceManager.startSystemService(new Intent(Logger.ACTION_LOG)
                 .setComponent(LOGGER_SERVICE)
