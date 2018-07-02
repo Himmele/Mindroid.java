@@ -77,7 +77,9 @@ public class LoggerService extends Service {
 
                 try {
                     mWaitForLogs.get();
-                } catch (CancellationException | ExecutionException | InterruptedException ignore) {
+                } catch (CancellationException | ExecutionException ignore) {
+                } catch (InterruptedException e) {
+                    break;
                 }
                 Iterator<Map.Entry<Integer, Promise<LogRecord>>> itr = loggers.entrySet().iterator();
                 while (itr.hasNext()) {
@@ -103,6 +105,8 @@ public class LoggerService extends Service {
                     }
                 }
             }
+
+            Log.println('I', LOG_TAG, "Logger has been shut down");
         }
 
         void reset() {
@@ -370,9 +374,9 @@ public class LoggerService extends Service {
                 mAssumptions.add(assumption);
                 Promise<String> p = assumption.orTimeout(timeout).then((value, exception) -> {
                     if (exception == null) {
-                        Log.println('D', LOG_TAG, "Log assumption success: " + value); 
+                        Log.println('D', LOG_TAG, "Log assumption success: " + value);
                     } else {
-                        Log.println('E', LOG_TAG, "Log assumption timeout: " + value); 
+                        Log.println('E', LOG_TAG, "Log assumption timeout: " + value);
                     }
                     mAssumptions.remove(assumption);
                 });
