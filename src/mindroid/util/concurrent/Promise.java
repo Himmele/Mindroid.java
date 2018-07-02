@@ -1368,12 +1368,15 @@ public class Promise<T> implements Future<T> {
                 try {
                     @SuppressWarnings("unchecked") T result = (T) mSupplier.mResult;
                     mConsumer.completeOnTimeout(result != NULL ? result : null, mDelay);
+                    return;
                 } catch (Throwable e) {
                     mConsumer.setResult(toCompletionException(e));
                 }
             } else {
                 mConsumer.setResult(toCompletionException((Promise.Error) mSupplier.mResult));
             }
+
+            mConsumer.onComplete();
         }
     }
 

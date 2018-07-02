@@ -65,6 +65,9 @@ public class AsyncAwait {
         SERIAL_EXECUTOR = new Handler(sThread.getLooper()).asExecutor();
     }
 
+    private AsyncAwait() {
+    }
+
     /** @hide */
     public static void setUp() {
     }
@@ -85,6 +88,9 @@ public class AsyncAwait {
     }
 
     public static Promise<Void> async(Handler handler) {
+        if (handler == null) {
+            throw new NullPointerException();
+        }
         return async(handler.asExecutor());
     }
 
