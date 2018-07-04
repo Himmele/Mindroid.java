@@ -364,6 +364,9 @@ public class FileHandler extends Handler {
      */
     @Override
     public synchronized void publish(LogRecord record) {
+        if (record.getPriority() < getPriority()) {
+            return;
+        }
         String logMessage = record.toString();
         final int logMessageSize = logMessage.length() + CRLF.length();
 

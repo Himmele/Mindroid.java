@@ -206,6 +206,7 @@ public class LoggerService extends Service {
                     throw new IllegalArgumentException("Invalid log buffer: " + logBuffer);
                 }
 
+                int priority = arguments.getInt("logPriority", Log.INFO);
                 String[] flags = arguments.getStringArray("logFlags");
                 boolean consoleLogging = arguments.getBoolean("consoleLogging", false);
                 if (consoleLogging) {
@@ -213,6 +214,7 @@ public class LoggerService extends Service {
                     if (flags != null && Arrays.asList(flags).contains("timestamp")) {
                         consoleHandler.setFlag(ConsoleHandler.FLAG_TIMESTAMP);
                     }
+                    consoleHandler.setPriority(priority);
                     logHandlers.add(consoleHandler);
                 } else {
                     Log.println('D', LOG_TAG, "Console logging: disabled");
@@ -229,6 +231,7 @@ public class LoggerService extends Service {
                     try {
                         FileHandler fileHandler = new FileHandler(directory + File.separator + fileName, fileLimit, fileCount, true,
                                 bufferSize, dataVolumeLimit);
+                        fileHandler.setPriority(priority);
                         logHandlers.add(fileHandler);
                     } catch (IOException e) {
                         Log.println('E', LOG_TAG, "File logging error: " + e.getMessage(), e);
@@ -240,6 +243,7 @@ public class LoggerService extends Service {
                     try {
                         Class<?> clazz = Class.forName(customHandler);
                         Handler handler = (Handler) clazz.newInstance();
+                        handler.setPriority(priority);
                         logHandlers.add(handler);
                     } catch (Exception e) {
                         Log.println('E', LOG_TAG, "Cannot create custom handler \'" + customHandler + "\': " + e.getMessage(), e);

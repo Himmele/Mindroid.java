@@ -16,9 +16,20 @@
 
 package mindroid.util.logging;
 
+import mindroid.util.Log;
 import mindroid.util.logging.LogBuffer.LogRecord;
 
 public abstract class Handler {
+    private int mPriority = Log.INFO;
+
+    public int getPriority() {
+        return mPriority;
+    }
+
+    public void setPriority(int priority) {
+        mPriority = priority;
+    }
+
     /**
      * Closes this handler. A flush operation will be performed and all the
      * associated resources will be freed. Client applications should not use

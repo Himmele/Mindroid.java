@@ -52,6 +52,9 @@ public class ConsoleHandler extends Handler {
      */
     @Override
     public void publish(LogRecord record) {
+        if (record.getPriority() < getPriority()) {
+            return;
+        }
         String output;
         if ((mFlags & FLAG_TIMESTAMP) == FLAG_TIMESTAMP) {
             output = record.toString();
