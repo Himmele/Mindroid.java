@@ -201,12 +201,12 @@ public class LoggerService extends Service {
         if (!mLogHandlers.containsKey(logBuffer)) {
             Log.println('D', LOG_TAG, "Starting logging {" + logBuffer + "}");
             try {
-                List<Handler> logHandlers = new ArrayList<>();
                 if (Log.getLogBuffer(logBuffer) == null) {
                     throw new IllegalArgumentException("Invalid log buffer: " + logBuffer);
                 }
-
+                List<Handler> logHandlers = new ArrayList<>();
                 int priority = arguments.getInt("logPriority", Log.INFO);
+
                 String[] flags = arguments.getStringArray("logFlags");
                 boolean consoleLogging = arguments.getBoolean("consoleLogging", false);
                 if (consoleLogging) {
@@ -251,6 +251,7 @@ public class LoggerService extends Service {
                         Log.println('E', LOG_TAG, "Linkage error: " + e.getMessage(), e);
                     }
                 }
+
                 if (!logHandlers.isEmpty()) {
                     mLogHandlers.put(logBuffer, logHandlers);
                     mLogger.reset();
@@ -259,7 +260,7 @@ public class LoggerService extends Service {
                     Log.println('D', LOG_TAG, "Logging has been disabled {" + logBuffer + "}");
                 }
             } catch (IllegalArgumentException e) {
-                Log.println('D', LOG_TAG, "Failed to start logging {" + logBuffer + "}", e);
+                Log.println('E', LOG_TAG, "Failed to start logging {" + logBuffer + "}", e);
             }
         }
     }
@@ -380,7 +381,7 @@ public class LoggerService extends Service {
                     if (exception == null) {
                         Log.println('D', LOG_TAG, "Log assumption success: " + value);
                     } else {
-                        Log.println('E', LOG_TAG, "Log assumption timeout: " + value);
+                        Log.println('E', LOG_TAG, "Log assumption timeout: " + exception.getMessage());
                     }
                     mAssumptions.remove(assumption);
                 });
