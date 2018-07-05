@@ -81,6 +81,13 @@ public final class Log {
     private static PrintStream sPrintStream = System.out;
     private static boolean sIntegrationTesting = false;
 
+    static {
+        final String value = System.getProperty(Properties.INTEGRATION_TESTING);
+        if (value != null) {
+            sIntegrationTesting = Boolean.valueOf(value);
+        }
+    }
+
     private Log() {
     }
 
@@ -441,23 +448,5 @@ public final class Log {
      */
     public static void setPrintStream(PrintStream printStream) {
         sPrintStream = printStream;
-    }
-
-    /**
-     * Integration testing.
-     *
-     * @hide
-     */
-    public static synchronized void setIntegrationTesting(boolean integrationTesting) {
-        sIntegrationTesting = integrationTesting;
-    }
-
-    /**
-     * Integration testing.
-     *
-     * @hide
-     */
-    public static synchronized boolean getIntegrationTesting() {
-        return sIntegrationTesting;
     }
 }

@@ -33,6 +33,7 @@ import mindroid.os.IServiceManager;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
+import mindroid.util.Properties;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.TimeoutException;
@@ -53,7 +54,7 @@ public class IntegrationTest {
         final int nodeId = 1;
         final String rootDir = ".";
 
-        Log.setIntegrationTesting(true);
+        System.setProperty(Properties.INTEGRATION_TESTING, "true");
 
         Environment.setRootDirectory(rootDir);
 

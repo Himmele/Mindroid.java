@@ -37,6 +37,7 @@ import mindroid.os.IRemoteCallback;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
+import mindroid.util.Properties;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Promise;
@@ -145,7 +146,8 @@ public class LoggerService extends Service {
         SharedPreferences preferences = Environment.getSharedPreferences(Environment.getPreferencesDirectory(), "Logger.xml", 0);
         final int threadPriority = preferences.getInt("threadPriority", Thread.MIN_PRIORITY);
         mLogger.setPriority(threadPriority);
-        if (Log.getIntegrationTesting()) {
+        final String integrationTesting = System.getProperty(Properties.INTEGRATION_TESTING);
+        if (integrationTesting != null && Boolean.valueOf(integrationTesting)) {
             mTestHandler = new TestHandler();
             List<Handler> handlers = new ArrayList<>();
             handlers.add(mTestHandler);
