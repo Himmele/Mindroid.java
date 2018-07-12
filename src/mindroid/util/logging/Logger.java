@@ -27,6 +27,8 @@ public class Logger {
     public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
     public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
     public static final String ACTION_CLEAR_LOG = "mindroid.util.logging.CLEAR_LOG";
+    public static final String ACTION_MARK_LOG = "mindroid.util.logging.MARK_LOG";
+    public static final String ACTION_RESET_LOG = "mindroid.util.logging.RESET_LOG";
 
     /** @hide */
     public static final String[] LOG_LEVELS = { "V", "D", "I", "W", "E", "A" };

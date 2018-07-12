@@ -16,6 +16,7 @@
 
 package mindroid.runtime.inspection;
 
+import java.util.Map;
 import mindroid.os.Bundle;
 import mindroid.os.IInterface;
 import mindroid.os.IBinder;
@@ -60,6 +61,10 @@ public interface IConsole extends IInterface {
                 String command = data.getString("command");
                 String[] arguments = data.getStringArray("arguments");
                 ((Promise<String>) result).completeWith(executeCommand(command, arguments));
+                break;
+            }
+            case MSG_LIST_COMMANDS: {
+                ((Promise<Map<String, String>>) result).complete(listCommands());
                 break;
             }
             default:
@@ -116,11 +121,18 @@ public interface IConsole extends IInterface {
                 mRemote.transact(MSG_EXECUTE_COMMAND, 0, null, data, promise, 0);
                 return promise;
             }
+
+            public Map<String, String> listCommands() throws RemoteException {
+                Promise<Map<String, String>> promise = new Promise<>();
+                mRemote.transact(MSG_LIST_COMMANDS, 0, null, null, promise, 0);
+                return Binder.get(promise);
+            }
         }
 
         static final int MSG_ADD_COMMAND = 1;
         static final int MSG_REMOVE_COMMAND = 2;
         static final int MSG_EXECUTE_COMMAND = 3;
+        static final int MSG_LIST_COMMANDS = 4;
     }
 
     static class Proxy implements IConsole {
@@ -181,9 +193,18 @@ public interface IConsole extends IInterface {
                 return mProxy.executeCommand(command, arguments);
             }
         }
+
+        public Map<String, String> listCommands() throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                return mStub.listCommands();
+            } else {
+                return mProxy.listCommands();
+            }
+        }
     }
 
     public boolean addCommand(String command, String description, ICommandHandler commandHandler) throws RemoteException;
     public boolean removeCommand(String command) throws RemoteException;
     public Promise<String> executeCommand(String command, String[] arguments) throws RemoteException;
+    public Map<String, String> listCommands() throws RemoteException;
 }

@@ -20,7 +20,9 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -50,7 +52,7 @@ public class IntegrationTest {
     private static ServiceManager sServiceManager;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setUpTests() {
         final int nodeId = 1;
         final String rootDir = ".";
 
@@ -78,7 +80,7 @@ public class IntegrationTest {
     }
 
     @AfterAll
-    public static void tearDown() {
+    public static void tearDownTests() {
         try {
             shutdownServices();
         } catch (Exception e) {
@@ -95,6 +97,28 @@ public class IntegrationTest {
         sServiceManager = null;
 
         Runtime.shutdown();
+    }
+
+    @BeforeEach
+    public void setUp() {
+        IServiceManager serviceManager = ServiceManager.getServiceManager();
+        try {
+            serviceManager.startSystemService(new Intent(Logger.ACTION_MARK_LOG)
+                    .setComponent(LOGGER_SERVICE)
+                    .putExtra("logBuffer", Log.LOG_ID_TEST));
+        } catch (RemoteException ignore) {
+        }
+    }
+
+    @AfterEach
+    public void tearDown() {
+        IServiceManager serviceManager = ServiceManager.getServiceManager();
+        try {
+            serviceManager.startSystemService(new Intent(Logger.ACTION_RESET_LOG)
+                    .setComponent(LOGGER_SERVICE)
+                    .putExtra("logBuffer", Log.LOG_ID_TEST));
+        } catch (RemoteException ignore) {
+        }
     }
 
     private static void startSystemServices() throws InterruptedException, RemoteException {

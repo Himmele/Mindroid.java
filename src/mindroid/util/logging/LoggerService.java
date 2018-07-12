@@ -168,6 +168,14 @@ public class LoggerService extends Service {
             flushLog(intent.getExtras());
         } else if (Logger.ACTION_CLEAR_LOG.equals(action)) {
             clearLog(intent.getExtras());
+        } else if (Logger.ACTION_MARK_LOG.equals(action)) {
+            if (mTestHandler != null) {
+                mTestHandler.mark();
+            }
+        } else if (Logger.ACTION_RESET_LOG.equals(action)) {
+            if (mTestHandler != null) {
+                mTestHandler.reset();
+            }
         }
 
         return 0;
@@ -177,7 +185,7 @@ public class LoggerService extends Service {
         ServiceManager.removeService(mBinder);
         mLogger.quit();
         if (mTestHandler != null) {
-            mTestHandler.reset();
+            mTestHandler.clear();
         }
         Log.println('D', LOG_TAG, "Flushing logs");
         Iterator<Map.Entry<Integer, List<Handler>>> itr = mLogHandlers.entrySet().iterator();
@@ -335,8 +343,9 @@ public class LoggerService extends Service {
     private static class TestHandler extends Handler {
         private List<LogRecord> mLogHistory = new LinkedList<>();
         private List<Assumption> mAssumptions = new LinkedList<>();
+        private int mMark = 0;
 
-        public static class Assumption extends Promise<String> {
+        private static class Assumption extends Promise<String> {
             private String mTag;
             private String mMessage;
 
@@ -351,6 +360,10 @@ public class LoggerService extends Service {
                 }
                 return false;
             }
+
+            public String toString() {
+                return mTag + ": " + mMessage;
+            }
         }
 
         @Override
@@ -364,8 +377,12 @@ public class LoggerService extends Service {
         @Override
         public synchronized void publish(LogRecord logRecord) {
             mLogHistory.add(logRecord);
-            for (Assumption assumption : mAssumptions) {
-                assumption.match(logRecord.getPriority(), logRecord.getTag(), logRecord.getMessage());
+            Iterator<Assumption> itr = mAssumptions.iterator();
+            while (itr.hasNext()) {
+                Assumption assumption = itr.next();
+                if (assumption.match(logRecord.getPriority(), logRecord.getTag(), logRecord.getMessage())) {
+                    itr.remove();
+                }
             }
         }
 
@@ -379,16 +396,32 @@ public class LoggerService extends Service {
                 return assumption;
             } else {
                 mAssumptions.add(assumption);
-                Promise<String> p = assumption.orTimeout(timeout).then((value, exception) -> {
+                Promise<String> p = assumption.orTimeout(timeout).catchException(exception -> {
+                    synchronized (TestHandler.this) {
+                        mAssumptions.remove(assumption);
+                    }
+                })
+                .then((value, exception) -> {
                     if (exception == null) {
                         Log.println('D', LOG_TAG, "Log assumption success: " + value);
                     } else {
-                        Log.println('E', LOG_TAG, "Log assumption timeout: " + exception.getMessage());
+                        Log.println('E', LOG_TAG, "Log assumption timeout: " + assumption.toString());
                     }
-                    mAssumptions.remove(assumption);
                 });
                 return p;
             }
+        }
+
+        public synchronized void clear() {
+            for (Assumption assumption : mAssumptions) {
+                assumption.cancel();
+            }
+            mAssumptions.clear();
+            mLogHistory.clear();
+        }
+
+        public synchronized void mark() {
+            mMark = mLogHistory.size();
         }
 
         public synchronized void reset() {
@@ -396,7 +429,9 @@ public class LoggerService extends Service {
                 assumption.cancel();
             }
             mAssumptions.clear();
-            mLogHistory.clear();
+            while (mLogHistory.size() > mMark) {
+                mLogHistory.remove(mLogHistory.size() - 1);
+            }
         }
 
         private boolean matchLogHistory(Assumption assumption) {

@@ -17,6 +17,7 @@
 package mindroid.runtime.inspection;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import mindroid.content.Context;
 import mindroid.os.RemoteException;
@@ -106,6 +107,18 @@ public class Console {
             }
         } else {
             return new Promise<>(new ExecutionException());
+        }
+    }
+
+    public Map<String, String> listCommands() {
+        if (mConsole != null) {
+            try {
+                return mConsole.listCommands();
+            } catch (RemoteException e) {
+                throw new RuntimeException("System failure", e);
+            }
+        } else {
+            return null;
         }
     }
 }

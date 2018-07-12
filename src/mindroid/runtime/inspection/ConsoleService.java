@@ -95,6 +95,16 @@ public class ConsoleService extends Service {
             }
             return result;
         }
+
+        public Map<String, String> listCommands() throws RemoteException {
+            Map<String, String> map = new HashMap<>();
+            for (Map.Entry<String, Command> entry : mCommands.entrySet()) {
+                String key = entry.getKey();
+                Command value = entry.getValue();
+                map.put(key, value.description);
+            }
+            return map;
+        }
     };
 
     private void addCommand(String command, String description, Function<String[], String> function) {
