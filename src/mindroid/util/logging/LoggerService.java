@@ -396,7 +396,8 @@ public class LoggerService extends Service {
                 return assumption;
             } else {
                 mAssumptions.add(assumption);
-                Promise<String> p = assumption.orTimeout(timeout).catchException(exception -> {
+                Promise<String> p = assumption.orTimeout(timeout, "Log assumption timeout: " + assumption.toString())
+                .catchException(exception -> {
                     synchronized (TestHandler.this) {
                         mAssumptions.remove(assumption);
                     }

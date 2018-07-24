@@ -938,8 +938,16 @@ public class Promise<T> implements Future<T> {
 
     @Override
     public Promise<T> orTimeout(long timeout) {
+        return orTimeout(timeout, null, null);
+    }
+
+    public Promise<T> orTimeout(long timeout, String message) {
+        return orTimeout(timeout, message, null);
+    }
+
+    public Promise<T> orTimeout(long timeout, String message, Throwable cause) {
         if (mResult == null) {
-            then(Timeout.add(new Timeout.Exception(this), timeout));
+            then(Timeout.add(new Timeout.Exception(this, message, cause), timeout));
         }
         return this;
     }
@@ -1465,15 +1473,19 @@ public class Promise<T> implements Future<T> {
 
         static final class Exception implements Runnable {
             final Promise<?> mConsumer;
+            final String mMessage;
+            final Throwable mCause;
 
-            Exception(Promise<?> consumer) {
+            Exception(Promise<?> consumer, String message, Throwable cause) {
                 mConsumer = consumer;
+                mMessage = message;
+                mCause = cause;
             }
 
             @Override
             public void run() {
                 if (mConsumer != null && !mConsumer.isDone()) {
-                    mConsumer.completeWith(new TimeoutException());
+                    mConsumer.completeWith(new TimeoutException(mMessage, mCause));
                 }
             }
         }
