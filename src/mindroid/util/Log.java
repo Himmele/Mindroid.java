@@ -78,15 +78,8 @@ public final class Log {
     private static final LogBuffer EVENT_LOG_BUFFER = new LogBuffer(LOG_ID_EVENTS, 262144); // 256KB
     private static final LogBuffer TEST_LOG_BUFFER = new LogBuffer(LOG_ID_TEST, 262144); // 256KB
 
-    private static PrintStream sPrintStream = System.out;
     private static boolean sIntegrationTesting = false;
-
-    static {
-        final String value = System.getProperty(Properties.INTEGRATION_TESTING);
-        if (value != null) {
-            sIntegrationTesting = Boolean.valueOf(value);
-        }
-    }
+    private static PrintStream sPrintStream = System.out;
 
     private Log() {
     }
@@ -439,6 +432,15 @@ public final class Log {
         default:
             return -1;
         }
+    }
+
+    /**
+     * Integration testing.
+     *
+     * @hide
+     */
+    public static void setIntegrationTesting(boolean integrationTesting) {
+        sIntegrationTesting = integrationTesting;
     }
 
     /**

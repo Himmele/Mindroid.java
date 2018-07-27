@@ -57,6 +57,7 @@ public class IntegrationTest {
         final String rootDir = ".";
 
         System.setProperty(Properties.INTEGRATION_TESTING, "true");
+        Log.setIntegrationTesting(true);
 
         Environment.setRootDirectory(rootDir);
 
