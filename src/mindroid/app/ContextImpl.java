@@ -145,7 +145,7 @@ public class ContextImpl extends Context {
                 throw new RuntimeException("System failure", e);
             }
         } else {
-            return null;
+            return new Promise<>((ComponentName) null);
         }
     }
 
