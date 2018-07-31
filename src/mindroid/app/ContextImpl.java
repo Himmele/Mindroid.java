@@ -42,8 +42,8 @@ import mindroid.os.RemoteCallback;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.Log;
-import mindroid.util.concurrent.CancellationException;
-import mindroid.util.concurrent.ExecutionException;
+import mindroid.util.concurrent.Future;
+import mindroid.util.concurrent.Promise;
 
 /**
  * Common implementation of Context API, which provides the base
@@ -137,11 +137,11 @@ public class ContextImpl extends Context {
     }
 
     @Override
-    public ComponentName startService(Intent service) {
+    public Future<ComponentName> startService(Intent service) {
         if (service != null) {
             try {
-                return mServiceManager.startService(service).get();
-            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
+                return mServiceManager.startService(service);
+            } catch (RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {
@@ -150,23 +150,23 @@ public class ContextImpl extends Context {
     }
 
     @Override
-    public boolean stopService(Intent service) {
+    public Future<Boolean> stopService(Intent service) {
         if (service != null) {
             try {
-                return mServiceManager.stopService(service).get();
-            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
+                return mServiceManager.stopService(service);
+            } catch (RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {
-            return false;
+            return new Promise<>(Boolean.FALSE);
         }
     }
 
     @Override
-    public boolean bindService(final Intent service, final ServiceConnection conn, int flags) {
+    public Future<Boolean> bindService(final Intent service, final ServiceConnection conn, int flags) {
         if (service != null && conn != null) {
             if (mServiceConnections.containsKey(conn)) {
-                return true;
+                return new Promise<>(Boolean.TRUE);
             }
             mServiceConnections.put(conn, service);
             RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
@@ -181,12 +181,12 @@ public class ContextImpl extends Context {
                 }
             }, mHandler);
             try {
-                return mServiceManager.bindService(service, conn, flags, callback.asInterface()).get();
-            } catch (CancellationException | ExecutionException | InterruptedException | RemoteException e) {
+                return mServiceManager.bindService(service, conn, flags, callback.asInterface());
+            } catch (RemoteException e) {
                 throw new RuntimeException("System failure", e);
             }
         } else {
-            return false;
+            return new Promise<>(Boolean.FALSE);
         }
     }
 

@@ -22,10 +22,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.net.URI;
-import mindroid.os.IBinder;
-import mindroid.os.Looper;
 import mindroid.content.SharedPreferences;
 import mindroid.content.pm.PackageManager;
+import mindroid.os.IBinder;
+import mindroid.os.Looper;
+import mindroid.util.concurrent.Future;
 
 /**
  * Interface to global information about an application environment. This is an class whose
@@ -196,7 +197,7 @@ public abstract class Context {
      * @see #stopService
      * @see #bindService
      */
-    public abstract ComponentName startService(Intent service);
+    public abstract Future<ComponentName> startService(Intent service);
 
     /**
      * Request that a given application service be stopped. If the service is not running, nothing
@@ -216,7 +217,7 @@ public abstract class Context {
      * 
      * @see #startService
      */
-    public abstract boolean stopService(Intent service);
+    public abstract Future<Boolean> stopService(Intent service);
 
     /**
      * Connect to an application service, creating it if needed. This defines a dependency between
@@ -237,7 +238,7 @@ public abstract class Context {
      * @see #unbindService
      * @see #startService
      */
-    public abstract boolean bindService(Intent service, ServiceConnection conn, int flags);
+    public abstract Future<Boolean> bindService(Intent service, ServiceConnection conn, int flags);
 
     /**
      * Disconnect from an application service. You will no longer receive calls as the service is

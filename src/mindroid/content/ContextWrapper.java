@@ -25,6 +25,7 @@ import java.net.URI;
 import mindroid.content.pm.PackageManager;
 import mindroid.os.IBinder;
 import mindroid.os.Looper;
+import mindroid.util.concurrent.Future;
 
 /**
  * Proxying implementation of Context that simply delegates all of its calls to another Context. Can
@@ -108,17 +109,17 @@ public class ContextWrapper extends Context {
     }
 
     @Override
-    public ComponentName startService(Intent service) {
+    public Future<ComponentName> startService(Intent service) {
         return mBaseContext.startService(service);
     }
 
     @Override
-    public boolean stopService(Intent service) {
+    public Future<Boolean> stopService(Intent service) {
         return mBaseContext.stopService(service);
     }
 
     @Override
-    public boolean bindService(Intent service, ServiceConnection conn, int flags) {
+    public Future<Boolean> bindService(Intent service, ServiceConnection conn, int flags) {
         return mBaseContext.bindService(service, conn, flags);
     }
 
