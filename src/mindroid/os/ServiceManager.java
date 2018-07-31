@@ -261,7 +261,8 @@ public final class ServiceManager {
                     return new Promise<>(false);
                 }
 
-                RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+                final Promise<Boolean> promise = new Promise<>();
+                final RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
                     public void onResult(Bundle data) {
                         boolean result = data.getBoolean("result");
                         if (result) {
@@ -269,6 +270,7 @@ public final class ServiceManager {
                         } else {
                             Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be stopped");
                         }
+                        promise.complete(result);
                     }
                 });
 
@@ -290,7 +292,7 @@ public final class ServiceManager {
                     }
                 }
 
-                return new Promise<>(true);
+                return promise;
             } else {
                 Log.d(LOG_TAG, "Cannot find and stop service " + service.getComponent().toShortString());
                 return new Promise<>(false);
@@ -488,7 +490,8 @@ public final class ServiceManager {
         final ServiceRecord serviceRecord = mServices.get(service.getComponent());
         serviceRecord.running = true;
 
-        RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
+        final Promise<ComponentName> promise = new Promise<>();
+        final RemoteCallback callback = new RemoteCallback(new RemoteCallback.OnResultListener() {
             public void onResult(Bundle data) {
                 boolean result = data.getBoolean("result");
                 if (result) {
@@ -496,6 +499,7 @@ public final class ServiceManager {
                 } else {
                     Log.w(LOG_TAG, "Service " + serviceRecord.name + " cannot be started in process " + serviceRecord.processRecord.name);
                 }
+                promise.complete(service.getComponent());
             }
         });
 
@@ -505,7 +509,7 @@ public final class ServiceManager {
             throw new RuntimeException("System failure", e);
         }
 
-        return new Promise<>(service.getComponent());
+        return promise;
     }
 
     private boolean cleanupService(Intent service) {

@@ -122,14 +122,14 @@ public class IntegrationTest {
         }
     }
 
-    private static void startSystemServices() throws InterruptedException, RemoteException {
+    private static void startSystemServices() throws InterruptedException, CancellationException, ExecutionException, RemoteException {
         IServiceManager serviceManager = ServiceManager.getServiceManager();
 
         serviceManager.startSystemService(new Intent()
                 .setComponent(LOGGER_SERVICE)
                 .putExtra("name", Context.LOGGER_SERVICE.toString())
-                .putExtra("process", "main"));
-        ServiceManager.waitForSystemService(Context.LOGGER_SERVICE);
+                .putExtra("process", "main"))
+                .get();
 
         serviceManager.startSystemService(new Intent(Logger.ACTION_LOG)
                 .setComponent(LOGGER_SERVICE)
@@ -145,14 +145,14 @@ public class IntegrationTest {
         serviceManager.startSystemService(new Intent()
                 .setComponent(CONSOLE_SERVICE)
                 .putExtra("name", Context.CONSOLE_SERVICE.toString())
-                .putExtra("process", "main"));
-        ServiceManager.waitForSystemService(Context.CONSOLE_SERVICE);
+                .putExtra("process", "main"))
+                .get();
 
         serviceManager.startSystemService(new Intent()
                 .setComponent(PACKAGE_MANAGER)
                 .putExtra("name", Context.PACKAGE_MANAGER.toString())
-                .putExtra("process", "main"));
-        ServiceManager.waitForSystemService(Context.PACKAGE_MANAGER);
+                .putExtra("process", "main"))
+                .get();
     }
 
     private static void startServices() throws InterruptedException, RemoteException {
@@ -183,7 +183,7 @@ public class IntegrationTest {
         }
     }
 
-    private static void shutdownServices() throws RemoteException, InterruptedException {
+    private static void shutdownServices() throws InterruptedException, RemoteException {
         PackageManager packageManager = new PackageManager();
         List<PackageInfo> packages = packageManager.getInstalledPackages(PackageManager.GET_SERVICES);
         if (packages != null) {
@@ -208,16 +208,19 @@ public class IntegrationTest {
         }
     }
 
-    private static void shutdownSystemServices() throws RemoteException, InterruptedException {
+    private static void shutdownSystemServices() throws InterruptedException, CancellationException, ExecutionException, RemoteException {
         IServiceManager serviceManager = ServiceManager.getServiceManager();
 
-        serviceManager.stopSystemService(new Intent().setComponent(PACKAGE_MANAGER));
-        ServiceManager.waitForSystemServiceShutdown(Context.PACKAGE_MANAGER);
+        serviceManager.stopSystemService(new Intent()
+                .setComponent(PACKAGE_MANAGER))
+                .get();
 
-        serviceManager.stopSystemService(new Intent().setComponent(CONSOLE_SERVICE));
-        ServiceManager.waitForSystemServiceShutdown(Context.CONSOLE_SERVICE);
+        serviceManager.stopSystemService(new Intent()
+                .setComponent(CONSOLE_SERVICE))
+                .get();
 
-        serviceManager.stopSystemService(new Intent().setComponent(LOGGER_SERVICE));
-        ServiceManager.waitForSystemServiceShutdown(Context.LOGGER_SERVICE);
+        serviceManager.stopSystemService(new Intent()
+                .setComponent(LOGGER_SERVICE))
+                .get();
     }
 }
