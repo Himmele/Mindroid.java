@@ -140,6 +140,20 @@ public class LoggerService extends Service {
                 return new Promise<>(new ExecutionException());
             }
         }
+
+        @Override
+        public void mark() throws RemoteException {
+            if (mTestHandler != null) {
+                mTestHandler.mark();
+            }
+        }
+
+        @Override
+        public void reset() throws RemoteException {
+            if (mTestHandler != null) {
+                mTestHandler.reset();
+            }
+        }
     };
 
     public void onCreate() {
@@ -168,14 +182,6 @@ public class LoggerService extends Service {
             flushLog(intent.getExtras());
         } else if (Logger.ACTION_CLEAR_LOG.equals(action)) {
             clearLog(intent.getExtras());
-        } else if (Logger.ACTION_MARK_LOG.equals(action)) {
-            if (mTestHandler != null) {
-                mTestHandler.mark();
-            }
-        } else if (Logger.ACTION_RESET_LOG.equals(action)) {
-            if (mTestHandler != null) {
-                mTestHandler.reset();
-            }
         }
 
         return 0;

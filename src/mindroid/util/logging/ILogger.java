@@ -52,6 +52,14 @@ public interface ILogger extends IInterface {
                 ((Promise<String>) result).completeWith(assumeThat(tag, message, timeout));
                 break;
             }
+            case MSG_MARK: {
+                mark();
+                break;
+            }
+            case MSG_RESET: {
+                reset();
+                break;
+            }
             default:
                 super.onTransact(what, num, obj, data, result);
             }
@@ -91,9 +99,19 @@ public interface ILogger extends IInterface {
                 mRemote.transact(MSG_ASSUME_THAT, 0, null, data, promise, 0);
                 return promise;
             }
+
+            public void mark() throws RemoteException {
+                mRemote.transact(MSG_MARK, 0, null, null, null, FLAG_ONEWAY);
+            }
+
+            public void reset() throws RemoteException {
+                mRemote.transact(MSG_RESET, 0, null, null, null, FLAG_ONEWAY);
+            }
         }
 
         static final int MSG_ASSUME_THAT = 1;
+        static final int MSG_MARK = 2;
+        static final int MSG_RESET = 3;
     }
 
     static class Proxy implements ILogger {
@@ -138,7 +156,25 @@ public interface ILogger extends IInterface {
                 return mProxy.assumeThat(tag, message, timeout);
             }
         }
+
+        public void mark() throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                mStub.mark();
+            } else {
+                mProxy.mark();
+            }
+        }
+
+        public void reset() throws RemoteException {
+            if (mStub != null && mStub.isCurrentThread()) {
+                mStub.reset();
+            } else {
+                mProxy.reset();
+            }
+        }
     }
 
     public Promise<String> assumeThat(String tag, String message, long timeout) throws RemoteException;
+    public void mark() throws RemoteException;
+    public void reset() throws RemoteException;
 }

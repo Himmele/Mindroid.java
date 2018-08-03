@@ -102,24 +102,14 @@ public class IntegrationTest {
 
     @BeforeEach
     public void setUp() {
-        IServiceManager serviceManager = ServiceManager.getServiceManager();
-        try {
-            serviceManager.startSystemService(new Intent(Logger.ACTION_MARK_LOG)
-                    .setComponent(LOGGER_SERVICE)
-                    .putExtra("logBuffer", Log.LOG_ID_TEST));
-        } catch (RemoteException ignore) {
-        }
+        Logger logger = new Logger();
+        logger.mark();
     }
 
     @AfterEach
     public void tearDown() {
-        IServiceManager serviceManager = ServiceManager.getServiceManager();
-        try {
-            serviceManager.startSystemService(new Intent(Logger.ACTION_RESET_LOG)
-                    .setComponent(LOGGER_SERVICE)
-                    .putExtra("logBuffer", Log.LOG_ID_TEST));
-        } catch (RemoteException ignore) {
-        }
+        Logger logger = new Logger();
+        logger.reset();
     }
 
     private static void startSystemServices() throws InterruptedException, CancellationException, ExecutionException, RemoteException {

@@ -27,8 +27,6 @@ public class Logger {
     public static final String ACTION_DUMP_LOG = "mindroid.util.logging.DUMP_LOG";
     public static final String ACTION_FLUSH_LOG = "mindroid.util.logging.FLUSH_LOG";
     public static final String ACTION_CLEAR_LOG = "mindroid.util.logging.CLEAR_LOG";
-    public static final String ACTION_MARK_LOG = "mindroid.util.logging.MARK_LOG";
-    public static final String ACTION_RESET_LOG = "mindroid.util.logging.RESET_LOG";
 
     /** @hide */
     public static final String[] LOG_LEVELS = { "V", "D", "I", "W", "E", "A" };
@@ -55,6 +53,35 @@ public class Logger {
             }
         } else {
             return new Promise<>(new ExecutionException());
+        }
+    }
+
+    /**
+     * Sets a mark position in the test log buffer. Sending {@code reset()}
+     * will reposition the stream back to the marked position.
+     *
+     * @see #reset()
+     */
+    public void mark() {
+        if (mLogger != null) {
+            try {
+                mLogger.mark();
+            } catch (RemoteException e) {
+                throw new RuntimeException("System failure", e);
+            }
+        }
+    }
+
+    /**
+     * Resets this stream to the last marked location.
+     */
+    public void reset() {
+        if (mLogger != null) {
+            try {
+                mLogger.reset();
+            } catch (RemoteException e) {
+                throw new RuntimeException("System failure", e);
+            }
         }
     }
 }
