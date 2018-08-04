@@ -474,6 +474,43 @@ public class Promise<T> implements Future<T> {
         return andTree(executor, promises, 0, promises.length - 1);
     }
 
+    public static Promise<Void> allOf(boolean completeOnException, Promise<?>... promises) {
+        return allOf((Looper.myLooper() != null) ? new Handler().asExecutor() : null, completeOnException, promises);
+    }
+
+    public static Promise<Void> allOf(Handler handler, boolean completeOnException, Promise<?>... promises) {
+        return allOf(handler.asExecutor(), completeOnException, promises);
+    }
+
+    public static Promise<Void> allOf(Executor executor, boolean completeOnException, Promise<?>... promises) {
+        if (!completeOnException) {
+            return allOf(executor, promises);
+        } else {
+            Promise<Void> p = new Promise<>(executor);
+            if (promises.length == 0) {
+                p.complete(null);
+                return p;
+            }
+
+            Promise<Void> values = Promise.allOf(Executors.SYNCHRONOUS_EXECUTOR, promises);
+            Promise<Void> exceptions = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
+            for (Promise<?> promise : promises) {
+                promise.catchException((t) -> {
+                    exceptions.completeWith(t);
+                });
+            }
+
+            Promise.anyOf(Executors.SYNCHRONOUS_EXECUTOR, values, exceptions).then((value, exception) -> {
+                if (exception == null) {
+                    p.complete(null);
+                } else {
+                    p.completeWith(exception);
+                }
+            });
+            return p;
+        }
+    }
+
     private static Promise<Void> andTree(Executor executor, Promise<?>[] promises, int start, int end) {
         Promise<?> supplier1;
         Promise<?> supplier2;
