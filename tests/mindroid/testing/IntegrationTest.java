@@ -34,6 +34,7 @@ import mindroid.os.Environment;
 import mindroid.os.IServiceManager;
 import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
+import mindroid.os.SystemClock;
 import mindroid.util.Log;
 import mindroid.util.Properties;
 import mindroid.util.concurrent.CancellationException;
@@ -43,7 +44,7 @@ import mindroid.util.logging.Logger;
 import mindroid.runtime.system.Runtime;
 
 public class IntegrationTest {
-    private static final String LOG_TAG = "Mindroid";
+    private static final String LOG_TAG = "IntegrationTest";
     private static final ComponentName SERVICE_MANAGER = new ComponentName("mindroid.os", "ServiceManager");
     private static final ComponentName PACKAGE_MANAGER = new ComponentName("mindroid.content.pm", "PackageManagerService");
     private static final ComponentName LOGGER_SERVICE = new ComponentName("mindroid.util.logging", "LoggerService");
@@ -187,9 +188,16 @@ public class IntegrationTest {
                         if (serviceInfo.isEnabled()) {
                             Intent service = new Intent();
                             service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
+                            final String name = serviceInfo.packageName + "." + serviceInfo.name;
+                            long start = SystemClock.uptimeMillis();
                             try {
                                 serviceManager.stopService(service).get(10000);
+                                long end = SystemClock.uptimeMillis();
+                                if (end - start >= 1000) {
+                                    Log.println('W', LOG_TAG, "Stopping service " + name + " took very long: " + (end - start) + "ms");
+                                }
                             } catch (CancellationException | ExecutionException | TimeoutException | RemoteException ignore) {
+                                Log.println('E', LOG_TAG, "Failed to stop service " + name);
                             }
                         }
                     }
