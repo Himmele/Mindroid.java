@@ -77,7 +77,9 @@ public class AsyncAwait {
         sThread.quit();
         try {
             THREAD_POOL_EXECUTOR.shutdown();
-            THREAD_POOL_EXECUTOR.awaitTermination(10000, TimeUnit.MILLISECONDS);
+            if (!THREAD_POOL_EXECUTOR.awaitTermination(10000, TimeUnit.MILLISECONDS)) {
+                THREAD_POOL_EXECUTOR.shutdownNow();
+            }
         } catch (InterruptedException e) {
             THREAD_POOL_EXECUTOR.shutdownNow();
         }

@@ -126,7 +126,10 @@ public class PromiseExample extends Service {
         Log.i(LOG_TAG, "onDestroy");
         try {
             mExecutorService.shutdown();
-            mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS);
+            if (!mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                Log.e(LOG_TAG, "Cannot shutdown executor service");
+                mExecutorService.shutdownNow();
+            }
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "Cannot shutdown executor service", e);
             mExecutorService.shutdownNow();
