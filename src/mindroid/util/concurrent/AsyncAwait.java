@@ -82,6 +82,7 @@ public class AsyncAwait {
             }
         } catch (InterruptedException e) {
             THREAD_POOL_EXECUTOR.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -133,6 +133,7 @@ public class PromiseExample extends Service {
         } catch (InterruptedException e) {
             Log.w(LOG_TAG, "Cannot shutdown executor service", e);
             mExecutorService.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
