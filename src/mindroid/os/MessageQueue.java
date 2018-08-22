@@ -34,7 +34,8 @@ public class MessageQueue {
     private static final int STARVATION_DELAY = 1000; // ms
     private final boolean mQuitAllowed;
 
-    Message mMessages;
+    Message mHeadMessage;
+    Message mTailMessage;
     private boolean mQuitting;
 
     MessageQueue(boolean quitAllowed) {
@@ -52,13 +53,14 @@ public class MessageQueue {
             }
             mQuitting = true;
 
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
             while (curMessage != null) {
                 Message nextMessage = curMessage.nextMessage;
                 curMessage.recycle();
                 curMessage = nextMessage;
             }
-            mMessages = null;
+            mHeadMessage = null;
+            mTailMessage = null;
 
             notify();
         }
@@ -83,24 +85,36 @@ public class MessageQueue {
 
             message.markInUse();
             message.when = when;
-            Message curMessage = mMessages;
-            if (curMessage == null || when == 0 || when < curMessage.when) {
-                message.nextMessage = curMessage;
-                mMessages = message;
-                notify();
+
+            if (mHeadMessage == null || when == 0 || when < mHeadMessage.when) {
+                Message oldHeadMessage = mHeadMessage;
+                mHeadMessage = message;
+                if (oldHeadMessage != null) {
+                    oldHeadMessage.prevMessage = mHeadMessage;
+                } else {
+                    mTailMessage = mHeadMessage;
+                }
+                mHeadMessage.nextMessage = oldHeadMessage;
+            } else if (when >= mTailMessage.when) {
+                message.prevMessage = mTailMessage;
+                mTailMessage.nextMessage = message;
+                mTailMessage = message;
             } else {
-                Message prevMessage;
+                Message curMessage = mTailMessage;
+                Message nextMessage;
                 for (;;) {
-                    prevMessage = curMessage;
-                    curMessage = curMessage.nextMessage;
-                    if (curMessage == null || when < curMessage.when) {
+                    nextMessage = curMessage;
+                    curMessage = curMessage.prevMessage;
+                    if (when >= curMessage.when) {
                         break;
                     }
                 }
-                message.nextMessage = curMessage;
-                prevMessage.nextMessage = message;
-                notify();
+                message.nextMessage = nextMessage;
+                message.prevMessage = curMessage;
+                nextMessage.prevMessage = message;
+                curMessage.nextMessage = message;
             }
+            notify();
         }
         return true;
     }
@@ -113,7 +127,7 @@ public class MessageQueue {
                 }
 
                 final long now = SystemClock.uptimeMillis();
-                Message message = mMessages;
+                Message message = mHeadMessage;
 
                 if (message != null) {
                     if (now < message.when) {
@@ -129,7 +143,11 @@ public class MessageQueue {
                             }
                         }
 
-                        mMessages = message.nextMessage;
+                        mHeadMessage = message.nextMessage;
+                        if (mHeadMessage != null) {
+                            mHeadMessage.prevMessage = null;
+                        }
+                        message.prevMessage = null;
                         message.nextMessage = null;
                         return message;
                     }
@@ -150,7 +168,7 @@ public class MessageQueue {
         }
 
         synchronized (this) {
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
             while (curMessage != null) {
                 if (curMessage.target == handler && curMessage.what == what && (object == null || curMessage.obj == object)) {
                     return true;
@@ -167,7 +185,7 @@ public class MessageQueue {
         }
 
         synchronized (this) {
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
             while (curMessage != null) {
                 if (curMessage.target == handler && curMessage.callback == runnable && (object == null || curMessage.obj == object)) {
                     return true;
@@ -186,13 +204,18 @@ public class MessageQueue {
         boolean foundMessage = false;
 
         synchronized (this) {
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
 
             // Remove all messages at the front of the message queue.
             while (curMessage != null && curMessage.target == handler && curMessage.what == what && (object == null || curMessage.obj == object)) {
                 foundMessage = true;
                 Message nextMessage = curMessage.nextMessage;
-                mMessages = nextMessage;
+                mHeadMessage = nextMessage;
+                if (mHeadMessage != null) {
+                    mHeadMessage.prevMessage = null;
+                } else {
+                    mTailMessage = null;
+                }
                 curMessage.recycle();
                 curMessage = nextMessage;
             }
@@ -204,8 +227,13 @@ public class MessageQueue {
                     if (nextMessage.target == handler && nextMessage.what == what && (object == null || nextMessage.obj == object)) {
                         foundMessage = true;
                         Message nextButOneMessage = nextMessage.nextMessage;
-                        nextMessage.recycle();
+                        if (nextButOneMessage != null) {
+                            nextButOneMessage.prevMessage = curMessage;
+                        } else {
+                            mTailMessage = curMessage;
+                        }
                         curMessage.nextMessage = nextButOneMessage;
+                        nextMessage.recycle();
                         continue;
                     }
                 }
@@ -224,13 +252,18 @@ public class MessageQueue {
         boolean foundMessage = false;
 
         synchronized (this) {
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
 
             // Remove all messages at the front of the message queue.
             while (curMessage != null && curMessage.target == handler && curMessage.callback == runnable && (object == null || curMessage.obj == object)) {
                 foundMessage = true;
                 Message nextMessage = curMessage.nextMessage;
-                mMessages = nextMessage;
+                mHeadMessage = nextMessage;
+                if (mHeadMessage != null) {
+                    mHeadMessage.prevMessage = null;
+                } else {
+                    mTailMessage = null;
+                }
                 curMessage.recycle();
                 curMessage = nextMessage;
             }
@@ -242,8 +275,13 @@ public class MessageQueue {
                     if (nextMessage.target == handler && nextMessage.callback == runnable && (object == null || nextMessage.obj == object)) {
                         foundMessage = true;
                         Message nextButOneMessage = nextMessage.nextMessage;
-                        nextMessage.recycle();
+                        if (nextButOneMessage != null) {
+                            nextButOneMessage.prevMessage = curMessage;
+                        } else {
+                            mTailMessage = curMessage;
+                        }
                         curMessage.nextMessage = nextButOneMessage;
+                        nextMessage.recycle();
                         continue;
                     }
                 }
@@ -262,13 +300,18 @@ public class MessageQueue {
         boolean foundMessage = false;
 
         synchronized (this) {
-            Message curMessage = mMessages;
+            Message curMessage = mHeadMessage;
 
             // Remove all messages at the front of the message queue.
             while (curMessage != null && curMessage.target == handler && (object == null || curMessage.obj == object)) {
                 foundMessage = true;
                 Message nextMessage = curMessage.nextMessage;
-                mMessages = nextMessage;
+                mHeadMessage = nextMessage;
+                if (mHeadMessage != null) {
+                    mHeadMessage.prevMessage = null;
+                } else {
+                    mTailMessage = null;
+                }
                 curMessage.recycle();
                 curMessage = nextMessage;
             }
@@ -280,8 +323,13 @@ public class MessageQueue {
                     if (nextMessage.target == handler && (object == null || nextMessage.obj == object)) {
                         foundMessage = true;
                         Message nextButOneMessage = nextMessage.nextMessage;
-                        nextMessage.recycle();
+                        if (nextButOneMessage != null) {
+                            nextButOneMessage.prevMessage = curMessage;
+                        } else {
+                            mTailMessage = curMessage;
+                        }
                         curMessage.nextMessage = nextButOneMessage;
+                        nextMessage.recycle();
                         continue;
                     }
                 }

@@ -71,13 +71,13 @@ public class IntegrationTest {
         try {
             startSystemServices();
         } catch (Exception e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
 
         try {
             startServices();
         } catch (Exception e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
     }
 
@@ -86,13 +86,13 @@ public class IntegrationTest {
         try {
             shutdownServices();
         } catch (Exception e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
 
         try {
             shutdownSystemServices();
         } catch (Exception e) {
-            throw new RuntimeException("System failure");
+            throw new RuntimeException("System failure", e);
         }
 
         sServiceManager.shutdown();
@@ -165,7 +165,7 @@ public class IntegrationTest {
                             try {
                                 serviceManager.startService(service).get(10000);
                             } catch (CancellationException | ExecutionException | TimeoutException | RemoteException e) {
-                                throw new RuntimeException("System failure");
+                                throw new RuntimeException("System failure", e);
                             }
                         }
                     }

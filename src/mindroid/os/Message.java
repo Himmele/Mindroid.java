@@ -67,6 +67,7 @@ public final class Message {
 
     /*package*/ Runnable callback;
 
+    Message prevMessage;
     Message nextMessage;
 
     private static final Object sMessagePoolLock = new Object();
@@ -241,6 +242,8 @@ public final class Message {
         data = null;
         result = null;
         sendingPid = -1;
+        prevMessage = null;
+        nextMessage = null;
 
         synchronized (sMessagePoolLock) {
             if (sMessagePoolSize < MAX_MESSAGE_POOL_SIZE) {
