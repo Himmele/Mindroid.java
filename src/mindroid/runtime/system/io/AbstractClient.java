@@ -35,7 +35,7 @@ public abstract class AbstractClient {
     private final String LOG_TAG;
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10000;
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private final Socket mSocket;
     private String mHost;
@@ -125,7 +125,7 @@ public abstract class AbstractClient {
                 mOutputStream = socket.getOutputStream();
             } catch (IOException e) {
                 Log.d(LOG_TAG, "Failed to set up connection", e);
-                AbstractClient.this.shutdown();
+                shutdown();
             }
             super.start();
         }

@@ -34,7 +34,7 @@ import mindroid.util.Log;
 public abstract class AbstractServer {
     private final String LOG_TAG;
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private ServerSocket mServerSocket;
     private Thread mThread;
@@ -117,7 +117,10 @@ public abstract class AbstractServer {
                 mOutputStream = socket.getOutputStream();
             } catch (IOException e) {
                 Log.d(LOG_TAG, "Failed to set up connection", e);
-                shutdown();
+                try {
+                    close();
+                } catch (IOException ignore) {
+                }
             }
             super.start();
         }
