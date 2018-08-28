@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import mindroid.os.Bundle;
@@ -80,12 +81,16 @@ public abstract class AbstractServer {
     }
 
     public void shutdown() {
-        for (Connection connection : mConnections) {
+        Iterator<Connection> itr = mConnections.iterator();
+        while (itr.hasNext()) {
+            Connection connection = itr.next();
             try {
                 connection.close();
             } catch (IOException ignore) {
             }
+            itr.remove();
         }
+
         try {
             mServerSocket.close();
         } catch (IOException e) {
@@ -109,7 +114,7 @@ public abstract class AbstractServer {
         private InputStream mInputStream;
         private OutputStream mOutputStream;
 
-        public Connection(Socket socket) {
+        public Connection(Socket socket) throws IOException {
             mContext.putObject("connection", this);
             mSocket = socket;
             try {
@@ -121,6 +126,7 @@ public abstract class AbstractServer {
                     close();
                 } catch (IOException ignore) {
                 }
+                throw e;
             }
             super.start();
         }
@@ -130,7 +136,6 @@ public abstract class AbstractServer {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnecting from " + mSocket.getRemoteSocketAddress());
             }
-            mConnections.remove(this);
 
             interrupt();
             try {
@@ -170,6 +175,7 @@ public abstract class AbstractServer {
                     if (DEBUG) {
                         Log.e(LOG_TAG, e.getMessage(), e);
                     }
+                    mConnections.remove(this);
                     try {
                         close();
                     } catch (IOException ignore) {

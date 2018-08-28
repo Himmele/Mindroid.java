@@ -44,7 +44,7 @@ public abstract class AbstractClient {
     private final int mNodeId;
 
     public AbstractClient(int nodeId, String uri) throws IOException {
-        LOG_TAG = "Client (" + uri + ")";
+        LOG_TAG = "Client [" + uri + "]";
         mNodeId = nodeId;
 
         try {
@@ -55,11 +55,10 @@ public abstract class AbstractClient {
             mHost = url.getHost();
             mPort = url.getPort();
             mSocket = new Socket();
-            mConnection = new Connection();
 
             try {
                 mSocket.connect(new InetSocketAddress(mHost, mPort), CONNECTION_ESTABLISHMENT_TIMEOUT);
-                mConnection.start(mSocket);
+                mConnection = new Connection(mSocket);
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
                 shutdown();
@@ -101,22 +100,7 @@ public abstract class AbstractClient {
         private InputStream mInputStream;
         private OutputStream mOutputStream;
 
-        public Connection() {
-        }
-
-        public Bundle getContext() {
-            return mContext;
-        }
-
-        public InputStream getInputStream() {
-            return mInputStream;
-        }
-
-        public OutputStream getOutputStream() {
-            return mOutputStream;
-        }
-
-        public void start(Socket socket) {
+        public Connection(Socket socket) throws IOException {
             setName("Client: " + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress());
             mContext.putObject("connection", this);
             mSocket = socket;
@@ -125,7 +109,11 @@ public abstract class AbstractClient {
                 mOutputStream = socket.getOutputStream();
             } catch (IOException e) {
                 Log.d(LOG_TAG, "Failed to set up connection", e);
-                shutdown();
+                try {
+                    close();
+                } catch (IOException ignore) {
+                }
+                throw e;
             }
             super.start();
         }
@@ -137,12 +125,10 @@ public abstract class AbstractClient {
             }
             interrupt();
             try {
-                if (mSocket != null) {
-                    try {
-                        mSocket.close();
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Cannot close socket", e);
-                    }
+                try {
+                    mSocket.close();
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Cannot close socket", e);
                 }
                 if (mInputStream != null) {
                     try {
@@ -165,6 +151,18 @@ public abstract class AbstractClient {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Connection has been closed");
             }
+        }
+
+        public Bundle getContext() {
+            return mContext;
+        }
+
+        public InputStream getInputStream() {
+            return mInputStream;
+        }
+
+        public OutputStream getOutputStream() {
+            return mOutputStream;
         }
 
         public void run() {
