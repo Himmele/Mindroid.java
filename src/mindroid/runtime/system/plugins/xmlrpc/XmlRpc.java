@@ -16,6 +16,7 @@
 
 package mindroid.runtime.system.plugins.xmlrpc;
 
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -23,28 +24,24 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import mindroid.os.Binder;
+import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
 import mindroid.runtime.system.Configuration;
 import mindroid.runtime.system.Plugin;
+import mindroid.runtime.system.io.AbstractClient;
+import mindroid.runtime.system.io.AbstractServer;
 import mindroid.util.Log;
 import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
@@ -53,6 +50,7 @@ public class XmlRpc extends Plugin {
     private static final String LOG_TAG = "XmlRpc";
     private static final String TIMEOUT = "timeout";
     private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
+    private static final boolean DEBUG = false;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
     private Configuration.Plugin mConfiguration;
@@ -185,7 +183,7 @@ public class XmlRpc extends Plugin {
     @Override
     public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
-        Client client = mClients.get(nodeId);
+        AbstractClient client = mClients.get(nodeId);
         if (client == null) {
             Configuration.Node node;
             if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
@@ -204,7 +202,7 @@ public class XmlRpc extends Plugin {
         return client.transact(binder, what, data, flags);
     }
 
-    public void onShutdown(Client client) {
+    public void onShutdown(AbstractClient client) {
         mClients.remove(client.getNodeId());
     }
 
@@ -228,6 +226,27 @@ public class XmlRpc extends Plugin {
             return new Message(MESSAGE_TYPE_EXCEPTION_TRANSACTION, uri, transactionId, what, data);
         }
 
+        public static Message newMessage(DataInputStream inputStream) throws IOException {
+            int type = inputStream.readInt();
+            String uri = inputStream.readUTF();
+            int transactionId = inputStream.readInt();
+            int what = inputStream.readInt();
+            int size = inputStream.readInt();
+            byte[] data = new byte[size];
+            inputStream.readFully(data, 0, size);
+            return new Message(type, uri, transactionId, what, data);
+        }
+
+        public final void write(DataOutputStream outputStream) throws IOException {
+            outputStream.writeInt(this.type);
+            outputStream.writeUTF(this.uri);
+            outputStream.writeInt(this.transactionId);
+            outputStream.writeInt(this.what);
+            outputStream.writeInt(this.data.length);
+            outputStream.write(this.data);
+            outputStream.flush();
+        }
+
         int type;
         String uri;
         int transactionId;
@@ -235,349 +254,95 @@ public class XmlRpc extends Plugin {
         byte[] data;
     }
 
-    private class Server {
-        private static final int SHUTDOWN_TIMEOUT = 10000; //ms
-        private static final boolean DEBUG = false;
-
-        private Thread mThread;
-        private ServerSocket mServerSocket;
-        private Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
+    private class Server extends AbstractServer {
+        private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
 
         public Server(String uri) throws IOException {
-            URI url;
-            try {
-                url = new URI(uri);
-            } catch (URISyntaxException e) {
-                throw new IOException("Invalid URI: " + uri);
-            }
-
-            if ("tcp".equals(url.getScheme())) {
-                try {
-                    mServerSocket = new ServerSocket();
-                    mServerSocket.setReuseAddress(true);
-                    mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
-
-                    mThread = new Thread("Server [" + mServerSocket.getLocalSocketAddress() + "]") {
-                        public void run() {
-                            while (!isInterrupted()) {
-                                try {
-                                    Socket socket = mServerSocket.accept();
-                                    if (DEBUG) {
-                                        Log.d(LOG_TAG, "New connection from " + socket.getRemoteSocketAddress());
-                                    }
-                                    mConnections.add(new Connection(socket));
-                                } catch (IOException e) {
-                                    Log.e(LOG_TAG, e.getMessage(), e);
-                                }
-                            }
-                        }
-                    };
-                    mThread.start();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot bind to server socket on port " + url.getPort());
-                }
-            } else {
-                throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
-            }
+            super(uri);
         }
 
-        public void shutdown() {
-            for (Connection connection : mConnections) {
-                connection.shutdown();
+        @Override
+        public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
+            if (!context.containsKey("dataInputStream")) {
+                DataInputStream dataInputStream = new DataInputStream(inputStream);
+                context.putObject("dataInputStream", dataInputStream);
             }
+            if (!context.containsKey("datOutputStream")) {
+                DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+                context.putObject("dataOutputStream", dataOutputStream);
+            }
+            DataInputStream dataInputStream = (DataInputStream) context.getObject("dataInputStream");
+            DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
+
             try {
-                mServerSocket.close();
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Cannot close server socket", e);
-            }
-            mThread.interrupt();
-            try {
-                mThread.join(SHUTDOWN_TIMEOUT);
-            } catch (InterruptedException ignore) {
-            }
-            if (mThread.isAlive()) {
-                Log.e(LOG_TAG, "Cannot shutdown server");
-            }
-        }
+                Message message = Message.newMessage(dataInputStream);
 
-        private class Connection {
-            private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
-            private final Socket mSocket;
-            private Reader mReader;
-            private Writer mWriter;
-
-            public Connection(Socket socket) {
-                mSocket = socket;
-                try {
-                    mReader = new Reader("Server.Reader: " + mSocket.getLocalSocketAddress() + " << " + mSocket.getRemoteSocketAddress(),
-                            socket.getInputStream());
-                    mWriter = new Writer("Server.Writer: " + mSocket.getLocalSocketAddress() + " >> " + mSocket.getRemoteSocketAddress(),
-                            socket.getOutputStream());
-                    mReader.start();
-                    mWriter.start();
-                } catch (IOException e) {
-                    Log.d(LOG_TAG, "Failed to set up connection", e);
-                    shutdown();
-                }
-            }
-
-            void shutdown() {
-                if (DEBUG) {
-                    Log.d(LOG_TAG, "Disconnecting from " + mSocket.getRemoteSocketAddress());
-                }
-                mConnections.remove(this);
-
-                sExecutor.execute(() -> {
+                if (message.type == Message.MESSAGE_TYPE_TRANSACTION) {
                     try {
-                        mSocket.close();
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Cannot close socket", e);
-                    }
-                    if (mReader != null) {
-                        try {
-                            if (DEBUG) {
-                                Log.d(LOG_TAG, "Shutting down reader");
-                            }
-                            mReader.shutdown();
-                            if (DEBUG) {
-                                Log.d(LOG_TAG, "Reader has been shut down");
-                            }
-                            mReader = null;
-                        } catch (Exception e) {
-                            Log.e(LOG_TAG, "Cannot shutdown reader", e);
-                        }
-                    }
-                    if (mWriter != null) {
-                        try {
-                            if (DEBUG) {
-                                Log.d(LOG_TAG, "Shutting down writer");
-                            }
-                            mWriter.shutdown();
-                            if (DEBUG) {
-                                Log.d(LOG_TAG, "Writer has been shut down");
-                            }
-                            mWriter = null;
-                        } catch (Exception e) {
-                            Log.e(LOG_TAG, "Cannot shutdown writer", e);
-                        }
-                    }
-                });
-            }
-
-            private class Reader extends Thread {
-                private final DataInputStream mInputStream;
-
-                public Reader(String name, InputStream inputStream) {
-                    super(name);
-                    mInputStream = new DataInputStream(inputStream);
-                }
-
-                void shutdown() {
-                    interrupt();
-                    try {
-                        try {
-                            mInputStream.close();
-                        } catch (IOException ignore) {
-                        }
-                        join(SHUTDOWN_TIMEOUT);
-                        if (isAlive()) {
-                            Log.e(LOG_TAG, "Cannot shutdown reader");
-                        }
-                    } catch (InterruptedException ignore) {
-                    }
-                }
-
-                public void run() {
-                    while (!isInterrupted()) {
-                        try {
-                            int type = mInputStream.readInt();
-                            String uri = mInputStream.readUTF();
-                            int transactionId = mInputStream.readInt();
-                            int what = mInputStream.readInt();
-                            int size = mInputStream.readInt();
-                            byte[] data = new byte[size];
-                            mInputStream.readFully(data, 0, size);
-
-                            if (type == Message.MESSAGE_TYPE_TRANSACTION) {
-                                try {
-                                    IBinder binder = mRuntime.getBinder(URI.create(uri));
-                                    if (binder != null) {
-                                        Promise<Parcel> result = binder.transact(what, Parcel.obtain(data), 0);
-                                        if (result != null) {
-                                            result.then((value, exception) -> {
-                                                if (exception == null) {
-                                                    mWriter.write(Message.newMessage(uri, transactionId, what, value.toByteArray()));
-                                                } else {
-                                                    mWriter.write(Message.newExceptionMessage(uri, transactionId, what, BINDER_TRANSACTION_FAILURE));
-                                                }
-                                            });
+                        IBinder binder = mRuntime.getBinder(URI.create(message.uri));
+                        if (binder != null) {
+                            Promise<Parcel> result = binder.transact(message.what, Parcel.obtain(message.data), 0);
+                            if (result != null) {
+                                result.then((value, exception) -> {
+                                    try {
+                                        if (exception == null) {
+                                            Message.newMessage(message.uri, message.transactionId, message.what, value.toByteArray()).write(dataOutputStream);
+                                        } else {
+                                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
                                         }
-                                    } else {
-                                        mWriter.write(Message.newExceptionMessage(uri, transactionId, what, BINDER_TRANSACTION_FAILURE));
+                                    } catch (IOException e) {
+                                        try {
+                                            ((Closeable) context.getObject("connection")).close();
+                                        } catch (IOException ignore) {
+                                        }
                                     }
-                                } catch (IllegalArgumentException e) {
-                                    Log.e(LOG_TAG, e.getMessage(), e);
-                                    mWriter.write(Message.newExceptionMessage(uri, transactionId, what, BINDER_TRANSACTION_FAILURE));
-                                } catch (RemoteException e) {
-                                    Log.e(LOG_TAG, e.getMessage(), e);
-                                    mWriter.write(Message.newExceptionMessage(uri, transactionId, what, BINDER_TRANSACTION_FAILURE));
-                                }
-                            } else {
-                                Log.e(LOG_TAG, "Invalid message type: " + type);
+                                });
                             }
-                        } catch (IOException e) {
-                            if (DEBUG) {
-                                Log.e(LOG_TAG, e.getMessage(), e);
-                            }
-                            Connection.this.shutdown();
-                            break;
+                        } else {
+                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
                         }
+                    } catch (IllegalArgumentException e) {
+                        Log.e(LOG_TAG, e.getMessage(), e);
+                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
+                    } catch (RemoteException e) {
+                        Log.e(LOG_TAG, e.getMessage(), e);
+                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
                     }
-
-                    if (DEBUG) {
-                        Log.d(LOG_TAG, "Reader is terminating");
-                    }
+                } else {
+                    Log.e(LOG_TAG, "Invalid message type: " + message.type);
                 }
-            };
-
-            private class Writer extends Thread {
-                private final LinkedList<Message> mQueue = new LinkedList<>();
-                private final DataOutputStream mOutputStream;
-
-                public Writer(String name, OutputStream outputStream) {
-                    super(name);
-                    mOutputStream = new DataOutputStream(outputStream);
+            } catch (IOException e) {
+                if (DEBUG) {
+                    Log.e(LOG_TAG, e.getMessage(), e);
                 }
-
-                public void shutdown() throws IOException {
-                    interrupt();
-                    try {
-                        try {
-                            mOutputStream.close();
-                        } catch (IOException ignore) {
-                        }
-                        join(SHUTDOWN_TIMEOUT);
-                        if (isAlive()) {
-                            Log.e(LOG_TAG, "Cannot shutdown writer");
-                        }
-                    } catch (InterruptedException ignore) {
-                    }
-                }
-
-                public void write(Message message) {
-                    synchronized (mQueue) {
-                        mQueue.add(message);
-                        mQueue.notify();
-                    }
-                }
-
-                public void run() {
-                    Message message;
-
-                    while (!isInterrupted()) {
-                        synchronized (mQueue) {
-                            try {
-                                while (mQueue.isEmpty()) {
-                                    mQueue.wait();
-                                }
-                            } catch (InterruptedException e) {
-                                break;
-                            }
-
-                            message = mQueue.get(0);
-                            mQueue.remove(0);
-                        }
-
-                        try {
-                            mOutputStream.writeInt(message.type);
-                            mOutputStream.writeUTF(message.uri);
-                            mOutputStream.writeInt(message.transactionId);
-                            mOutputStream.writeInt(message.what);
-                            mOutputStream.writeInt(message.data.length);
-                            mOutputStream.write(message.data);
-                            mOutputStream.flush();
-                        } catch (IOException e) {
-                            Log.e(LOG_TAG, e.getMessage(), e);
-                            Connection.this.shutdown();
-                            break;
-                        }
-                    }
-
-                    if (DEBUG) {
-                        Log.d(LOG_TAG, "Writer is terminating");
-                    }
-                }
-            };
+                throw e;
+            }
         }
     }
 
-    private class Client {
-        private static final int SHUTDOWN_TIMEOUT = 10000; //ms
-        private static final boolean DEBUG = false;
-
-        private Thread mThread;
-        private final Socket mSocket;
-        private String mHost;
-        private int mPort;
-        private final Connection mConnection;
+    private class Client extends AbstractClient {
         private final AtomicInteger mTransactionIdGenerator = new AtomicInteger(1);
         private Map<Integer, Promise<Parcel>> mTransactions = new ConcurrentHashMap<>();
-        private final int mNodeId;
 
         public Client(int nodeId, String uri) throws IOException {
-            mNodeId = nodeId;
-
-            try {
-                URI url = new URI(uri);
-                if (!"tcp".equals(url.getScheme())) {
-                    throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
-                }
-                mHost = url.getHost();
-                mPort = url.getPort();
-                mSocket = new Socket();
-                mConnection = new Connection();
-
-                mThread = new Thread("Client [" + uri + "]") {
-                    public void run() {
-                        try {
-                            mSocket.connect(new InetSocketAddress(mHost, mPort));
-                            mConnection.start(mSocket);
-                        } catch (IOException e) {
-                            Log.e(LOG_TAG, e.getMessage(), e);
-                            shutdown();
-                        }
-                    }
-                };
-                mThread.start();
-            } catch (URISyntaxException e) {
-                throw new IOException("Invalid URI: " + uri);
-            }
+            super(nodeId, uri);
         }
 
-        void shutdown() {
+        protected void shutdown() {
             XmlRpc.this.onShutdown(this);
 
-            sExecutor.execute(() -> {
-                if (mConnection != null) {
-                    mConnection.shutdown();
-                }
-
-                mThread.interrupt();
-                try {
-                    mThread.join(SHUTDOWN_TIMEOUT);
-                } catch (InterruptedException ignore) {
-                }
-                if (mThread.isAlive()) {
-                    Log.e(LOG_TAG, "Cannot shutdown client");
-                }
-
-                for (Promise<Parcel> promise : mTransactions.values()) {
-                    promise.completeWith(new RemoteException());
-                }
-            });
+            sExecutor.execute(() -> { super.shutdown(); });
         }
 
+        @Override
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
+            Bundle context = getContext();
+            if (!context.containsKey("datOutputStream")) {
+                DataOutputStream dataOutputStream = new DataOutputStream(getConnection().getOutputStream());
+                context.putObject("dataOutputStream", dataOutputStream);
+            }
+            DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
+
             final int transactionId = mTransactionIdGenerator.getAndIncrement();
             Promise<Parcel> result;
             if (flags == Binder.FLAG_ONEWAY) {
@@ -590,208 +355,48 @@ public class XmlRpc extends Plugin {
                 });
                 mTransactions.put(transactionId, promise);
             }
-            mConnection.mWriter.write(Message.newMessage(binder.getUri().toString(), transactionId, what, data.toByteArray()));
+
+            try {
+                Message.newMessage(binder.getUri().toString(), transactionId, what, data.toByteArray()).write(dataOutputStream);
+            } catch (IOException e) {
+                if (result != null) {
+                    result.completeWith(e);
+                    mTransactions.remove(transactionId);
+                }
+                shutdown();
+                throw new RemoteException(e);
+            }
             return result;
         }
 
-        int getNodeId() {
-            return mNodeId;
-        }
-
-        private class Connection {
-            private Socket mSocket;
-            private Reader mReader;
-            private Writer mWriter;
-
-            public Connection() {
-                mReader = new Reader();
-                mWriter = new Writer();
+        @Override
+        public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
+            if (!context.containsKey("dataInputStream")) {
+                DataInputStream dataInputStream = new DataInputStream(inputStream);
+                context.putObject("dataInputStream", dataInputStream);
             }
+            DataInputStream dataInputStream = (DataInputStream) context.getObject("dataInputStream");
 
-            public void start(Socket socket) {
-                mSocket = socket;
-                try {
-                    mReader.start("Client.Reader: " + mSocket.getLocalSocketAddress() + " << " + mSocket.getRemoteSocketAddress(),
-                            socket.getInputStream());
-                    mWriter.start("Client.Writer: " + mSocket.getLocalSocketAddress() + " >> " + mSocket.getRemoteSocketAddress(),
-                            socket.getOutputStream());
-                } catch (IOException e) {
-                    Log.d(LOG_TAG, "Failed to set up connection", e);
-                    Client.this.shutdown();
+            try {
+                Message message = Message.newMessage(dataInputStream);
+
+                final Promise<Parcel> promise = mTransactions.get(message.transactionId);
+                if (promise != null) {
+                    mTransactions.remove(message.transactionId);
+                    if (message.type == Message.MESSAGE_TYPE_TRANSACTION) {
+                        promise.complete(Parcel.obtain(message.data).asInput());
+                    } else {
+                        promise.completeWith(new RemoteException());
+                    }
+                } else {
+                    Log.e(LOG_TAG, "Invalid transaction id: " + message.transactionId);
                 }
+            } catch (IOException e) {
+                if (DEBUG) {
+                    Log.e(LOG_TAG, e.getMessage(), e);
+                }
+                throw e;
             }
-
-            void shutdown() {
-                if (mSocket != null) {
-                    try {
-                        mSocket.close();
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Cannot close socket", e);
-                    }
-                }
-                if (mReader != null) {
-                    try {
-                        if (DEBUG) {
-                            Log.d(LOG_TAG, "Shutting down reader");
-                        }
-                        mReader.shutdown();
-                        if (DEBUG) {
-                            Log.d(LOG_TAG, "Reader has been shut down");
-                        }
-                        mReader = null;
-                    } catch (Exception e) {
-                        Log.e(LOG_TAG, "Cannot shutdown reader", e);
-                    }
-                }
-                if (mWriter != null) {
-                    try {
-                        if (DEBUG) {
-                            Log.d(LOG_TAG, "Shutting down writer");
-                        }
-                        mWriter.shutdown();
-                        if (DEBUG) {
-                            Log.d(LOG_TAG, "Writer has been shut down");
-                        }
-                    } catch (Exception e) {
-                        Log.e(LOG_TAG, "Cannot shutdown writer", e);
-                    }
-                }
-            }
-
-            private class Reader extends Thread {
-                private DataInputStream mInputStream;
-
-                public void start(String name, InputStream inputStream) {
-                    setName(name);
-                    mInputStream = new DataInputStream(inputStream);
-                    super.start();
-                }
-
-                void shutdown() {
-                    interrupt();
-                    try {
-                        if (mInputStream != null) {
-                            try {
-                                mInputStream.close();
-                            } catch (IOException ignore) {
-                            }
-                        }
-                        join(SHUTDOWN_TIMEOUT);
-                        if (isAlive()) {
-                            Log.e(LOG_TAG, "Cannot shutdown reader");
-                        }
-                    } catch (InterruptedException ignore) {
-                    }
-                }
-
-                public void run() {
-                    while (!isInterrupted()) {
-                        try {
-                            int type = mInputStream.readInt();
-                            String uri = mInputStream.readUTF();
-                            int transactionId = mInputStream.readInt();
-                            int what = mInputStream.readInt();
-                            int size = mInputStream.readInt();
-                            byte[] data = new byte[size];
-                            mInputStream.readFully(data, 0, size);
-
-                            final Promise<Parcel> promise = mTransactions.get(transactionId);
-                            if (promise != null) {
-                                mTransactions.remove(transactionId);
-                                if (type == Message.MESSAGE_TYPE_TRANSACTION) {
-                                    promise.complete(Parcel.obtain(data).asInput());
-                                } else {
-                                    promise.completeWith(new RemoteException());
-                                }
-                            } else {
-                                Log.e(LOG_TAG, "Invalid transaction id: " + transactionId);
-                            }
-                        } catch (IOException e) {
-                            if (DEBUG) {
-                                Log.e(LOG_TAG, e.getMessage(), e);
-                            }
-                            Client.this.shutdown();
-                            break;
-                        }
-                    }
-
-                    if (DEBUG) {
-                        Log.d(LOG_TAG, "Reader is terminating");
-                    }
-                }
-            };
-
-            private class Writer extends Thread {
-                private final LinkedList<Message> mQueue = new LinkedList<>();
-                private DataOutputStream mOutputStream;
-
-                public void start(String name, OutputStream outputStream) {
-                    setName(name);
-                    mOutputStream = new DataOutputStream(outputStream);
-                    super.start();
-                }
-
-                public void shutdown() throws IOException {
-                    interrupt();
-                    try {
-                        if (mOutputStream != null) {
-                            try {
-                                mOutputStream.close();
-                            } catch (IOException ignore) {
-                            }
-                        }
-                        join(SHUTDOWN_TIMEOUT);
-                        if (isAlive()) {
-                            Log.e(LOG_TAG, "Cannot shutdown writer");
-                        }
-                    } catch (InterruptedException ignore) {
-                    }
-                }
-
-                public void write(Message message) {
-                    synchronized (mQueue) {
-                        mQueue.add(message);
-                        mQueue.notify();
-                    }
-                }
-
-                public void run() {
-                    Message message;
-
-                    while (!isInterrupted()) {
-                        synchronized (mQueue) {
-                            try {
-                                while (mQueue.isEmpty()) {
-                                    mQueue.wait();
-                                }
-                            } catch (InterruptedException e) {
-                                break;
-                            }
-
-                            message = mQueue.get(0);
-                            mQueue.remove(0);
-                        }
-
-                        try {
-                            mOutputStream.writeInt(message.type);
-                            mOutputStream.writeUTF(message.uri);
-                            mOutputStream.writeInt(message.transactionId);
-                            mOutputStream.writeInt(message.what);
-                            mOutputStream.writeInt(message.data.length);
-                            mOutputStream.write(message.data);
-                            mOutputStream.flush();
-                        } catch (IOException e) {
-                            Log.e(LOG_TAG, e.getMessage(), e);
-                            Client.this.shutdown();
-                            break;
-                        }
-                    }
-
-                    if (DEBUG) {
-                        Log.d(LOG_TAG, "Writer is terminating");
-                    }
-                }
-            };
         }
     }
 }
