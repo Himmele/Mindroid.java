@@ -82,16 +82,18 @@ public abstract class AbstractClient {
         return mNodeId;
     }
 
-    public abstract Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException;
-
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
     public Bundle getContext() {
         return mConnection.mContext;
     }
 
-    public Connection getConnection() {
-        return mConnection;
+    public InputStream getInputStream() {
+        return mConnection.mInputStream;
+    }
+
+    public OutputStream getOutputStream() {
+        return mConnection.mOutputStream;
     }
 
     public class Connection extends Thread implements Closeable {

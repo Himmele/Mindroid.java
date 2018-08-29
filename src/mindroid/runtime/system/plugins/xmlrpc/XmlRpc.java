@@ -183,7 +183,7 @@ public class XmlRpc extends Plugin {
     @Override
     public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
-        AbstractClient client = mClients.get(nodeId);
+        Client client = mClients.get(nodeId);
         if (client == null) {
             Configuration.Node node;
             if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
@@ -247,13 +247,15 @@ public class XmlRpc extends Plugin {
         }
 
         public final void write(DataOutputStream outputStream) throws IOException {
-            outputStream.writeInt(this.type);
-            outputStream.writeUTF(this.uri);
-            outputStream.writeInt(this.transactionId);
-            outputStream.writeInt(this.what);
-            outputStream.writeInt(this.size);
-            outputStream.write(this.data, 0, this.size);
-            outputStream.flush();
+            synchronized (outputStream) {
+                outputStream.writeInt(this.type);
+                outputStream.writeUTF(this.uri);
+                outputStream.writeInt(this.transactionId);
+                outputStream.writeInt(this.what);
+                outputStream.writeInt(this.size);
+                outputStream.write(this.data, 0, this.size);
+                outputStream.flush();
+            }
         }
 
         int type;
@@ -348,11 +350,10 @@ public class XmlRpc extends Plugin {
             }
         }
 
-        @Override
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
             Bundle context = getContext();
             if (!context.containsKey("datOutputStream")) {
-                DataOutputStream dataOutputStream = new DataOutputStream(getConnection().getOutputStream());
+                DataOutputStream dataOutputStream = new DataOutputStream(getOutputStream());
                 context.putObject("dataOutputStream", dataOutputStream);
             }
             DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
