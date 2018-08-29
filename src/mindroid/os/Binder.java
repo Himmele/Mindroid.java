@@ -443,6 +443,9 @@ public class Binder implements IBinder {
                         String value = pair.substring(i + 1).trim();
                         if (key.equals("if")) {
                             mDescriptor = uri.getScheme() + "://interfaces/" + value;
+                            if (uri.getQuery() != null) {
+                                mDescriptor += "?" + uri.getQuery();
+                            }
                             break;
                         }
                     }

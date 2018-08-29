@@ -193,20 +193,29 @@ public class Mindroid extends Plugin {
         public static final int MESSAGE_TYPE_TRANSACTION = 1;
         public static final int MESSAGE_TYPE_EXCEPTION_TRANSACTION = 2;
 
-        private Message(int type, String uri, int transactionId, int what, byte[] data) {
+        private Message(int type, String uri, int transactionId, int what, byte[] data, int size) {
             this.type = type;
             this.uri = uri;
             this.transactionId = transactionId;
             this.what = what;
             this.data = data;
+            this.size = size;
         }
 
         public static Message newMessage(String uri, int transactionId, int what, byte[] data) {
-            return new Message(MESSAGE_TYPE_TRANSACTION, uri, transactionId, what, data);
+            return newMessage(uri, transactionId, what, data, data.length);
+        }
+
+        public static Message newMessage(String uri, int transactionId, int what, byte[] data, int size) {
+            return new Message(MESSAGE_TYPE_TRANSACTION, uri, transactionId, what, data, size);
         }
 
         public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data) {
-            return new Message(MESSAGE_TYPE_EXCEPTION_TRANSACTION, uri, transactionId, what, data);
+            return newExceptionMessage(uri, transactionId, what, data, data.length);
+        }
+
+        public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data, int size) {
+            return new Message(MESSAGE_TYPE_EXCEPTION_TRANSACTION, uri, transactionId, what, data, size);
         }
 
         public static Message newMessage(DataInputStream inputStream) throws IOException {
@@ -217,7 +226,7 @@ public class Mindroid extends Plugin {
             int size = inputStream.readInt();
             byte[] data = new byte[size];
             inputStream.readFully(data, 0, size);
-            return new Message(type, uri, transactionId, what, data);
+            return new Message(type, uri, transactionId, what, data, size);
         }
 
         public final void write(DataOutputStream outputStream) throws IOException {
@@ -225,8 +234,8 @@ public class Mindroid extends Plugin {
             outputStream.writeUTF(this.uri);
             outputStream.writeInt(this.transactionId);
             outputStream.writeInt(this.what);
-            outputStream.writeInt(this.data.length);
-            outputStream.write(this.data);
+            outputStream.writeInt(this.size);
+            outputStream.write(this.data, 0, this.size);
             outputStream.flush();
         }
 
@@ -235,6 +244,7 @@ public class Mindroid extends Plugin {
         int transactionId;
         int what;
         byte[] data;
+        int size;
     }
 
     private class Server extends AbstractServer {
@@ -269,7 +279,7 @@ public class Mindroid extends Plugin {
                                 result.then((value, exception) -> {
                                     try {
                                         if (exception == null) {
-                                            Message.newMessage(message.uri, message.transactionId, message.what, value.toByteArray()).write(dataOutputStream);
+                                            Message.newMessage(message.uri, message.transactionId, message.what, value.getByteArray(), value.size()).write(dataOutputStream);
                                         } else {
                                             Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
                                         }
@@ -344,7 +354,7 @@ public class Mindroid extends Plugin {
             }
 
             try {
-                Message.newMessage(binder.getUri().toString(), transactionId, what, data.toByteArray()).write(dataOutputStream);
+                Message.newMessage(binder.getUri().toString(), transactionId, what, data.getByteArray(), data.size()).write(dataOutputStream);
             } catch (IOException e) {
                 if (result != null) {
                     result.completeWith(e);

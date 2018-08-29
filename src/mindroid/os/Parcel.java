@@ -208,7 +208,7 @@ public final class Parcel {
     public final void putBinder(IBinder binder) throws RemoteException {
         try {
             URI descriptor = new URI(binder.getInterfaceDescriptor());
-            URI uri = new URI(binder.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), null, null);
+            URI uri = new URI(binder.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
             putString(uri.toString());
         } catch (URISyntaxException e) {
             throw new RemoteException(e);
@@ -218,7 +218,7 @@ public final class Parcel {
     public final void putBinder(IBinder base, IBinder binder) throws RemoteException {
         try {
             URI descriptor = new URI(binder.getInterfaceDescriptor());
-            URI uri = new URI(base.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), null, null);
+            URI uri = new URI(base.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
             putString(uri.toString());
         } catch (URISyntaxException e) {
             throw new RemoteException(e);
@@ -359,13 +359,13 @@ public final class Parcel {
         return Runtime.getRuntime().getBinder(uri);
     }
 
-    public final byte[] toByteArray() {
+    public final byte[] getByteArray() {
         return mOutputStream.getByteArray();
     }
 
     public final ByteArrayInputStream asInputStream() {
         if (mInputStream == null) {
-            mInputStream = new ByteArrayInputStream(mOutputStream.getByteArray());
+            mInputStream = new ByteArrayInputStream(mOutputStream.getByteArray(), 0, mOutputStream.size());
             mDataInputStream = new DataInputStream(mInputStream);
         }
         return mInputStream;
@@ -404,7 +404,7 @@ public final class Parcel {
     public static final URI toUri(IBinder base, IBinder binder) throws RemoteException {
         try {
             URI descriptor = new URI(binder.getInterfaceDescriptor());
-            URI uri = new URI(base.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), null, null);
+            URI uri = new URI(base.getUri().getScheme(), binder.getUri().getAuthority(), "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
             return uri;
         } catch (URISyntaxException e) {
             throw new RemoteException(e);

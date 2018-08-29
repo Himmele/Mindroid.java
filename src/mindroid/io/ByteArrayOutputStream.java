@@ -71,6 +71,7 @@ public class ByteArrayOutputStream extends OutputStream {
 
     public ByteArrayOutputStream(byte[] buffer) {
         mBuffer = buffer;
+        mCount = buffer.length;
     }
 
     /**
