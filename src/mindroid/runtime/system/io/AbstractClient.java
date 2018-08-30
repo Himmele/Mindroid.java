@@ -25,11 +25,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import mindroid.os.Bundle;
-import mindroid.os.IBinder;
-import mindroid.os.Parcel;
-import mindroid.os.RemoteException;
 import mindroid.util.Log;
-import mindroid.util.concurrent.Promise;
 
 public abstract class AbstractClient {
     private final String LOG_TAG;
@@ -127,23 +123,23 @@ public abstract class AbstractClient {
             }
             interrupt();
             try {
+                mSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot close socket", e);
+            }
+            if (mInputStream != null) {
                 try {
-                    mSocket.close();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot close socket", e);
+                    mInputStream.close();
+                } catch (IOException ignore) {
                 }
-                if (mInputStream != null) {
-                    try {
-                        mInputStream.close();
-                    } catch (IOException ignore) {
-                    }
+            }
+            if (mOutputStream != null) {
+                try {
+                    mOutputStream.close();
+                } catch (IOException ignore) {
                 }
-                if (mOutputStream != null) {
-                    try {
-                        mOutputStream.close();
-                    } catch (IOException ignore) {
-                    }
-                }
+            }
+            try {
                 join(SHUTDOWN_TIMEOUT);
                 if (isAlive()) {
                     Log.e(LOG_TAG, "Cannot shutdown connection");

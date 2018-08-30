@@ -139,23 +139,23 @@ public abstract class AbstractServer {
 
             interrupt();
             try {
+                mSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot close socket", e);
+            }
+            if (mInputStream != null) {
                 try {
-                    mSocket.close();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot close socket", e);
+                    mInputStream.close();
+                } catch (IOException ignore) {
                 }
-                if (mInputStream != null) {
-                    try {
-                        mInputStream.close();
-                    } catch (IOException ignore) {
-                    }
+            }
+            if (mOutputStream != null) {
+                try {
+                    mOutputStream.close();
+                } catch (IOException ignore) {
                 }
-                if (mOutputStream != null) {
-                    try {
-                        mOutputStream.close();
-                    } catch (IOException ignore) {
-                    }
-                }
+            }
+            try {
                 join(SHUTDOWN_TIMEOUT);
                 if (isAlive()) {
                     Log.e(LOG_TAG, "Cannot shutdown connection");
