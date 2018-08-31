@@ -93,10 +93,10 @@ public abstract class AbstractClient {
     }
 
     public class Connection extends Thread implements Closeable {
-        private Bundle mContext = new Bundle();
-        private Socket mSocket;
-        private InputStream mInputStream;
-        private OutputStream mOutputStream;
+        private final Bundle mContext = new Bundle();
+        private final Socket mSocket;
+        private final InputStream mInputStream;
+        private final OutputStream mOutputStream;
 
         public Connection(Socket socket) throws IOException {
             setName("Client: " + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress());

@@ -109,10 +109,10 @@ public abstract class AbstractServer {
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
     public class Connection extends Thread implements Closeable {
-        private Bundle mContext = new Bundle();
+        private final Bundle mContext = new Bundle();
         private final Socket mSocket;
-        private InputStream mInputStream;
-        private OutputStream mOutputStream;
+        private final InputStream mInputStream;
+        private final OutputStream mOutputStream;
 
         public Connection(Socket socket) throws IOException {
             mContext.putObject("connection", this);
