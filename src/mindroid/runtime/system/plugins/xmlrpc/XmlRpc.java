@@ -25,12 +25,10 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
@@ -40,8 +38,8 @@ import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
 import mindroid.runtime.system.Configuration;
 import mindroid.runtime.system.Plugin;
-import mindroid.runtime.system.io.AbstractClient;
-import mindroid.runtime.system.io.AbstractServer;
+import mindroid.runtime.system.aio.AbstractClient;
+import mindroid.runtime.system.aio.AbstractServer;
 import mindroid.util.Log;
 import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
@@ -51,27 +49,11 @@ public class XmlRpc extends Plugin {
     private static final String TIMEOUT = "timeout";
     private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
     private static final boolean DEBUG = false;
-    private static final ScheduledThreadPoolExecutor sExecutor;
 
     private Configuration.Plugin mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new HashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
-
-    static {
-        sExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                t.setName("ThreadPoolExecutorDaemon");
-                return t;
-            }
-        });
-        sExecutor.setKeepAliveTime(10, TimeUnit.SECONDS);
-        sExecutor.allowCoreThreadTimeOut(true);
-        sExecutor.setRemoveOnCancelPolicy(true);
-    }
 
     @Override
     public void start() {
@@ -237,7 +219,10 @@ public class XmlRpc extends Plugin {
 
         public static Message newMessage(DataInputStream inputStream) throws IOException {
             int type = inputStream.readInt();
-            String uri = inputStream.readUTF();
+            int length = inputStream.readUnsignedShort();
+            byte[] byteArray = new byte[length];
+            inputStream.read(byteArray);
+            String uri = new String(byteArray, StandardCharsets.US_ASCII);
             int transactionId = inputStream.readInt();
             int what = inputStream.readInt();
             int size = inputStream.readInt();
@@ -248,8 +233,11 @@ public class XmlRpc extends Plugin {
 
         public final void write(DataOutputStream outputStream) throws IOException {
             synchronized (outputStream) {
+                byte[] uri = this.uri.getBytes(StandardCharsets.US_ASCII);
+                outputStream.writeInt(4 + 2 + uri.length + 4 + 4 + 4 + this.size);
                 outputStream.writeInt(this.type);
-                outputStream.writeUTF(this.uri);
+                outputStream.writeShort(uri.length);
+                outputStream.write(uri);
                 outputStream.writeInt(this.transactionId);
                 outputStream.writeInt(this.what);
                 outputStream.writeInt(this.size);
@@ -287,7 +275,21 @@ public class XmlRpc extends Plugin {
             DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
 
             try {
-                Message message = Message.newMessage(dataInputStream);
+                if (!context.containsKey("parcelSize")) {
+                    if (dataInputStream.available() >= 4) {
+                        context.putInt("parcelSize", dataInputStream.readInt());
+                    } else {
+                        return;
+                    }
+                }
+                int parcelSize = context.getInt("parcelSize");
+                Message message;
+                if (dataInputStream.available() >= parcelSize) {
+                    message = Message.newMessage(dataInputStream);
+                    context.remove("parcelSize");
+                } else {
+                    return;
+                }
 
                 if (message.type == Message.MESSAGE_TYPE_TRANSACTION) {
                     try {
@@ -343,11 +345,11 @@ public class XmlRpc extends Plugin {
         protected void shutdown() {
             XmlRpc.this.onShutdown(this);
 
-            sExecutor.execute(() -> { super.shutdown(); });
-
             for (Promise<Parcel> promise : mTransactions.values()) {
                 promise.completeWith(new RemoteException());
             }
+
+            super.shutdown();
         }
 
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
@@ -393,7 +395,21 @@ public class XmlRpc extends Plugin {
             DataInputStream dataInputStream = (DataInputStream) context.getObject("dataInputStream");
 
             try {
-                Message message = Message.newMessage(dataInputStream);
+                if (!context.containsKey("parcelSize")) {
+                    if (dataInputStream.available() >= 4) {
+                        context.putInt("parcelSize", dataInputStream.readInt());
+                    } else {
+                        return;
+                    }
+                }
+                int parcelSize = context.getInt("parcelSize");
+                Message message;
+                if (dataInputStream.available() >= parcelSize) {
+                    message = Message.newMessage(dataInputStream);
+                    context.remove("parcelSize");
+                } else {
+                    return;
+                }
 
                 final Promise<Parcel> promise = mTransactions.get(message.transactionId);
                 if (promise != null) {

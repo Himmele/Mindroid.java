@@ -26,6 +26,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,21 +82,19 @@ public abstract class AbstractServer {
     }
 
     public void shutdown() {
-        Iterator<Connection> itr = mConnections.iterator();
-        while (itr.hasNext()) {
-            Connection connection = itr.next();
-            try {
-                connection.close();
-            } catch (IOException ignore) {
-            }
-            itr.remove();
-        }
-
         try {
             mServerSocket.close();
         } catch (IOException e) {
             Log.e(LOG_TAG, "Cannot close server socket", e);
         }
+
+        for (Connection connection : mConnections) {
+            try {
+                connection.close();
+            } catch (IOException ignore) {
+            }
+        }
+
         mThread.interrupt();
         try {
             mThread.join(SHUTDOWN_TIMEOUT);
@@ -104,6 +103,10 @@ public abstract class AbstractServer {
         if (mThread.isAlive()) {
             Log.e(LOG_TAG, "Cannot shutdown server");
         }
+    }
+
+    public Set<Connection> getConnections() {
+        return Collections.unmodifiableSet(mConnections);
     }
 
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
@@ -162,9 +165,22 @@ public abstract class AbstractServer {
                 }
             } catch (InterruptedException ignore) {
             }
+            mConnections.remove(this);
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteSocketAddress());
             }
+        }
+
+        public Bundle getContext() {
+            return mContext;
+        }
+
+        public InputStream getInputStream() {
+            return mInputStream;
+        }
+
+        public OutputStream getOutputStream() {
+            return mOutputStream;
         }
 
         public void run() {
@@ -175,7 +191,6 @@ public abstract class AbstractServer {
                     if (DEBUG) {
                         Log.e(LOG_TAG, e.getMessage(), e);
                     }
-                    mConnections.remove(this);
                     try {
                         close();
                     } catch (IOException ignore) {
