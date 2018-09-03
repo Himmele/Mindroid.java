@@ -214,15 +214,15 @@ public class SocketInputStream extends InputStream {
         mSocket.read(buffer).whenComplete((value, exception) -> {
             if (exception == null) {
                 if (value == -1) {
-                    mSocket.onOperation(Socket.OP_CLOSE, null);
+                    mSocket.notifyListener(Socket.OP_CLOSE, null);
                 }
                 if (value > 0) {
                     mList.add((ByteBuffer) buffer.flip());
                     mCount.addAndGet(buffer.remaining());
-                    mSocket.onOperation(Socket.OP_READ, null);
+                    mSocket.notifyListener(Socket.OP_READ, null);
                 }
             } else {
-                mSocket.onOperation(Socket.OP_CLOSE, exception);
+                mSocket.notifyListener(Socket.OP_CLOSE, exception);
             }
         });
     }

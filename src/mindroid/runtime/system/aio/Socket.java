@@ -216,7 +216,7 @@ public class Socket {
         }
     }
 
-    void onOperation(int operation, Object arg) {
+    void notifyListener(int operation, Object arg) {
         if (mListener != null) {
             mListener.onOperation(operation, arg);
         }

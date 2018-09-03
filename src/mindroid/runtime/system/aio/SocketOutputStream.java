@@ -130,10 +130,10 @@ public class SocketOutputStream extends OutputStream {
                                 break;
                             }
                         }
-                        mSocket.onOperation(Socket.OP_WRITE, null);
+                        mSocket.notifyListener(Socket.OP_WRITE, null);
                     }
                 } else {
-                    mSocket.onOperation(Socket.OP_CLOSE, exception);
+                    mSocket.notifyListener(Socket.OP_CLOSE, exception);
                 }
             });
         }
