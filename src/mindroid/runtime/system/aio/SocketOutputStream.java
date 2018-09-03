@@ -33,16 +33,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class SocketOutputStream extends OutputStream {
     protected Socket mSocket;
-    protected Socket.Listener mListener;
 
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
      */
     protected Deque<ByteBuffer> mList = new ConcurrentLinkedDeque<>();
-
-    public static abstract class Listener {
-        public abstract void onOperation(int operations);
-    }
 
     /**
      * Constructs a new ByteArrayOutputStream with a default size of 64 bytes.
@@ -120,10 +115,6 @@ public class SocketOutputStream extends OutputStream {
         sync();
     }
 
-    public void setListener(Socket.Listener listener) {
-        mListener = listener;
-    }
-
     void sync() {
         if (!mList.isEmpty()) {
             ByteBuffer[] buffers = mList.toArray(new ByteBuffer[mList.size()]);
@@ -139,14 +130,10 @@ public class SocketOutputStream extends OutputStream {
                                 break;
                             }
                         }
-                        if (mListener != null) {
-                            mListener.onOperation(Socket.OP_WRITE, null);
-                        }
+                        mSocket.onOperation(Socket.OP_WRITE, null);
                     }
                 } else {
-                    if (mListener != null) {
-                        mListener.onOperation(Socket.OP_CLOSE, exception);
-                    }
+                    mSocket.onOperation(Socket.OP_CLOSE, exception);
                 }
             });
         }

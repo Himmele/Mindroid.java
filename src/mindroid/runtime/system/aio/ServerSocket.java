@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 public class ServerSocket {
     private final ServerSocketChannel mServerSocketChannel;
     private Selector mSelector;
-    private ServerSocket.Listener mListener;
+    private Listener mListener;
     private int mOps = 0;
 
     public static final int OP_CLOSE = 1;
@@ -69,7 +69,7 @@ public class ServerSocket {
         return mServerSocketChannel.getLocalAddress();
     }
 
-    public void setListener(ServerSocket.Listener listener) {
+    public void setListener(Listener listener) {
         mListener = listener;
     }
 

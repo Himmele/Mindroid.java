@@ -116,21 +116,15 @@ public class SocketExecutor {
                 }
                 if (key.isValid() && key.isConnectable()) {
                     Socket socket = (Socket) key.attachment();
-                    if (socket != null) {
-                        socket.onOperation(SelectionKey.OP_CONNECT);
-                    }
+                    socket.onOperation(SelectionKey.OP_CONNECT);
                 }
                 if (key.isValid() && key.isReadable()) {
                     Socket socket = (Socket) key.attachment();
-                    if (socket != null) {
-                        socket.onOperation(SelectionKey.OP_READ);
-                    }
+                    socket.onOperation(SelectionKey.OP_READ);
                 }
                 if (key.isValid() && key.isWritable()) {
                     Socket socket = (Socket) key.attachment();
-                    if (socket != null) {
-                        socket.onOperation(SelectionKey.OP_WRITE);
-                    }
+                    socket.onOperation(SelectionKey.OP_WRITE);
                 }
             }
         }

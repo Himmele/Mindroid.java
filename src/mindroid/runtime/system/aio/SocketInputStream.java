@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SocketInputStream extends InputStream {
     protected Socket mSocket;
-    protected Socket.Listener mListener;
 
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
@@ -209,31 +208,21 @@ public class SocketInputStream extends InputStream {
         return num;
     }
 
-    public void setListener(Socket.Listener listener) {
-        mListener = listener;
-    }
-
     void sync() {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
 
         mSocket.read(buffer).whenComplete((value, exception) -> {
             if (exception == null) {
                 if (value == -1) {
-                    if (mListener != null) {
-                        mListener.onOperation(Socket.OP_CLOSE, null);
-                    }
+                    mSocket.onOperation(Socket.OP_CLOSE, null);
                 }
                 if (value > 0) {
                     mList.add((ByteBuffer) buffer.flip());
                     mCount.addAndGet(buffer.remaining());
-                    if (mListener != null) {
-                        mListener.onOperation(Socket.OP_READ, null);
-                    }
+                    mSocket.onOperation(Socket.OP_READ, null);
                 }
             } else {
-                if (mListener != null) {
-                    mListener.onOperation(Socket.OP_CLOSE, exception);
-                }
+                mSocket.onOperation(Socket.OP_CLOSE, exception);
             }
         });
     }

@@ -104,7 +104,7 @@ public abstract class AbstractServer {
             mSocket = socket;
             mInputStream = mSocket.getInputStream();
             mOutputStream = mSocket.getOutputStream();
-            mSocket.getInputStream().setListener((operation, argument) -> {
+            mSocket.setListener((operation, argument) -> {
                 if (operation == Socket.OP_READ) {
                     try {
                         AbstractServer.this.onTransact(mContext, mInputStream, mOutputStream);

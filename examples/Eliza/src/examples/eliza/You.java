@@ -29,7 +29,7 @@ public class You extends Service {
     @Override
     public void onCreate() {
         Bundle extras = new Bundle();
-        // extras.putString("scheme", "xmlrpc");
+        extras.putString("scheme", "xmlrpc");
 
         Eliza eliza = new Eliza(this, extras);
         Log.d(LOG_TAG, "You: Hello");

@@ -30,6 +30,7 @@ public class Socket {
     private SocketOutputStream mOutputStream;
     private Selector mSelector;
     private CompletableFuture<Void> mConnector;
+    private Listener mListener;
     private int mOps = 0;
 
     public static final int OP_CLOSE = 1;
@@ -179,6 +180,10 @@ public class Socket {
         return mSocketChannel.getRemoteAddress();
     }
 
+    public void setListener(Listener listener) {
+        mListener = listener;
+    }
+
     SocketChannel getChannel() {
         return mSocketChannel;
     }
@@ -208,6 +213,12 @@ public class Socket {
         }
         if ((ops & SelectionKey.OP_WRITE) != 0 && mSocketChannel.isConnected()) {
             mOutputStream.sync();
+        }
+    }
+
+    void onOperation(int operation, Object arg) {
+        if (mListener != null) {
+            mListener.onOperation(operation, arg);
         }
     }
 }
