@@ -17,23 +17,23 @@
 package mindroid.runtime.system.aio;
 
 import java.io.IOException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import mindroid.util.Log;
 
 public class SocketExecutor {
+    private static final String LOG_TAG = "SocketExecutor";
     private final Executor mExecutor;
     private final Selector mSelector;
     private final Map<SelectableChannel, ServerSocket> mServerSockets = new ConcurrentHashMap<>();
     private final Map<SelectableChannel, Socket> mSockets = new ConcurrentHashMap<>();
-    private volatile boolean mShutdown = false;
 
     public SocketExecutor(Executor executor) throws IOException {
         mExecutor = executor;
@@ -42,13 +42,15 @@ public class SocketExecutor {
     }
 
     public void shutdown() {
-        mShutdown = true;
-        mSelector.wakeup();
+        try {
+            mSelector.close();
+        } catch (IOException ignore) {
+        }
     }
 
     void register(ServerSocket serverSocket) {
-        mServerSockets.put(serverSocket.getChannel(), serverSocket);
         serverSocket.setSelector(mSelector);
+        mServerSockets.put(serverSocket.getChannel(), serverSocket);
         mSelector.wakeup();
     }
 
@@ -58,8 +60,8 @@ public class SocketExecutor {
     }
 
     void register(Socket socket) {
-        mSockets.put(socket.getChannel(), socket);
         socket.setSelector(mSelector);
+        mSockets.put(socket.getChannel(), socket);
         mSelector.wakeup();
     }
 
@@ -69,7 +71,8 @@ public class SocketExecutor {
     }
 
     protected void run() {
-        while (!Thread.currentThread().isInterrupted() && !mShutdown) {
+        while (!Thread.currentThread().isInterrupted() && mSelector.isOpen()) {
+            Set<SelectionKey> keys;
             try {
                 Iterator<Map.Entry<SelectableChannel, Socket>> socketIterator = mSockets.entrySet().iterator();
                 while (socketIterator.hasNext()) {
@@ -77,7 +80,7 @@ public class SocketExecutor {
                     SelectableChannel channel = entry.getKey();
                     Socket socket = entry.getValue();
                     if (channel.isOpen()) {
-                        channel.register(mSelector, socket.getOps());
+                        channel.register(mSelector, socket.getOps(), socket);
                     }
                 }
                 Iterator<Map.Entry<SelectableChannel, ServerSocket>> serverSocketIterator = mServerSockets.entrySet().iterator();
@@ -86,17 +89,19 @@ public class SocketExecutor {
                     SelectableChannel channel = entry.getKey();
                     ServerSocket serverSocket = entry.getValue();
                     if (channel.isOpen()) {
-                        channel.register(mSelector, serverSocket.getOps());
+                        channel.register(mSelector, serverSocket.getOps(), serverSocket);
                     }
                 }
                 mSelector.select();
+                keys = mSelector.selectedKeys();
             } catch (IOException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                break;
+            } catch (ClosedSelectorException e) {
                 break;
             }
 
-            Set<SelectionKey> keys = mSelector.selectedKeys();
             Iterator<SelectionKey> itr = keys.iterator();
-
             while (itr.hasNext()) {
                 SelectionKey key = itr.next();
                 itr.remove();
@@ -106,23 +111,23 @@ public class SocketExecutor {
                 }
 
                 if (key.isValid() && key.isAcceptable()) {
-                    ServerSocket serverSocket = mServerSockets.get((ServerSocketChannel) key.channel());
+                    ServerSocket serverSocket = (ServerSocket) key.attachment();
                     serverSocket.onOperation(SelectionKey.OP_ACCEPT);
                 }
                 if (key.isValid() && key.isConnectable()) {
-                    Socket socket = mSockets.get((SocketChannel) key.channel());
+                    Socket socket = (Socket) key.attachment();
                     if (socket != null) {
                         socket.onOperation(SelectionKey.OP_CONNECT);
                     }
                 }
                 if (key.isValid() && key.isReadable()) {
-                    Socket socket = mSockets.get((SocketChannel) key.channel());
+                    Socket socket = (Socket) key.attachment();
                     if (socket != null) {
                         socket.onOperation(SelectionKey.OP_READ);
                     }
                 }
                 if (key.isValid() && key.isWritable()) {
-                    Socket socket = mSockets.get((SocketChannel) key.channel());
+                    Socket socket = (Socket) key.attachment();
                     if (socket != null) {
                         socket.onOperation(SelectionKey.OP_WRITE);
                     }

@@ -29,6 +29,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
@@ -49,11 +52,27 @@ public class XmlRpc extends Plugin {
     private static final String TIMEOUT = "timeout";
     private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
     private static final boolean DEBUG = false;
+    private static final ScheduledThreadPoolExecutor sExecutor;
 
     private Configuration.Plugin mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new HashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
+
+    static {
+        sExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("ThreadPoolExecutorDaemon");
+                return t;
+            }
+        });
+        sExecutor.setKeepAliveTime(10, TimeUnit.SECONDS);
+        sExecutor.allowCoreThreadTimeOut(true);
+        sExecutor.setRemoveOnCancelPolicy(true);
+    }
 
     @Override
     public void start() {
@@ -349,7 +368,7 @@ public class XmlRpc extends Plugin {
                 promise.completeWith(new RemoteException());
             }
 
-            super.shutdown();
+            sExecutor.execute(() -> { super.shutdown(); });
         }
 
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
