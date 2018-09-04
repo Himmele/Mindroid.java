@@ -26,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
 
 public class Socket {
     private final SocketChannel mSocketChannel;
-    private SocketInputStream mInputStream;
-    private SocketOutputStream mOutputStream;
+    private final SocketInputStream mInputStream;
+    private final SocketOutputStream mOutputStream;
     private Selector mSelector;
     private CompletableFuture<Void> mConnector;
     private Listener mListener;
@@ -78,7 +78,7 @@ public class Socket {
         return future;
     }
 
-    public int read(ByteBuffer buffer) throws IOException {
+    int read(ByteBuffer buffer) throws IOException {
         if (!mSocketChannel.isConnected()) {
             return 0;
         }
@@ -87,7 +87,7 @@ public class Socket {
         return num;
     }
 
-    public long read(ByteBuffer[] buffers) throws IOException {
+    long read(ByteBuffer[] buffers) throws IOException {
         if (!mSocketChannel.isConnected()) {
             return 0;
         }
@@ -96,7 +96,7 @@ public class Socket {
         return num;
     }
 
-    public int write(ByteBuffer buffer) throws IOException {
+    int write(ByteBuffer buffer) throws IOException {
         if (!mSocketChannel.isConnected()) {
             return 0;
         }
@@ -116,7 +116,7 @@ public class Socket {
         return num;
     }
 
-    public long write(ByteBuffer[] buffers) throws IOException {
+    long write(ByteBuffer[] buffers) throws IOException {
         if (!mSocketChannel.isConnected()) {
             return 0;
         }

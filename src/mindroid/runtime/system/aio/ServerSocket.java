@@ -17,11 +17,8 @@
 package mindroid.runtime.system.aio;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
-import java.net.URI;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -41,10 +38,10 @@ public class ServerSocket {
         public abstract void onOperation(int operation, Object arg);
     }
 
-    public ServerSocket(URI url) throws IOException {
+    public ServerSocket(SocketAddress socketAddress) throws IOException {
         mServerSocketChannel = ServerSocketChannel.open();
         mServerSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        mServerSocketChannel.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
+        mServerSocketChannel.bind(socketAddress);
         mServerSocketChannel.configureBlocking(false);
         mOps = SelectionKey.OP_ACCEPT;
     }

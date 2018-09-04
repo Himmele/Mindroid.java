@@ -20,6 +20,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Set;
@@ -46,8 +48,7 @@ public abstract class AbstractServer {
 
         if ("tcp".equals(url.getScheme())) {
             try {
-                mServerSocket = new ServerSocket(url);
-                mExecutorGroup.register(mServerSocket);
+                mServerSocket = new ServerSocket(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
                 mServerSocket.setListener((operation, argument) -> {
                     if (operation == ServerSocket.OP_ACCEPT) {
                         mServerSocket.accept().whenComplete((socket, exception) -> {
@@ -65,6 +66,7 @@ public abstract class AbstractServer {
                         });
                     }
                 });
+                mExecutorGroup.register(mServerSocket);
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Cannot bind to server socket on port " + url.getPort());
             }
