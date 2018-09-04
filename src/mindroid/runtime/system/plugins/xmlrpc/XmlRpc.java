@@ -364,8 +364,10 @@ public class XmlRpc extends Plugin {
         protected void shutdown() {
             XmlRpc.this.onShutdown(this);
 
-            for (Promise<Parcel> promise : mTransactions.values()) {
-                promise.completeWith(new RemoteException());
+            if (mTransactions != null) {
+                for (Promise<Parcel> promise : mTransactions.values()) {
+                    promise.completeWith(new RemoteException());
+                }
             }
 
             sExecutor.execute(() -> { super.shutdown(); });

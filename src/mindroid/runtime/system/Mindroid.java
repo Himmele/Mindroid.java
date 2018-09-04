@@ -326,8 +326,10 @@ public class Mindroid extends Plugin {
         protected void shutdown() {
             Mindroid.this.onShutdown(this);
 
-            for (Promise<Parcel> promise : mTransactions.values()) {
-                promise.completeWith(new RemoteException());
+            if (mTransactions != null) {
+                for (Promise<Parcel> promise : mTransactions.values()) {
+                    promise.completeWith(new RemoteException());
+                }
             }
 
             sExecutor.execute(() -> { super.shutdown(); });
