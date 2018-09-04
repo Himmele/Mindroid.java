@@ -51,10 +51,10 @@ public abstract class AbstractClient {
             mSocket = new Socket();
 
             mSocket.connect(new InetSocketAddress(mHost, mPort)).whenComplete((value, exception) -> {
-               if (exception != null) {
-                   Log.e(LOG_TAG, exception.getMessage(), exception);
-                   shutdown();
-               }
+                if (exception != null) {
+                    Log.e(LOG_TAG, exception.getMessage(), exception);
+                    shutdown();
+                }
             });
             mExecutorGroup.register(mSocket);
             mConnection = new Connection(mSocket);

@@ -116,11 +116,14 @@ public class SocketOutputStream extends OutputStream {
     }
 
     void sync() {
-        if (!mList.isEmpty()) {
-            ByteBuffer[] buffers = mList.toArray(new ByteBuffer[mList.size()]);
-            mSocket.write(buffers).whenComplete((value, exception) -> {
-                if (exception == null) {
-                    if (value > 0) {
+        int operation = 0;
+        Object arg = null;
+        synchronized (this) {
+            if (!mList.isEmpty()) {
+                ByteBuffer[] buffers = mList.toArray(new ByteBuffer[mList.size()]);
+                try {
+                    long num = mSocket.write(buffers);
+                    if (num > 0) {
                         Iterator<ByteBuffer> itr = mList.iterator();
                         while (itr.hasNext()) {
                             ByteBuffer buffer = itr.next();
@@ -130,12 +133,16 @@ public class SocketOutputStream extends OutputStream {
                                 break;
                             }
                         }
-                        mSocket.notifyListener(Socket.OP_WRITE, null);
+                        operation = Socket.OP_WRITE;
                     }
-                } else {
-                    mSocket.notifyListener(Socket.OP_CLOSE, exception);
+                } catch (IOException e) {
+                    operation = Socket.OP_CLOSE;
+                    arg = e;
                 }
-            });
+            }
+        }
+        if (operation != 0) {
+            mSocket.notifyListener(operation, arg);
         }
     }
 }

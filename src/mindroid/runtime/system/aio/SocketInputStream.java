@@ -209,21 +209,27 @@ public class SocketInputStream extends InputStream {
     }
 
     void sync() {
+        int operation = 0;
+        Object arg = null;
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-
-        mSocket.read(buffer).whenComplete((value, exception) -> {
-            if (exception == null) {
-                if (value == -1) {
-                    mSocket.notifyListener(Socket.OP_CLOSE, null);
+        synchronized (this) {
+            try {
+                long num = mSocket.read(buffer);
+                if (num == -1) {
+                    operation = Socket.OP_CLOSE;
                 }
-                if (value > 0) {
+                if (num > 0) {
                     mList.add((ByteBuffer) buffer.flip());
                     mCount.addAndGet(buffer.remaining());
-                    mSocket.notifyListener(Socket.OP_READ, null);
+                    operation = Socket.OP_READ;
                 }
-            } else {
-                mSocket.notifyListener(Socket.OP_CLOSE, exception);
+            } catch (IOException e) {
+                operation = Socket.OP_CLOSE;
+                arg = e;
             }
-        });
+        }
+        if (operation != 0) {
+            mSocket.notifyListener(operation, arg);
+        }
     }
 }

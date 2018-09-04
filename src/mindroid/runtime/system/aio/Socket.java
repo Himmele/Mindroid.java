@@ -78,90 +78,62 @@ public class Socket {
         return future;
     }
 
-    public CompletableFuture<Integer> read(ByteBuffer buffer) {
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+    public int read(ByteBuffer buffer) throws IOException {
         if (!mSocketChannel.isConnected()) {
-            future.complete(0);
-            return future;
+            return 0;
         }
 
-        try {
-            int num = mSocketChannel.read(buffer);
-            future.complete(num);
-        } catch (IOException e) {
-            future.completeExceptionally(e);
-        }
-        return future;
+        int num = mSocketChannel.read(buffer);
+        return num;
     }
 
-    public CompletableFuture<Long> read(ByteBuffer[] buffers) {
-        CompletableFuture<Long> future = new CompletableFuture<>();
+    public long read(ByteBuffer[] buffers) throws IOException {
         if (!mSocketChannel.isConnected()) {
-            future.complete(0L);
-            return future;
+            return 0;
         }
 
-        try {
-            long num = mSocketChannel.read(buffers);
-            future.complete(num);
-        } catch (IOException e) {
-            future.completeExceptionally(e);
-        }
-        return future;
+        long num = mSocketChannel.read(buffers);
+        return num;
     }
 
-    public CompletableFuture<Integer> write(ByteBuffer buffer) {
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+    public int write(ByteBuffer buffer) throws IOException {
         if (!mSocketChannel.isConnected()) {
-            future.complete(0);
-            return future;
+            return 0;
         }
 
-        try {
-            int num = mSocketChannel.write(buffer);
-            future.complete(num);
-            if (!buffer.hasRemaining()) {
-                if ((mOps & SelectionKey.OP_WRITE) == 1) {
-                    mOps &= ~SelectionKey.OP_WRITE;
-                    mSelector.wakeup();
-                }
-            } else {
-                if ((mOps & SelectionKey.OP_WRITE) == 0) {
-                    mOps |= SelectionKey.OP_WRITE;
-                    mSelector.wakeup();
-                }
+        int num = mSocketChannel.write(buffer);
+        if (!buffer.hasRemaining()) {
+            if ((mOps & SelectionKey.OP_WRITE) == 1) {
+                mOps &= ~SelectionKey.OP_WRITE;
+                mSelector.wakeup();
             }
-        } catch (IOException e) {
-            future.completeExceptionally(e);
+        } else {
+            if ((mOps & SelectionKey.OP_WRITE) == 0) {
+                mOps |= SelectionKey.OP_WRITE;
+                mSelector.wakeup();
+            }
         }
-        return future;
+        return num;
     }
 
-    public CompletableFuture<Long> write(ByteBuffer[] buffers) {
-        CompletableFuture<Long> future = new CompletableFuture<>();
+    public long write(ByteBuffer[] buffers) throws IOException {
         if (!mSocketChannel.isConnected()) {
-            future.complete(0L);
-            return future;
+            return 0;
         }
 
-        try {
-            long num = mSocketChannel.write(buffers);
-            if (!buffers[buffers.length - 1].hasRemaining()) {
-                if ((mOps & SelectionKey.OP_WRITE) == 1) {
-                    mOps &= ~SelectionKey.OP_WRITE;
-                    mSelector.wakeup();
-                }
-            } else {
-                if ((mOps & SelectionKey.OP_WRITE) == 0) {
-                    mOps |= SelectionKey.OP_WRITE;
-                    mSelector.wakeup();
-                }
+        long num = mSocketChannel.write(buffers);
+        if (!buffers[buffers.length - 1].hasRemaining()) {
+            if ((mOps & SelectionKey.OP_WRITE) == 1) {
+                mOps &= ~SelectionKey.OP_WRITE;
+                mSelector.wakeup();
             }
-            future.complete(num);
-        } catch (IOException e) {
-            future.completeExceptionally(e);
+        } else {
+            if ((mOps & SelectionKey.OP_WRITE) == 0) {
+                mOps |= SelectionKey.OP_WRITE;
+                mSelector.wakeup();
+            }
         }
-        return future;
+        return num;
     }
 
     public SocketInputStream getInputStream() {
