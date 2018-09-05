@@ -294,18 +294,18 @@ public class XmlRpc extends Plugin {
             DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
 
             try {
-                if (!context.containsKey("parcelSize")) {
+                if (!context.containsKey("messageSize")) {
                     if (dataInputStream.available() >= 4) {
-                        context.putInt("parcelSize", dataInputStream.readInt());
+                        context.putInt("messageSize", dataInputStream.readInt());
                     } else {
                         return;
                     }
                 }
-                int parcelSize = context.getInt("parcelSize");
+                int messageSize = context.getInt("messageSize");
                 Message message;
-                if (dataInputStream.available() >= parcelSize) {
+                if (dataInputStream.available() >= messageSize) {
                     message = Message.newMessage(dataInputStream);
-                    context.remove("parcelSize");
+                    context.remove("messageSize");
                 } else {
                     return;
                 }
@@ -416,18 +416,18 @@ public class XmlRpc extends Plugin {
             DataInputStream dataInputStream = (DataInputStream) context.getObject("dataInputStream");
 
             try {
-                if (!context.containsKey("parcelSize")) {
+                if (!context.containsKey("messageSize")) {
                     if (dataInputStream.available() >= 4) {
-                        context.putInt("parcelSize", dataInputStream.readInt());
+                        context.putInt("messageSize", dataInputStream.readInt());
                     } else {
                         return;
                     }
                 }
-                int parcelSize = context.getInt("parcelSize");
+                int messageSize = context.getInt("messageSize");
                 Message message;
-                if (dataInputStream.available() >= parcelSize) {
+                if (dataInputStream.available() >= messageSize) {
                     message = Message.newMessage(dataInputStream);
-                    context.remove("parcelSize");
+                    context.remove("messageSize");
                 } else {
                     return;
                 }
