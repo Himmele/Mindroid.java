@@ -82,8 +82,9 @@ public class XmlRpc extends Plugin {
             mConfiguration = configuration.plugins.get("xmlrpc");
             if (mConfiguration != null) {
                 Configuration.Node node = mConfiguration.nodes.get(nodeId);
+                mServer = new Server();
                 try {
-                    mServer = new Server(node.uri);
+                    mServer.start(node.uri);
                 } catch (IOException e) {
                     Log.println('E', LOG_TAG, e.getMessage(), e);
                 }
@@ -189,13 +190,15 @@ public class XmlRpc extends Plugin {
             Configuration.Node node;
             if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
                 if (!mClients.containsKey(nodeId)) {
+                    client = new Client(node.id);
+                    mClients.put(nodeId, client);
                     try {
-                        mClients.put(nodeId, new Client(node.id, node.uri));
+                        client.start(node.uri);
                     } catch (IOException e) {
+                        mClients.remove(nodeId);
                         throw new RemoteException("Binder transaction failure");
                     }
                 }
-                client = mClients.get(nodeId);
             } else {
                 throw new RemoteException("Binder transaction failure");
             }
@@ -276,10 +279,6 @@ public class XmlRpc extends Plugin {
     private class Server extends AbstractServer {
         private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
 
-        public Server(String uri) throws IOException {
-            super(uri);
-        }
-
         @Override
         public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
             if (!context.containsKey("dataInputStream")) {
@@ -357,11 +356,11 @@ public class XmlRpc extends Plugin {
         private final AtomicInteger mTransactionIdGenerator = new AtomicInteger(1);
         private Map<Integer, Promise<Parcel>> mTransactions = new ConcurrentHashMap<>();
 
-        public Client(int nodeId, String uri) throws IOException {
-            super(nodeId, uri);
+        public Client(int nodeId) {
+            super(nodeId);
         }
 
-        protected void shutdown() {
+        public void shutdown() {
             XmlRpc.this.onShutdown(this);
 
             if (mTransactions != null) {

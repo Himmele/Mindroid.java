@@ -28,20 +28,23 @@ import mindroid.os.Bundle;
 import mindroid.util.Log;
 
 public abstract class AbstractClient {
-    private final String LOG_TAG;
+    private String LOG_TAG;
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10000;
     private static final boolean DEBUG = false;
 
-    private final Socket mSocket;
+    private final int mNodeId;
+    private Socket mSocket;
     private String mHost;
     private int mPort;
-    private final Connection mConnection;
-    private final int mNodeId;
+    private Connection mConnection;
 
-    public AbstractClient(int nodeId, String uri) throws IOException {
-        LOG_TAG = "Client [" + uri + "]";
+    public AbstractClient(int nodeId) {
         mNodeId = nodeId;
+    }
+
+    public void start(String uri) throws IOException {
+        LOG_TAG = "Client [" + uri + "]";
 
         try {
             URI url = new URI(uri);
@@ -65,7 +68,7 @@ public abstract class AbstractClient {
         }
     }
 
-    protected void shutdown() {
+    public void shutdown() {
         if (mConnection != null) {
             try {
                 mConnection.close();

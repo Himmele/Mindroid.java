@@ -33,15 +33,15 @@ import mindroid.os.Bundle;
 import mindroid.util.Log;
 
 public abstract class AbstractServer {
-    private final String LOG_TAG;
+    private String LOG_TAG;
     private static final int SHUTDOWN_TIMEOUT = 10000; //ms
     private static final boolean DEBUG = false;
 
+    private final Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
     private ServerSocket mServerSocket;
     private Thread mThread;
-    private Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
 
-    public AbstractServer(String uri) throws IOException {
+    public void start(String uri) throws IOException {
         LOG_TAG = "Server [" + uri + "]";
         URI url;
         try {
