@@ -34,13 +34,14 @@ public abstract class AbstractClient {
     private static final boolean DEBUG = false;
 
     private final int mNodeId;
-    private Socket mSocket;
+    private final Socket mSocket;
     private String mHost;
     private int mPort;
     private Connection mConnection;
 
-    public AbstractClient(int nodeId) {
+    public AbstractClient(int nodeId) throws IOException {
         mNodeId = nodeId;
+        mSocket = new Socket();
     }
 
     public void start(String uri) throws IOException {
@@ -53,7 +54,6 @@ public abstract class AbstractClient {
             }
             mHost = url.getHost();
             mPort = url.getPort();
-            mSocket = new Socket();
 
             try {
                 mSocket.connect(new InetSocketAddress(mHost, mPort), CONNECTION_ESTABLISHMENT_TIMEOUT);
@@ -83,15 +83,15 @@ public abstract class AbstractClient {
 
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
-    public Bundle getContext() {
+    public Bundle getContext() throws IOException {
         return mConnection.mContext;
     }
 
-    public InputStream getInputStream() {
+    public InputStream getInputStream() throws IOException {
         return mConnection.mInputStream;
     }
 
-    public OutputStream getOutputStream() {
+    public OutputStream getOutputStream() throws IOException {
         return mConnection.mOutputStream;
     }
 

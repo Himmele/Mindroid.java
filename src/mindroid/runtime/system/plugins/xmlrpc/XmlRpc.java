@@ -56,7 +56,7 @@ public class XmlRpc extends Plugin {
 
     private Configuration.Plugin mConfiguration;
     private Server mServer;
-    private Map<Integer, Client> mClients = new HashMap<>();
+    private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
 
     static {
@@ -190,9 +190,9 @@ public class XmlRpc extends Plugin {
             Configuration.Node node;
             if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
                 if (!mClients.containsKey(nodeId)) {
-                    client = new Client(node.id);
-                    mClients.put(nodeId, client);
                     try {
+                        client = new Client(node.id);
+                        mClients.put(nodeId, client);
                         client.start(node.uri);
                     } catch (IOException e) {
                         mClients.remove(nodeId);
@@ -356,7 +356,7 @@ public class XmlRpc extends Plugin {
         private final AtomicInteger mTransactionIdGenerator = new AtomicInteger(1);
         private Map<Integer, Promise<Parcel>> mTransactions = new ConcurrentHashMap<>();
 
-        public Client(int nodeId) {
+        public Client(int nodeId) throws IOException {
             super(nodeId);
         }
 
@@ -373,35 +373,32 @@ public class XmlRpc extends Plugin {
         }
 
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
-            Bundle context = getContext();
-            if (!context.containsKey("datOutputStream")) {
-                DataOutputStream dataOutputStream = new DataOutputStream(getOutputStream());
-                context.putObject("dataOutputStream", dataOutputStream);
-            }
-            DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
-
             final int transactionId = mTransactionIdGenerator.getAndIncrement();
             Promise<Parcel> result;
-            if (flags == Binder.FLAG_ONEWAY) {
-                result = null;
-            } else {
-                final Promise<Parcel> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
-                result = promise.orTimeout(data.getLongExtra(TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT))
-                .then((value, exception) -> {
-                    mTransactions.remove(transactionId);
-                });
-                mTransactions.put(transactionId, promise);
-            }
-
             try {
+                Bundle context = getContext();
+                if (!context.containsKey("datOutputStream")) {
+                    DataOutputStream dataOutputStream = new DataOutputStream(getOutputStream());
+                    context.putObject("dataOutputStream", dataOutputStream);
+                }
+                DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
+
+                if (flags == Binder.FLAG_ONEWAY) {
+                    result = null;
+                } else {
+                    final Promise<Parcel> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
+                    result = promise.orTimeout(data.getLongExtra(TIMEOUT, DEFAULT_TRANSACTION_TIMEOUT))
+                            .then((value, exception) -> {
+                                mTransactions.remove(transactionId);
+                            });
+                    mTransactions.put(transactionId, promise);
+                }
+
                 Message.newMessage(binder.getUri().toString(), transactionId, what, data.getByteArray(), data.size()).write(dataOutputStream);
             } catch (IOException e) {
-                if (result != null) {
-                    result.completeWith(e);
-                    mTransactions.remove(transactionId);
-                }
+                mTransactions.remove(transactionId);
                 shutdown();
-                throw new RemoteException(e);
+                throw new RemoteException("Binder transaction failure", e);
             }
             return result;
         }

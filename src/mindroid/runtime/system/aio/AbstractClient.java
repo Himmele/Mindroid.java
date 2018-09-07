@@ -32,13 +32,15 @@ public abstract class AbstractClient {
 
     private final int mNodeId;
     private final SocketExecutorGroup mExecutorGroup = new SocketExecutorGroup();
-    private Socket mSocket;
+    private final Socket mSocket;
+    private final Connection mConnection;
     private String mHost;
     private int mPort;
-    private Connection mConnection;
 
-    public AbstractClient(int nodeId) {
+    public AbstractClient(int nodeId) throws IOException {
         mNodeId = nodeId;
+        mSocket = new Socket();
+        mConnection = new Connection(mSocket);
     }
 
     public void start(String uri) throws IOException {
@@ -51,7 +53,6 @@ public abstract class AbstractClient {
             }
             mHost = url.getHost();
             mPort = url.getPort();
-            mSocket = new Socket();
 
             mSocket.connect(new InetSocketAddress(mHost, mPort)).whenComplete((value, exception) -> {
                 if (exception != null) {
@@ -60,7 +61,6 @@ public abstract class AbstractClient {
                 }
             });
             mExecutorGroup.register(mSocket);
-            mConnection = new Connection(mSocket);
         } catch (URISyntaxException e) {
             throw new IOException("Invalid URI: " + uri);
         }
@@ -83,15 +83,15 @@ public abstract class AbstractClient {
 
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
-    public Bundle getContext() {
+    public Bundle getContext() throws IOException {
         return mConnection.mContext;
     }
 
-    public InputStream getInputStream() {
+    public InputStream getInputStream() throws IOException {
         return mConnection.mSocket.getInputStream();
     }
 
-    public OutputStream getOutputStream() {
+    public OutputStream getOutputStream() throws IOException {
         return mConnection.mSocket.getOutputStream();
     }
 
