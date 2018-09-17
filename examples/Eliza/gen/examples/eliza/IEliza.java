@@ -51,8 +51,12 @@ public interface IEliza extends IInterface {
                 String question = data.getString();
                 String reply = ask1(question);
                 Parcel parcel = Parcel.obtain();
-                parcel.putString(reply);
-                result.complete(parcel);
+                try {
+                    parcel.putString(reply);
+                    result.complete(parcel);
+                } catch (RemoteException e) {
+                    result.completeWith(e);
+                }
                 break;
             }
             case MSG_ASK2: {
@@ -62,9 +66,9 @@ public interface IEliza extends IInterface {
                     if (exception == null) {
                         Parcel parcel = Parcel.obtain();
                         try {
-                            parcel.putString(reply.get());
+                            parcel.putString(value);
                             result.complete(parcel);
-                        } catch (Exception e) {
+                        } catch (RemoteException e) {
                             result.completeWith(e);
                         }
                     } else {
@@ -119,18 +123,18 @@ public interface IEliza extends IInterface {
                 Parcel data = Parcel.obtain();
                 data.putString(question);
                 mRemote.transact(MSG_ASK1, data, 0)
-                    .then((parcel, exception) -> {
-                        if (exception == null) {
-                            try {
-                                String reply = parcel.getString();
-                                promise.complete(reply);
-                            } catch (RemoteException e) {
-                                promise.completeWith(e);
+                        .then((parcel, exception) -> {
+                            if (exception == null) {
+                                try {
+                                    String reply = parcel.getString();
+                                    promise.complete(reply);
+                                } catch (RemoteException e) {
+                                    promise.completeWith(e);
+                                }
+                            } else {
+                                promise.completeWith(exception);
                             }
-                        } else {
-                            promise.completeWith(exception);
-                        }
-                    });
+                        });
                 return Binder.get(promise);
             }
 
@@ -140,18 +144,18 @@ public interface IEliza extends IInterface {
                 Parcel data = Parcel.obtain();
                 data.putString(question);
                 mRemote.transact(MSG_ASK2, data, 0)
-                    .then((parcel, exception) -> {
-                        if (exception == null) {
-                            try {
-                                String reply = parcel.getString();
-                                promise.complete(reply);
-                            } catch (RemoteException e) {
-                                promise.completeWith(e);
+                        .then((parcel, exception) -> {
+                            if (exception == null) {
+                                try {
+                                    String reply = parcel.getString();
+                                    promise.complete(reply);
+                                } catch (RemoteException e) {
+                                    promise.completeWith(e);
+                                }
+                            } else {
+                                promise.completeWith(exception);
                             }
-                        } else {
-                            promise.completeWith(exception);
-                        }
-                    });
+                        });
                 return promise;
             }
 

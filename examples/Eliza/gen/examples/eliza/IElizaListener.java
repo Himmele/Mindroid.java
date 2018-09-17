@@ -47,7 +47,11 @@ public interface IElizaListener extends IInterface {
         protected void onTransact(int what, Parcel data, Promise<Parcel> result) throws RemoteException {
             switch (what) {
             case MSG_ON_REPLY: {
-                onReply(data.getString());
+                try {
+                    onReply(data.getString());
+                } catch (RemoteException e) {
+                    result.completeWith(e);
+                }
                 break;
             }
             default:

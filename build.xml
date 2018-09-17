@@ -237,28 +237,25 @@
     <target name="apps" depends="sdk">
         <antcall target="app">
             <param name="app" value="ServiceExample"/>
-            <param name="srcdir" value="examples/Services/src"/>
-            <param name="manifest-path" value="examples/Services"/>
+            <param name="dir" value="examples/Services"/>
         </antcall>
 
         <antcall target="app">
             <param name="app" value="ConcurrencyExample"/>
-            <param name="srcdir" value="examples/Concurrency/src"/>
-            <param name="manifest-path" value="examples/Concurrency"/>
+            <param name="dir" value="examples/Concurrency"/>
         </antcall>
 
         <antcall target="app">
             <param name="app" value="Eliza"/>
-            <param name="srcdir" value="examples/Eliza/src"/>
-            <param name="resdir" value="examples/Eliza/res"/>
-            <param name="manifest-path" value="examples/Eliza"/>
+            <param name="dir" value="examples/Eliza"/>
         </antcall>
     </target>
 
     <target name="app">
-        <build-module name="${app}" compile.source="${compile.source}" compile.target="${compile.target}" srcdir="${srcdir}" resdir="${resdir}" manifest-path="${manifest-path}" jarfile="${app}.jar">
+        <build-module name="${app}" compile.source="${compile.source}" compile.target="${compile.target}" srcdir="${dir}" resdir="${dir}/res" manifest-path="${dir}" jarfile="${app}.jar">
             <module-srcpath>
-                <fileset dir="${srcdir}" includes="**/*.java" />
+                <fileset dir="${dir}" includes="src/**/*.java" />
+                <fileset dir="${dir}" includes="gen/**/*.java" />
             </module-srcpath>
             <module-classpath>
                 <path path="${out.target.dir}/Mindroid.jar" />
