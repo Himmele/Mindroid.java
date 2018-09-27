@@ -81,7 +81,7 @@ public abstract class AbstractClient {
         return mNodeId;
     }
 
-    public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
+    public abstract boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
     public Bundle getContext() throws IOException {
         return mConnection.mContext;
@@ -109,7 +109,11 @@ public abstract class AbstractClient {
             mSocket.setListener((operation, argument) -> {
                 if (operation == Socket.OP_READ) {
                     try {
-                        AbstractClient.this.onTransact(mContext, mInputStream, mOutputStream);
+                        while (mInputStream.available() > 0) {
+                            if (!AbstractClient.this.onTransact(mContext, mInputStream, mOutputStream)) {
+                                break;
+                            }
+                        }
                     } catch (IOException e) {
                         if (DEBUG) {
                             Log.e(LOG_TAG, e.getMessage(), e);

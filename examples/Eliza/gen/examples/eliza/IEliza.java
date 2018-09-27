@@ -51,12 +51,8 @@ public interface IEliza extends IInterface {
                 String question = data.getString();
                 String reply = ask1(question);
                 Parcel parcel = Parcel.obtain();
-                try {
-                    parcel.putString(reply);
-                    result.complete(parcel);
-                } catch (RemoteException e) {
-                    result.completeWith(e);
-                }
+                parcel.putString(reply);
+                result.complete(parcel);
                 break;
             }
             case MSG_ASK2: {

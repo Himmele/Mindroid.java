@@ -280,7 +280,7 @@ public class XmlRpc extends Plugin {
         private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
 
         @Override
-        public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
+        public boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
             if (!context.containsKey("dataInputStream")) {
                 DataInputStream dataInputStream = new DataInputStream(inputStream);
                 context.putObject("dataInputStream", dataInputStream);
@@ -297,7 +297,7 @@ public class XmlRpc extends Plugin {
                     if (dataInputStream.available() >= 4) {
                         context.putInt("messageSize", dataInputStream.readInt());
                     } else {
-                        return;
+                        return false;
                     }
                 }
                 int messageSize = context.getInt("messageSize");
@@ -306,7 +306,7 @@ public class XmlRpc extends Plugin {
                     message = Message.newMessage(dataInputStream);
                     context.remove("messageSize");
                 } else {
-                    return;
+                    return false;
                 }
 
                 if (message.type == Message.MESSAGE_TYPE_TRANSACTION) {
@@ -343,6 +343,7 @@ public class XmlRpc extends Plugin {
                 } else {
                     Log.e(LOG_TAG, "Invalid message type: " + message.type);
                 }
+                return true;
             } catch (IOException e) {
                 if (DEBUG) {
                     Log.e(LOG_TAG, e.getMessage(), e);
@@ -404,7 +405,7 @@ public class XmlRpc extends Plugin {
         }
 
         @Override
-        public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
+        public boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
             if (!context.containsKey("dataInputStream")) {
                 DataInputStream dataInputStream = new DataInputStream(inputStream);
                 context.putObject("dataInputStream", dataInputStream);
@@ -416,7 +417,7 @@ public class XmlRpc extends Plugin {
                     if (dataInputStream.available() >= 4) {
                         context.putInt("messageSize", dataInputStream.readInt());
                     } else {
-                        return;
+                        return false;
                     }
                 }
                 int messageSize = context.getInt("messageSize");
@@ -425,7 +426,7 @@ public class XmlRpc extends Plugin {
                     message = Message.newMessage(dataInputStream);
                     context.remove("messageSize");
                 } else {
-                    return;
+                    return false;
                 }
 
                 final Promise<Parcel> promise = mTransactions.get(message.transactionId);
@@ -439,6 +440,7 @@ public class XmlRpc extends Plugin {
                 } else {
                     Log.e(LOG_TAG, "Invalid transaction id: " + message.transactionId);
                 }
+                return true;
             } catch (IOException e) {
                 if (DEBUG) {
                     Log.e(LOG_TAG, e.getMessage(), e);

@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import mindroid.os.Bundle;
@@ -93,7 +94,11 @@ public abstract class AbstractServer {
         mExecutorGroup.shutdown();
     }
 
-    public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
+    public Set<Connection> getConnections() {
+        return Collections.unmodifiableSet(mConnections);
+    }
+
+    public abstract boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
     public class Connection implements Closeable {
         private final Bundle mContext = new Bundle();
@@ -109,7 +114,11 @@ public abstract class AbstractServer {
             mSocket.setListener((operation, argument) -> {
                 if (operation == Socket.OP_READ) {
                     try {
-                        AbstractServer.this.onTransact(mContext, mInputStream, mOutputStream);
+                        while (mInputStream.available() > 0) {
+                            if (!AbstractServer.this.onTransact(mContext, mInputStream, mOutputStream)) {
+                                break;
+                            }
+                        }
                     } catch (IOException e) {
                         if (DEBUG) {
                             Log.e(LOG_TAG, e.getMessage(), e);
@@ -166,5 +175,18 @@ public abstract class AbstractServer {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteAddress());
             }
         }
+
+        public Bundle getContext() {
+            return mContext;
+        }
+
+        public InputStream getInputStream() {
+            return mInputStream;
+        }
+
+        public OutputStream getOutputStream() {
+            return mOutputStream;
+        }
+
     }
 }
