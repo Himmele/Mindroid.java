@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 Daniel Himmelein
+ * Copyright (C) 2018 ESR Labs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,16 +16,23 @@
 
 package examples.eliza;
 
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import mindroid.os.Binder;
+import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
-import mindroid.os.IBinder;
-import mindroid.os.Binder;
 import mindroid.os.RemoteException;
+import mindroid.util.concurrent.Future;
 import mindroid.util.concurrent.Promise;
 
 public interface IElizaListener extends IInterface {
     public static abstract class Stub extends Binder implements IElizaListener {
-        private static final String DESCRIPTOR = "mindroid://interfaces/examples/eliza/IElizaListener";
+        public static final String DESCRIPTOR = "mindroid://interfaces/examples/eliza/IElizaListener";
 
         public Stub() {
             this.attachInterface(this, DESCRIPTOR);
@@ -47,7 +54,8 @@ public interface IElizaListener extends IInterface {
         protected void onTransact(int what, Parcel data, Promise<Parcel> result) throws RemoteException {
             switch (what) {
             case MSG_ON_REPLY: {
-                onReply(data.getString());
+                String _reply = data.getString();
+                onReply(_reply);
                 break;
             }
             default:
@@ -86,9 +94,9 @@ public interface IElizaListener extends IInterface {
 
             @Override
             public void onReply(String reply) throws RemoteException {
-                Parcel data = Parcel.obtain();
-                data.putString(reply);
-                mRemote.transact(MSG_ON_REPLY, data, FLAG_ONEWAY);
+                Parcel _data = Parcel.obtain();
+                _data.putString(reply);
+                mRemote.transact(MSG_ON_REPLY, _data, FLAG_ONEWAY);
             }
         }
 

@@ -10,16 +10,16 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License."#;package examples.eliza;
+// limitations under the License.
 
 package examples.eliza;
 
 interface IElizaListener {
-    void onReply(String reply);
+    void onReply(String reply) oneway;
 }
 
 interface IEliza {
     String ask1(String question);
     Promise<String> ask2(String question);
-    void ask3(String question, IElizaListener listener);
+    void ask3(String question, IElizaListener listener) oneway;
 }
