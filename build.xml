@@ -342,6 +342,7 @@
                     <include name="mindroid/util/concurrent/Future.java"/>
                     <include name="mindroid/util/concurrent/Promise.java"/>
                     <include name="mindroid/util/concurrent/TimeoutException.java"/>
+                    <include name="mindroid/util/logging/Logger.java"/>
                 </fileset>
             </sourcefiles>
         </javadoc>

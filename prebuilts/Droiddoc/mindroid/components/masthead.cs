@@ -33,7 +33,7 @@
     <div class="mid">
       <div class="header">Links</div>
       <ul>
-        <li><a href="http://esrlabs.com/">E.S.R.Labs</a></li>
+        <li><a href="http://esrlabs.com/">ESR Labs</a></li>
       </ul>
       <br class="clearfix" />
     </div>
