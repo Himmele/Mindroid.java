@@ -231,7 +231,9 @@ public final class ServiceManager {
 
         mProcessManager.shutdown();
 
+        sStub = null;
         sServiceManager = null;
+        sSystemServices.clear();
     }
 
     class ServiceManagerImpl extends IServiceManager.Stub {

@@ -451,4 +451,15 @@ public final class Log {
     public static void setPrintStream(PrintStream printStream) {
         sPrintStream = printStream;
     }
+
+    /**
+     * Integration testing.
+     *
+     * @hide
+     */
+    public static void clear() {
+        reset(LOG_ID_MAIN);
+        reset(LOG_ID_EVENTS);
+        reset(LOG_ID_TEST);
+    }
 }

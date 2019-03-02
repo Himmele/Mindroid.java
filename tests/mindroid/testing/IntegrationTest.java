@@ -19,10 +19,12 @@ package mindroid.testing;
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.rules.TestName;
 import mindroid.content.ComponentName;
 import mindroid.content.Context;
 import mindroid.content.Intent;
@@ -52,10 +54,29 @@ public class IntegrationTest {
 
     private static ServiceManager sServiceManager;
 
+    @Rule
+    public TestName mTestName = new TestName();
+
     @BeforeAll
-    public static void setUpTests() {
+    public static final void setUpTests() {
         final int nodeId = 1;
         final String rootDir = ".";
+
+        Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
+            String message = exception.getMessage();
+            if (message == null) {
+                message = exception.toString();
+            }
+            String stackTrace = Log.getStackTraceString(exception);
+            System.out.println("E/" + LOG_TAG + ": Uncaught exception in \"" + thread.getName() + "\": " +
+                    message + ", Stack trace: " + stackTrace);
+            System.out.println();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignore) {
+            }
+            System.exit(-1);
+        });
 
         System.setProperty(Properties.INTEGRATION_TESTING, "true");
         Log.setIntegrationTesting(true);
@@ -82,7 +103,7 @@ public class IntegrationTest {
     }
 
     @AfterAll
-    public static void tearDownTests() {
+    public static final void tearDownTests() {
         try {
             shutdownServices();
         } catch (Exception e) {
@@ -99,17 +120,32 @@ public class IntegrationTest {
         sServiceManager = null;
 
         Runtime.shutdown();
+
+        Log.clear();
     }
 
     @BeforeEach
-    public void setUp() {
+    public final void setUp() {
         Logger logger = new Logger();
+        Log.d(LOG_TAG, "===> Running test " + mTestName.getMethodName()  + " <===");
+        try {
+            // Wait for test logger to mark beginning of test log history.
+            logger.assumeThat(LOG_TAG, "===> Running test " + mTestName.getMethodName()  + " <===", 60_000).get(60_000);
+        } catch (ExecutionException | TimeoutException | InterruptedException e) {
+            throw new RuntimeException("System failure", e);
+        }
         logger.mark();
     }
 
     @AfterEach
-    public void tearDown() {
+    public final void tearDown() {
         Logger logger = new Logger();
+        Log.d(LOG_TAG, "===> Finished test " + mTestName.getMethodName()  + " <===");
+        try {
+            logger.assumeThat(LOG_TAG, "===> Finished test " + mTestName.getMethodName()  + " <===", 60_000).get(60_000);
+        } catch (ExecutionException | TimeoutException | InterruptedException e) {
+            throw new RuntimeException("System failure", e);
+        }
         logger.reset();
     }
 

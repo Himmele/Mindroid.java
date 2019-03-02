@@ -54,10 +54,12 @@ public interface ILogger extends IInterface {
             }
             case MSG_MARK: {
                 mark();
+                ((Promise<Void>) result).complete(null);
                 break;
             }
             case MSG_RESET: {
                 reset();
+                ((Promise<Void>) result).complete(null);
                 break;
             }
             default:
@@ -101,11 +103,15 @@ public interface ILogger extends IInterface {
             }
 
             public void mark() throws RemoteException {
-                mRemote.transact(MSG_MARK, 0, null, null, null, FLAG_ONEWAY);
+                Promise<Void> promise = new Promise<>();
+                mRemote.transact(MSG_MARK, 0, null, null, promise, 0);
+                Binder.get(promise);
             }
 
             public void reset() throws RemoteException {
-                mRemote.transact(MSG_RESET, 0, null, null, null, FLAG_ONEWAY);
+                Promise<Void> promise = new Promise<>();
+                mRemote.transact(MSG_RESET, 0, null, null, promise, 0);
+                Binder.get(promise);
             }
         }
 

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -253,7 +254,7 @@ public class Mindroid extends Plugin {
     }
 
     private class Server extends AbstractServer {
-        private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
+        private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes(StandardCharsets.UTF_8);
 
         @Override
         public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {

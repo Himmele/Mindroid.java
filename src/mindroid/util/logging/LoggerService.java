@@ -78,9 +78,9 @@ public class LoggerService extends Service {
 
                 try {
                     mWaitForLogs.get();
-                } catch (CancellationException | ExecutionException ignore) {
                 } catch (InterruptedException e) {
                     break;
+                } catch (CancellationException | ExecutionException ignore) {
                 }
                 Iterator<Map.Entry<Integer, Promise<LogRecord>>> itr = loggers.entrySet().iterator();
                 while (itr.hasNext()) {
@@ -91,7 +91,9 @@ public class LoggerService extends Service {
                             LogRecord logRecord = null;
                             try {
                                 logRecord = promise.get();
-                            } catch (CancellationException | ExecutionException | InterruptedException ignore) {
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            } catch (CancellationException | ExecutionException ignore) {
                             }
                             if (logRecord != null) {
                                 List<Handler> handlers = mLogHandlers.get(entry.getKey());
@@ -122,11 +124,11 @@ public class LoggerService extends Service {
             interrupt();
             try {
                 join(JOIN_TIMEOUT);
-                if (isAlive()) {
-                    Log.println('E', LOG_TAG, "Cannot join thread " + getName());
-                    mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
-                }
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignore) {
+            }
+            if (isAlive()) {
+                Log.println('E', LOG_TAG, "Cannot join thread " + getName());
+                mindroid.lang.Runtime.getRuntime().exit(-1, "Cannot join thread " + getName());
             }
         }
     }

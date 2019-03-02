@@ -128,6 +128,10 @@ public class Runtime {
                         // Ignore exception.
                     }
                 }
+
+                if (hooks.length == 0) {
+                    throw new RuntimeException(reason + ": " + code, new Throwable());
+                }
             }
         }
     }
