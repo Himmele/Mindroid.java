@@ -267,20 +267,20 @@ public class XmlRpc extends Plugin {
             if (type == MESSAGE_TYPE_TRANSACTION) {
                 return new Message(type, uri, transactionId, what, data, size);
             } else {
-                Throwable cause = null;
+                Throwable exception = null;
                 int exceptionCount = inputStream.readInt();
                 if (exceptionCount > 0) {
+                    int exceptionClassNameSize = inputStream.readUnsignedShort();
+                    byte[] exceptionClassNameByteArray = new byte[exceptionClassNameSize];
+                    inputStream.readFully(exceptionClassNameByteArray);
+                    String exceptionClassName = new String(exceptionClassNameByteArray, StandardCharsets.US_ASCII);
                     try {
-                        int exceptionClassNameSize = inputStream.readUnsignedShort();
-                        byte[] exceptionClassNameByteArray = new byte[exceptionClassNameSize];
-                        inputStream.readFully(exceptionClassNameByteArray);
-                        String exceptionClassName = new String(exceptionClassNameByteArray, StandardCharsets.US_ASCII);
-                        cause = (Throwable) Class.forName(exceptionClassName).newInstance();
+                        exception = (Throwable) Class.forName(exceptionClassName).newInstance();
                     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {
-                        cause = null;
+                        exception = null;
                     }
                 }
-                return new Message(type, uri, transactionId, what, data, size, (cause != null) ? new RemoteException(cause) : new RemoteException());
+                return new Message(type, uri, transactionId, what, data, size, (exception != null) ? new RemoteException(exception) : new RemoteException());
             }
         }
 

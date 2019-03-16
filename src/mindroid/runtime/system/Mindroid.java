@@ -247,17 +247,17 @@ public class Mindroid extends Plugin {
             if (type == MESSAGE_TYPE_TRANSACTION) {
                 return new Message(type, uri, transactionId, what, data, size);
             } else {
-                Throwable cause = null;
+                Throwable exception = null;
                 int exceptionCount = inputStream.readInt();
                 if (exceptionCount > 0) {
+                    String exceptionClassName = inputStream.readUTF();
                     try {
-                        String causeClassName = inputStream.readUTF();
-                        cause = (Throwable) Class.forName(causeClassName).newInstance();
+                        exception = (Throwable) Class.forName(exceptionClassName).newInstance();
                     } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {
-                        cause = null;
+                        exception = null;
                     }
                 }
-                return new Message(type, uri, transactionId, what, data, size, (cause != null) ? new RemoteException(cause) : new RemoteException());
+                return new Message(type, uri, transactionId, what, data, size, (exception != null) ? new RemoteException(exception) : new RemoteException());
             }
         }
 
