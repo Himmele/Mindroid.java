@@ -292,22 +292,38 @@ public class Runtime {
     }
 
     public final synchronized IBinder getService(URI uri) {
-        IBinder binder = mServices.get(uri.toString());
+        final URI serviceUri;
+        if (uri.getScheme() != null) {
+            serviceUri = uri;
+        } else {
+            try {
+                serviceUri = new URI(MINDROID_SCHEME,
+                        uri.getUserInfo(),
+                        uri.getHost(),
+                        uri.getPort(),
+                        uri.getPath(),
+                        uri.getQuery(),
+                        uri.getFragment());
+            } catch (URISyntaxException e) {
+                throw new RuntimeException("Invalid service URI");
+            }
+        }
+        IBinder binder = mServices.get(serviceUri.toString());
         if (binder != null) {
             return binder;
         } else {
             try {
-                if (MINDROID_SCHEME.equals(uri.getScheme())) {
+                if (MINDROID_SCHEME.equals(serviceUri.getScheme())) {
                     return null;
                 } else {
-                    binder = mServices.get(MINDROID_SCHEME_WITH_SEPARATOR + uri.getAuthority());
+                    binder = mServices.get(MINDROID_SCHEME_WITH_SEPARATOR + serviceUri.getAuthority());
                     if (binder != null) {
                         if (binder instanceof Binder) {
-                            Plugin plugin = mPlugins.get(uri.getScheme());
+                            Plugin plugin = mPlugins.get(serviceUri.getScheme());
                             if (plugin != null) {
                                 Binder stub = plugin.getStub((Binder) binder);
                                 if (stub != null) {
-                                    mServices.put(uri.toString(), stub);
+                                    mServices.put(serviceUri.toString(), stub);
                                 }
                                 return stub;
                             } else {
@@ -315,10 +331,10 @@ public class Runtime {
                             }
                         } else {
                             URI descriptor = new URI(binder.getInterfaceDescriptor());
-                            IBinder proxy = new Binder.Proxy(new URI(uri.getScheme(),
+                            IBinder proxy = new Binder.Proxy(new URI(serviceUri.getScheme(),
                                     binder.getUri().getAuthority(),
                                     "/if=" + descriptor.getPath().substring(1), null, null));
-                            mServices.put(uri.toString(), proxy);
+                            mServices.put(serviceUri.toString(), proxy);
                             return proxy;
                         }
                     } else {

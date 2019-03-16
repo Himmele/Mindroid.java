@@ -43,6 +43,7 @@ import mindroid.os.RemoteException;
 import mindroid.runtime.system.io.AbstractClient;
 import mindroid.runtime.system.io.AbstractServer;
 import mindroid.util.Log;
+import mindroid.util.concurrent.CompletionException;
 import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
 
@@ -198,12 +199,17 @@ public class Mindroid extends Plugin {
         public static final int MESSAGE_TYPE_EXCEPTION_TRANSACTION = 2;
 
         private Message(int type, String uri, int transactionId, int what, byte[] data, int size) {
+            this(type, uri, transactionId, what, data, size, null);
+        }
+
+        private Message(int type, String uri, int transactionId, int what, byte[] data, int size, Throwable cause) {
             this.type = type;
             this.uri = uri;
             this.transactionId = transactionId;
             this.what = what;
             this.data = data;
             this.size = size;
+            this.cause = cause;
         }
 
         public static Message newMessage(String uri, int transactionId, int what, byte[] data) {
@@ -215,11 +221,19 @@ public class Mindroid extends Plugin {
         }
 
         public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data) {
-            return newExceptionMessage(uri, transactionId, what, data, data.length);
+            return newExceptionMessage(uri, transactionId, what, data, data.length, null);
+        }
+
+        public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data, Throwable cause) {
+            return newExceptionMessage(uri, transactionId, what, data, data.length, cause);
         }
 
         public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data, int size) {
-            return new Message(MESSAGE_TYPE_EXCEPTION_TRANSACTION, uri, transactionId, what, data, size);
+            return newExceptionMessage(uri, transactionId, what, data, data.length, null);
+        }
+
+        public static Message newExceptionMessage(String uri, int transactionId, int what, byte[] data, int size, Throwable cause) {
+            return new Message(MESSAGE_TYPE_EXCEPTION_TRANSACTION, uri, transactionId, what, data, size, cause);
         }
 
         public static Message newMessage(DataInputStream inputStream) throws IOException {
@@ -230,7 +244,21 @@ public class Mindroid extends Plugin {
             int size = inputStream.readInt();
             byte[] data = new byte[size];
             inputStream.readFully(data, 0, size);
-            return new Message(type, uri, transactionId, what, data, size);
+            if (type == MESSAGE_TYPE_TRANSACTION) {
+                return new Message(type, uri, transactionId, what, data, size);
+            } else {
+                Throwable cause = null;
+                int exceptionCount = inputStream.readInt();
+                if (exceptionCount > 0) {
+                    try {
+                        String causeClassName = inputStream.readUTF();
+                        cause = (Throwable) Class.forName(causeClassName).newInstance();
+                    } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {
+                        cause = null;
+                    }
+                }
+                return new Message(type, uri, transactionId, what, data, size, (cause != null) ? new RemoteException(cause) : new RemoteException());
+            }
         }
 
         public final void write(DataOutputStream outputStream) throws IOException {
@@ -241,6 +269,14 @@ public class Mindroid extends Plugin {
                 outputStream.writeInt(this.what);
                 outputStream.writeInt(this.size);
                 outputStream.write(this.data, 0, this.size);
+                if (type != MESSAGE_TYPE_TRANSACTION) {
+                    if (this.cause != null && !RemoteException.class.isInstance(this.cause)) {
+                        outputStream.writeInt(1);
+                        outputStream.writeUTF(this.cause.getClass().getName());
+                    } else {
+                        outputStream.writeInt(0);
+                    }
+                }
                 outputStream.flush();
             }
         }
@@ -251,6 +287,7 @@ public class Mindroid extends Plugin {
         int what;
         byte[] data;
         int size;
+        Throwable cause;
     }
 
     private class Server extends AbstractServer {
@@ -283,7 +320,13 @@ public class Mindroid extends Plugin {
                                         if (exception == null) {
                                             Message.newMessage(message.uri, message.transactionId, message.what, value.getByteArray(), value.size()).write(dataOutputStream);
                                         } else {
-                                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
+                                            final Throwable cause;
+                                            if (exception instanceof CompletionException && exception.getCause() != null) {
+                                                cause = exception.getCause();
+                                            } else {
+                                                cause = exception;
+                                            }
+                                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE, cause).write(dataOutputStream);
                                         }
                                     } catch (IOException e) {
                                         try {
@@ -294,14 +337,14 @@ public class Mindroid extends Plugin {
                                 });
                             }
                         } else {
-                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
+                            Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE, new RemoteException("Invalid service URI")).write(dataOutputStream);
                         }
                     } catch (IllegalArgumentException e) {
                         Log.e(LOG_TAG, e.getMessage(), e);
-                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
+                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE, e).write(dataOutputStream);
                     } catch (RemoteException e) {
                         Log.e(LOG_TAG, e.getMessage(), e);
-                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE).write(dataOutputStream);
+                        Message.newExceptionMessage(message.uri, message.transactionId, message.what, BINDER_TRANSACTION_FAILURE, e).write(dataOutputStream);
                     }
                 } else {
                     Log.e(LOG_TAG, "Invalid message type: " + message.type);
@@ -383,7 +426,7 @@ public class Mindroid extends Plugin {
                     if (message.type == Message.MESSAGE_TYPE_TRANSACTION) {
                         promise.complete(Parcel.obtain(message.data).asInput());
                     } else {
-                        promise.completeWith(new RemoteException());
+                        promise.completeWith(message.cause);
                     }
                 } else {
                     Log.e(LOG_TAG, "Invalid transaction id: " + message.transactionId);
