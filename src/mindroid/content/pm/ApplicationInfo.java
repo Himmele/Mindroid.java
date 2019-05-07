@@ -40,13 +40,6 @@ public class ApplicationInfo {
     public String processName;
 
     /**
-     * The app's declared version code.
-     * 
-     * @hide
-     */
-    public int versionCode;
-
-    /**
      * When false, indicates that all components within this application are considered disabled,
      * regardless of their individually set enabled status.
      */

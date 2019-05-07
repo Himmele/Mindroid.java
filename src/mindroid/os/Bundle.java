@@ -983,6 +983,21 @@ public final class Bundle {
         }
     }
 
+    /**
+     * Retrieve all values from the Bundle.
+     *
+     * <p>
+     * Note that you <em>must not</em> modify the collection returned by this method, or alter any
+     * of its contents. The consistency of your stored data is not guaranteed if you do.
+     *
+     * @return Returns a map containing a list of pairs key/value representing the Bundle.
+     *
+     * @throws NullPointerException
+     */
+    public Map<String, ?> getAll() {
+        return new HashMap<>(mMap);
+    }
+
     /** @hide */
     public static boolean isBasicType(Object value) {
         return (value instanceof Boolean) || (value instanceof Byte)

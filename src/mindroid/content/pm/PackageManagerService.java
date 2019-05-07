@@ -70,11 +70,11 @@ public class PackageManagerService extends Service {
         String action = intent.getAction();
         if (PackageManager.ACTION_START_APPLICATIONS.equals(action)) {
             install(Environment.getAppsDirectory());
-            List packages = getInstalledPackages(PackageManager.GET_SERVICES);
+            List<PackageInfo> packages = getInstalledPackages(PackageManager.GET_SERVICES);
             if (packages != null) {
                 IServiceManager serviceManager = ServiceManager.getServiceManager();
-                for (Iterator itr = packages.iterator(); itr.hasNext();) {
-                    PackageInfo p = (PackageInfo) itr.next();
+                for (Iterator<PackageInfo> itr = packages.iterator(); itr.hasNext();) {
+                    PackageInfo p = itr.next();
                     if (p.services != null) {
                         ServiceInfo[] services = p.services;
                         for (int i = 0; i < services.length; i++) {
@@ -83,6 +83,7 @@ public class PackageManagerService extends Service {
                                 Intent service = new Intent();
                                 service.setComponent(new ComponentName(serviceInfo.packageName, serviceInfo.name));
                                 try {
+                                    Log.d(LOG_TAG, "Starting service " + serviceInfo.packageName + "." + serviceInfo.name + " [version: code=" + p.versionCode + ", name=" + p.versionName + "]");
                                     serviceManager.startService(service);
                                 } catch (RemoteException e) {
                                     throw new RuntimeException("System failure");
@@ -93,11 +94,11 @@ public class PackageManagerService extends Service {
                 }
             }
         } else if (PackageManager.ACTION_SHUTDOWN_APPLICATIONS.equals(action)) {
-            List packages = getInstalledPackages(PackageManager.GET_SERVICES);
+            List<PackageInfo> packages = getInstalledPackages(PackageManager.GET_SERVICES);
             if (packages != null) {
                 IServiceManager serviceManager = ServiceManager.getServiceManager();
-                for (Iterator itr = packages.iterator(); itr.hasNext();) {
-                    PackageInfo p = (PackageInfo) itr.next();
+                for (Iterator<PackageInfo> itr = packages.iterator(); itr.hasNext();) {
+                    PackageInfo p = itr.next();
                     if (p.services != null) {
                         ServiceInfo[] services = p.services;
                         for (int i = 0; i < services.length; i++) {
@@ -337,17 +338,28 @@ public class PackageManagerService extends Service {
         ai.fileName = app.getAbsolutePath();
 
         String packageName = null;
+        int versionCode = 0;
+        String versionName = null;
         for (int i = 0; i < parser.getAttributeCount(); i++) {
             String attributeName = parser.getAttributeName(i);
             String attributeValue = parser.getAttributeValue(i);
             if (attributeName.equals("package")) {
                 packageName = attributeValue;
+            } else if (attributeName.equals("versionCode")) {
+                try {
+                    versionCode = Integer.parseInt(attributeValue);
+                } catch (NumberFormatException ignore) {
+                }
+            } else if (attributeName.equals("versionName")) {
+                versionName = attributeValue;
             }
         }
         if (packageName == null || packageName.length() == 0) {
             throw new XmlPullParserException("Manifest is missing a package name");
         }
         pi.packageName = packageName;
+        pi.versionCode = versionCode;
+        pi.versionName = versionName;
         ai.packageName = pi.packageName;
 
         List<ServiceInfo> services = new ArrayList<>();
