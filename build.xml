@@ -53,12 +53,7 @@
         <pathelement location="${java.home}/jmods/java.base.jmod"/>
         <pathelement location="${java.home}/jmods/java.logging.jmod"/>
         <pathelement location="${java.home}/jmods/java.naming.jmod"/>
-        <pathelement location="${java.home}/jmods/java.prefs.jmod"/>
-        <pathelement location="${java.home}/jmods/java.security.jgss.jmod"/>
-        <pathelement location="${java.home}/jmods/java.smartcardio.jmod"/>
-        <pathelement location="${java.home}/jmods/java.sql.jmod"/>
         <pathelement location="${java.home}/jmods/jdk.unsupported.jmod"/>
-        <pathelement location="${java.home}/jmods/java.xml.jmod"/>
     </path>
     <path id="Old_JSE_Classpath">
         <pathelement location="${java.home}/lib/rt.jar"/>
