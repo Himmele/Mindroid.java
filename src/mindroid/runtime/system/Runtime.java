@@ -414,7 +414,7 @@ public class Runtime {
 
                 try {
                     URI descriptor = new URI(service.interfaceDescriptor);
-                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), null, null);
+                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
                     Binder.Proxy proxy = new Binder.Proxy(proxyUri);
                     mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
                     return proxy;
