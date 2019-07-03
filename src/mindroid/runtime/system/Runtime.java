@@ -429,7 +429,7 @@ public class Runtime {
         }
     }
 
-    public final synchronized void removeProxy(IBinder proxy){
+    public final synchronized void removeProxy(IBinder proxy) {
         mProxies.remove(proxy.getUri().toString(), proxy);
     }
 }
