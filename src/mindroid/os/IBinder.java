@@ -80,11 +80,45 @@ public interface IBinder {
      */
     public void transact(int what, int num, Object obj, Bundle data, Promise<?> promise, int flags) throws RemoteException;
 
+    /**
+     * Interface for receiving a callback when the process hosting an IBinder
+     * has gone away.
+     * 
+     * @see #link
+     */
     public interface Supervisor {
         public void onExit(int reason);
     }
 
-    public void link(Supervisor supervisor, int flags) throws RemoteException;
+    /**
+     * Register the supervisor for a notification if this binder
+     * goes away.  If this binder object unexpectedly goes away
+     * (typically because its hosting process has been killed),
+     * then the given {@link Supervisor}'s
+     * {@link Supervisor#onExit Supervisor.onExit()} method
+     * will be called.
+     * 
+     * @param supervisor The supervisor.
+     * @param extras Extra parameters.
+     * @throws Throws {@link RemoteException} if the target IBinder's
+     * process has already exited.
+     * 
+     * @see #unlink
+     */
+    public void link(Supervisor supervisor, Bundle extras) throws RemoteException;
 
-    public boolean unlink(Supervisor supervisor, int flags);
+    /**
+     * Remove a previously registered supervisor notification.
+     * The supervisor will no longer be called if this object
+     * goes away.
+     * 
+     * @param supervisor The supervisor.
+     * @param extras Extra parameters.
+     * @return Returns true if the <var>supervisor</var> is successfully
+     * unlinked, assuring you that its
+     * {@link Supervisor#onExit Supervisor.onExit()} method
+     * will not be called.  Returns false if the target IBinder has already
+     * gone away, meaning the method has been (or soon will be) called.
+     */
+    public boolean unlink(Supervisor supervisor, Bundle extras);
 }

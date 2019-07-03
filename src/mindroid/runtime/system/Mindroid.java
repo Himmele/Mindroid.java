@@ -86,15 +86,6 @@ public class Mindroid extends Plugin {
                     if (service.node.id == nodeId) {
                         long id = ((long) nodeId << 32) | (service.id & 0xFFFFFFFFL);
                         ids.add(id);
-                    } else {
-                        try {
-                            URI descriptor = new URI(service.interfaceDescriptor);
-                            URI uri = new URI("mindroid", service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), null, null);
-                            IBinder proxy = new Binder.Proxy(uri);
-                            mRuntime.addService(new URI("mindroid", service.name, null, null, null), proxy);
-                        } catch (Exception e) {
-                            Log.println('E', LOG_TAG, "Binder proxy registration failed: " + service.name, e);
-                        }
                     }
                 }
                 mRuntime.addIds(ids);
@@ -188,6 +179,15 @@ public class Mindroid extends Plugin {
             }
         }
         return client.transact(binder, what, data, flags);
+    }
+
+    @Override
+    public void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException {
+    }
+
+    @Override
+    public boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
+        return true;
     }
 
     public void onShutdown(AbstractClient client) {
@@ -292,6 +292,14 @@ public class Mindroid extends Plugin {
 
     private class Server extends AbstractServer {
         private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes(StandardCharsets.UTF_8);
+
+        @Override
+        public void onConnected(Connection connection) {
+        }
+
+        @Override
+        public void onDisconnected(Connection connection, Throwable cause) {
+        }
 
         @Override
         public void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
@@ -407,6 +415,14 @@ public class Mindroid extends Plugin {
                 throw new RemoteException("Binder transaction failure", e);
             }
             return result;
+        }
+
+        @Override
+        public void onConnected() {
+        }
+
+        @Override
+        public void onDisconnected(Throwable cause) {
         }
 
         @Override

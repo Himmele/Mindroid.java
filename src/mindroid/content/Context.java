@@ -48,7 +48,7 @@ public abstract class Context {
     public static final URI LOCATION_SERVICE = URI.create("mindroid://locationService");
     public static final URI MEDIA_PLAYER_SERVICE = URI.create("mindroid://mediaPlayerService");
     public static final URI MESSAGE_BROKER = URI.create("mindroid://messageBroker");
-    public static final URI SUPERVISION_SERVICE = URI.create("mindroid://supervisionService");
+    public static final URI SUPERVISOR_SERVICE = URI.create("mindroid://supervisorService");
 
     /**
      * File creation mode: the default mode.

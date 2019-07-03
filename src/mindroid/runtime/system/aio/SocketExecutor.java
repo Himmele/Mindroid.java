@@ -55,8 +55,9 @@ public class SocketExecutor {
     }
 
     void unregister(ServerSocket serverSocket) {
-        mServerSockets.remove(serverSocket.getChannel(), serverSocket);
-        mSelector.wakeup();
+        if (mServerSockets.remove(serverSocket.getChannel(), serverSocket)) {
+            mSelector.wakeup();
+        }
     }
 
     void register(Socket socket) {
@@ -66,8 +67,9 @@ public class SocketExecutor {
     }
 
     void unregister(Socket socket) {
-        mSockets.remove(socket.getChannel(), socket);
-        mSelector.wakeup();
+        if (mSockets.remove(socket.getChannel(), socket)) {
+            mSelector.wakeup();
+        }
     }
 
     protected void run() {

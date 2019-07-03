@@ -62,7 +62,7 @@ public abstract class AbstractServer {
                                 }
                                 mConnections.add(new Connection(socket));
                             } else {
-                                shutdown();
+                                shutdown(exception);
                             }
                         });
                     }
@@ -77,6 +77,10 @@ public abstract class AbstractServer {
     }
 
     public void shutdown() {
+        shutdown(null);
+    }
+
+    private void shutdown(Throwable cause) {
         mExecutorGroup.unregister(mServerSocket);
         try {
             mServerSocket.close();
@@ -92,13 +96,21 @@ public abstract class AbstractServer {
         }
 
         mExecutorGroup.shutdown();
+        onShutdown(cause);
     }
 
     public Set<Connection> getConnections() {
         return Collections.unmodifiableSet(mConnections);
     }
 
+    public abstract void onConnected(Connection connection);
+
+    public abstract void onDisconnected(Connection connection, Throwable cause);
+
     public abstract boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
+
+    public void onShutdown(Throwable cause) {
+    }
 
     public class Connection implements Closeable {
         private final Bundle mContext = new Bundle();
@@ -106,7 +118,7 @@ public abstract class AbstractServer {
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
 
-        public Connection(Socket socket) {
+        Connection(Socket socket) {
             mContext.putObject("connection", this);
             mSocket = socket;
             mInputStream = mSocket.getInputStream();
@@ -124,7 +136,7 @@ public abstract class AbstractServer {
                             Log.e(LOG_TAG, e.getMessage(), e);
                         }
                         try {
-                            close();
+                            close(e);
                         } catch (IOException ignore) {
                         }
                     }
@@ -144,10 +156,16 @@ public abstract class AbstractServer {
                 }
             });
             mExecutorGroup.register(mSocket);
+
+            AbstractServer.this.onConnected(this);
         }
 
         @Override
         public void close() throws IOException {
+            close(null);
+        }
+
+        private void close(Throwable cause) throws IOException {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnecting from " + mSocket.getRemoteAddress());
             }
@@ -174,6 +192,8 @@ public abstract class AbstractServer {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteAddress());
             }
+
+            AbstractServer.this.onDisconnected(this, cause);
         }
 
         public Bundle getContext() {
@@ -187,6 +207,5 @@ public abstract class AbstractServer {
         public OutputStream getOutputStream() {
             return mOutputStream;
         }
-
     }
 }

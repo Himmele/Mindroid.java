@@ -81,6 +81,10 @@ public abstract class AbstractServer {
     }
 
     public void shutdown() {
+        shutdown(null);
+    }
+
+    public void shutdown(Throwable cause) {
         try {
             mServerSocket.close();
         } catch (IOException e) {
@@ -102,13 +106,22 @@ public abstract class AbstractServer {
         if (mThread.isAlive()) {
             Log.e(LOG_TAG, "Cannot shutdown server");
         }
+
+        onShutdown(cause);
     }
 
     public Set<Connection> getConnections() {
         return Collections.unmodifiableSet(mConnections);
     }
 
+    public abstract void onConnected(Connection connection);
+
+    public abstract void onDisconnected(Connection connection, Throwable cause);
+
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
+
+    public void onShutdown(Throwable cause) {
+    }
 
     public class Connection extends Thread implements Closeable {
         private final Bundle mContext = new Bundle();
@@ -116,7 +129,7 @@ public abstract class AbstractServer {
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
 
-        public Connection(Socket socket) throws IOException {
+        Connection(Socket socket) throws IOException {
             mContext.putObject("connection", this);
             mSocket = socket;
             try {
@@ -130,11 +143,17 @@ public abstract class AbstractServer {
                 }
                 throw e;
             }
+
+            AbstractServer.this.onConnected(this);
             super.start();
         }
 
         @Override
         public void close() throws IOException {
+            close(null);
+        }
+
+        private void close(Throwable cause) throws IOException {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnecting from " + mSocket.getRemoteSocketAddress());
             }
@@ -168,6 +187,8 @@ public abstract class AbstractServer {
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteSocketAddress());
             }
+
+            AbstractServer.this.onDisconnected(this, cause);
         }
 
         public Bundle getContext() {
@@ -191,7 +212,7 @@ public abstract class AbstractServer {
                         Log.e(LOG_TAG, e.getMessage(), e);
                     }
                     try {
-                        close();
+                        close(e);
                     } catch (IOException ignore) {
                     }
                     break;

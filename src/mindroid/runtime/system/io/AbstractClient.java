@@ -58,9 +58,10 @@ public abstract class AbstractClient {
             try {
                 mSocket.connect(new InetSocketAddress(mHost, mPort), CONNECTION_ESTABLISHMENT_TIMEOUT);
                 mConnection = new Connection(mSocket);
+                onConnected();
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
-                shutdown();
+                shutdown(e);
                 throw e;
             }
         } catch (URISyntaxException e) {
@@ -69,17 +70,27 @@ public abstract class AbstractClient {
     }
 
     public void shutdown() {
+        shutdown(null);
+    }
+
+    public void shutdown(Throwable cause) {
         if (mConnection != null) {
             try {
                 mConnection.close();
             } catch (IOException ignore) {
             }
         }
+
+        onDisconnected(cause);
     }
 
     public int getNodeId() {
         return mNodeId;
     }
+
+    public abstract void onConnected();
+
+    public abstract void onDisconnected(Throwable cause);
 
     public abstract void onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
@@ -101,7 +112,7 @@ public abstract class AbstractClient {
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
 
-        public Connection(Socket socket) throws IOException {
+        Connection(Socket socket) throws IOException {
             setName("Client: " + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress());
             mContext.putObject("connection", this);
             mSocket = socket;
@@ -174,7 +185,7 @@ public abstract class AbstractClient {
                     if (DEBUG) {
                         Log.e(LOG_TAG, e.getMessage(), e);
                     }
-                    shutdown();
+                    shutdown(e);
                     break;
                 }
             }

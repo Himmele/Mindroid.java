@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import mindroid.os.Binder;
+import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
@@ -43,7 +44,8 @@ public class Runtime {
     private final Map<String, Plugin> mPlugins = new ConcurrentHashMap<>();
     private final Map<Long, WeakReference<Binder>> mBinderIds = new ConcurrentHashMap<>();
     private final Map<String, WeakReference<Binder>> mBinderUris = new ConcurrentHashMap<>();
-    private final Map<String, IBinder> mServices = new HashMap<>();
+    private final Map<String, Binder> mServices = new HashMap<>();
+    private final Map<String, WeakReference<Binder.Proxy>> mProxies = new HashMap<>();
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
     private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
     private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
@@ -255,8 +257,8 @@ public class Runtime {
         if (uri.getScheme() == null || !uri.getScheme().equals(service.getUri().getScheme())) {
             throw new IllegalArgumentException("Binder scheme mismatch: " + uri + " != " + service.getUri());
         }
-        if (!mServices.containsKey(uri.toString())) {
-            if (service instanceof Binder) {
+        if (service instanceof Binder) {
+            if (!mServices.containsKey(uri.toString())) {
                 if (mConfiguration != null) {
                     Configuration.Plugin plugin = mConfiguration.plugins.get(MINDROID_SCHEME);
                     if (plugin != null) {
@@ -274,16 +276,18 @@ public class Runtime {
                         }
                     }
                 }
+                mServices.put(uri.toString(), (Binder) service);
             }
-            mServices.put(uri.toString(), service);
+        } else {
+            throw new IllegalArgumentException("Service must be of superclass mindroid.os.Binder");
         }
     }
 
     public final synchronized void removeService(IBinder service) {
         if (service != null) {
-            Iterator<Map.Entry<String, IBinder>> itr = mServices.entrySet().iterator();
+            Iterator<Map.Entry<String, Binder>> itr = mServices.entrySet().iterator();
             while (itr.hasNext()) {
-                Map.Entry<String, IBinder> entry = itr.next();
+                Map.Entry<String, Binder> entry = itr.next();
                 if (entry.getValue().getId() == service.getId()) {
                     itr.remove();
                 }
@@ -308,43 +312,29 @@ public class Runtime {
                 throw new RuntimeException("Invalid service URI");
             }
         }
+
+        // Services
         IBinder binder = mServices.get(serviceUri.toString());
         if (binder != null) {
             return binder;
         } else {
-            try {
-                if (MINDROID_SCHEME.equals(serviceUri.getScheme())) {
-                    return null;
-                } else {
-                    binder = mServices.get(MINDROID_SCHEME_WITH_SEPARATOR + serviceUri.getAuthority());
-                    if (binder != null) {
-                        if (binder instanceof Binder) {
-                            Plugin plugin = mPlugins.get(serviceUri.getScheme());
-                            if (plugin != null) {
-                                Binder stub = plugin.getStub((Binder) binder);
-                                if (stub != null) {
-                                    mServices.put(serviceUri.toString(), stub);
-                                }
-                                return stub;
-                            } else {
-                                return null;
-                            }
-                        } else {
-                            URI descriptor = new URI(binder.getInterfaceDescriptor());
-                            IBinder proxy = new Binder.Proxy(new URI(serviceUri.getScheme(),
-                                    binder.getUri().getAuthority(),
-                                    "/if=" + descriptor.getPath().substring(1), null, null));
-                            mServices.put(serviceUri.toString(), proxy);
-                            return proxy;
-                        }
-                    } else {
-                        return null;
+            binder = mServices.get(MINDROID_SCHEME_WITH_SEPARATOR + serviceUri.getAuthority());
+            if (binder != null) {
+                Plugin plugin = mPlugins.get(serviceUri.getScheme());
+                if (plugin != null) {
+                    Binder stub = plugin.getStub((Binder) binder);
+                    if (stub != null) {
+                        mServices.put(serviceUri.toString(), stub);
                     }
+                    return stub;
+                } else {
+                    return null;
                 }
-            } catch (URISyntaxException e) {
-                return null;
             }
         }
+
+        // Proxies
+        return getProxy(serviceUri);
     }
 
     public final long attachProxy(Binder.Proxy proxy) {
@@ -385,10 +375,60 @@ public class Runtime {
         }
     }
 
-    public final void link(IBinder binder, IBinder.Supervisor supervisor, int flags) throws RemoteException {
+    public final void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException {
+        Plugin plugin = mPlugins.get(binder.getUri().getScheme());
+        if (plugin != null) {
+            plugin.link(binder, supervisor, extras);
+        } else {
+            throw new RemoteException("Binder linking failure");
+        }
     }
 
-    public final boolean unlink(IBinder binder, IBinder.Supervisor supervisor, int flags) {
-        return false;
+    public final boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
+        Plugin plugin = mPlugins.get(binder.getUri().getScheme());
+        if (plugin != null) {
+            return plugin.unlink(binder, supervisor, extras);
+        } else {
+            return true;
+        }
+    }
+
+    private synchronized Binder.Proxy getProxy(URI uri) {
+        final String key = uri.toString();
+        WeakReference<Binder.Proxy> wp = mProxies.get(key);
+        Binder.Proxy p;
+        if (wp != null && (p = wp.get()) != null) {
+            return p;
+        } else {
+            mProxies.remove(key);
+        }
+
+        if (mConfiguration != null) {
+            Configuration.Plugin plugin = mConfiguration.plugins.get(MINDROID_SCHEME);
+            if (plugin != null) {
+                final String name = uri.getAuthority();
+                Configuration.Service service = plugin.services.get(name);
+                if (service == null) {
+                    return null;
+                }
+
+                try {
+                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, uri.getPath(), uri.getQuery(), uri.getFragment());
+                    Binder.Proxy proxy = new Binder.Proxy(proxyUri);
+                    mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
+                    return proxy;
+                } catch (URISyntaxException e) {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    public final synchronized void removeProxy(IBinder proxy){
+        mProxies.remove(proxy.getUri().toString(), proxy);
     }
 }

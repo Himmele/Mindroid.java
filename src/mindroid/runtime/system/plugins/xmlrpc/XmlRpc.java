@@ -207,6 +207,15 @@ public class XmlRpc extends Plugin {
         return client.transact(binder, what, data, flags);
     }
 
+    @Override
+    public void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException {
+    }
+
+    @Override
+    public boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
+        return true;
+    }
+
     public void onShutdown(AbstractClient client) {
         mClients.remove(client.getNodeId());
     }
@@ -327,6 +336,14 @@ public class XmlRpc extends Plugin {
 
     private class Server extends AbstractServer {
         private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
+
+        @Override
+        public void onConnected(Connection connection) {
+        }
+
+        @Override
+        public void onDisconnected(Connection connection, Throwable cause) {
+        }
 
         @Override
         public boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException {
@@ -457,6 +474,14 @@ public class XmlRpc extends Plugin {
                 throw new RemoteException("Binder transaction failure", e);
             }
             return result;
+        }
+
+        @Override
+        public void onConnected() {
+        }
+
+        @Override
+        public void onDisconnected(Throwable cause) {
         }
 
         @Override

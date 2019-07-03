@@ -63,7 +63,9 @@ public class SocketExecutorGroup {
     }
 
     void unregister(Socket socket) {
-        mSocketExecutors[mCounter.getAndIncrement() % mSocketExecutors.length].unregister(socket);
+        for (SocketExecutor executor : mSocketExecutors) {
+            executor.unregister(socket);
+        }
     }
 
     void register(ServerSocket serverSocket) {
@@ -71,7 +73,9 @@ public class SocketExecutorGroup {
     }
 
     void unregister(ServerSocket serverSocket) {
-        mSocketExecutors[mCounter.getAndIncrement() % mSocketExecutors.length].unregister(serverSocket);
+        for (SocketExecutor executor : mSocketExecutors) {
+            executor.unregister(serverSocket);
+        }
     }
 
     void shutdown() {

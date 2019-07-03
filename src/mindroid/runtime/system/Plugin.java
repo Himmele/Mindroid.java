@@ -17,6 +17,7 @@
 package mindroid.runtime.system;
 
 import mindroid.os.Binder;
+import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
@@ -45,6 +46,9 @@ public abstract class Plugin {
     public abstract Binder getStub(Binder binder);
     public abstract IInterface getProxy(IBinder binder);
     public abstract Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException;
+
+    public abstract void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException;
+    public abstract boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras);
 
     public static abstract class Observer {
         public abstract void onEntry(int nodeId);

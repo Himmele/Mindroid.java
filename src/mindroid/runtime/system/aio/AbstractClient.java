@@ -57,7 +57,9 @@ public abstract class AbstractClient {
             mSocket.connect(new InetSocketAddress(mHost, mPort)).whenComplete((value, exception) -> {
                 if (exception != null) {
                     Log.e(LOG_TAG, exception.getMessage(), exception);
-                    shutdown();
+                    shutdown(exception);
+                } else {
+                    onConnected();
                 }
             });
             mExecutorGroup.register(mSocket);
@@ -67,6 +69,10 @@ public abstract class AbstractClient {
     }
 
     public void shutdown() {
+        shutdown(null);
+    }
+
+    private void shutdown(Throwable cause) {
         if (mConnection != null) {
             try {
                 mConnection.close();
@@ -75,11 +81,16 @@ public abstract class AbstractClient {
         }
 
         mExecutorGroup.shutdown();
+        onDisconnected(cause);
     }
 
     public int getNodeId() {
         return mNodeId;
     }
+
+    public abstract void onConnected();
+
+    public abstract void onDisconnected(Throwable cause);
 
     public abstract boolean onTransact(Bundle context, InputStream inputStream, OutputStream outputStream) throws IOException;
 
@@ -101,7 +112,7 @@ public abstract class AbstractClient {
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
 
-        public Connection(Socket socket) {
+        Connection(Socket socket) {
             mContext.putObject("connection", this);
             mSocket = socket;
             mInputStream = mSocket.getInputStream();
@@ -122,7 +133,7 @@ public abstract class AbstractClient {
                             close();
                         } catch (IOException ignore) {
                         }
-                        shutdown();
+                        shutdown(e);
                     }
                 } else if (operation == Socket.OP_CLOSE) {
                     if (DEBUG) {
@@ -137,7 +148,7 @@ public abstract class AbstractClient {
                         close();
                     } catch (IOException ignore) {
                     }
-                    shutdown();
+                    shutdown(null);
                 }
             });
         }

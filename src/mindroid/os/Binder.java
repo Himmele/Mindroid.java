@@ -188,9 +188,11 @@ public class Binder implements IBinder {
      * If you want to call this, call transact().
      */
     protected void onTransact(int what, Parcel data, Promise<Parcel> result) throws RemoteException {
+        throw new RemoteException(new NoSuchMethodException());
     }
 
     protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
+        throw new RemoteException(new NoSuchMethodException());
     }
 
     /**
@@ -295,11 +297,11 @@ public class Binder implements IBinder {
     }
 
     @Override
-    public void link(Supervisor supervisor, int flags) throws RemoteException {
+    public void link(Supervisor supervisor, Bundle extras) throws RemoteException {
     }
 
     @Override
-    public boolean unlink(Supervisor supervisor, int flags) {
+    public boolean unlink(Supervisor supervisor, Bundle extras) {
         return true;
     }
 
@@ -497,13 +499,13 @@ public class Binder implements IBinder {
         }
 
         @Override
-        public void link(Supervisor supervisor, int flags) throws RemoteException {
-            mRuntime.link(this, supervisor, flags);
+        public void link(Supervisor supervisor, Bundle extras) throws RemoteException {
+            mRuntime.link(this, supervisor, extras);
         }
 
         @Override
-        public boolean unlink(Supervisor supervisor, int flags) {
-            return mRuntime.unlink(this, supervisor, flags);
+        public boolean unlink(Supervisor supervisor, Bundle extras) {
+            return mRuntime.unlink(this, supervisor, extras);
         }
     }
 
