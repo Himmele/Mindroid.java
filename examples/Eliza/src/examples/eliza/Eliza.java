@@ -81,7 +81,7 @@ public class Eliza {
         }
 
         for (int i = 0; i < 10; i++) {
-            if (context.getSystemService(ELIZA) != null) {
+            if (context.getSystemService(uri) != null) {
                 break;
             }
             try {

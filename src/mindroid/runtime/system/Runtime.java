@@ -413,7 +413,8 @@ public class Runtime {
                 }
 
                 try {
-                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, uri.getPath(), uri.getQuery(), uri.getFragment());
+                    URI descriptor = new URI(service.interfaceDescriptor);
+                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), null, null);
                     Binder.Proxy proxy = new Binder.Proxy(proxyUri);
                     mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
                     return proxy;

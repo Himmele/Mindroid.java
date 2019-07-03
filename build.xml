@@ -37,17 +37,39 @@
     </condition>
     <echo message="rootDir is set to: ${rootDir}" />
 
-    <!-- Platform dependent bootclasspath -->
+    <!-- Define platform dependent classpaths -->
     <property name="platform" value="pc" />
-    <property name="target.bootclasspath" value="JSE_Bootclasspath" />
+    <if>
+        <equals arg1="${ant.java.version}" arg2="1.8" />
+        <then>
+              <property name="target.classpath" value="Old_JSE_Classpath" />
+        </then>
+        <else>
+              <property name="target.classpath" value="JSE_Classpath" />
+        </else>
+    </if>
 
-    <path id="JSE_Bootclasspath">
+    <path id="JSE_Classpath">
+        <pathelement location="${java.home}/jmods/java.base.jmod"/>
+        <pathelement location="${java.home}/jmods/java.logging.jmod"/>
+        <pathelement location="${java.home}/jmods/java.naming.jmod"/>
+        <pathelement location="${java.home}/jmods/java.prefs.jmod"/>
+        <pathelement location="${java.home}/jmods/java.security.jgss.jmod"/>
+        <pathelement location="${java.home}/jmods/java.smartcardio.jmod"/>
+        <pathelement location="${java.home}/jmods/java.sql.jmod"/>
+        <pathelement location="${java.home}/jmods/jdk.unsupported.jmod"/>
+        <pathelement location="${java.home}/jmods/java.xml.jmod"/>
+    </path>
+    <path id="Old_JSE_Classpath">
         <pathelement location="${java.home}/lib/rt.jar"/>
         <pathelement location="${java.home}/lib/jce.jar"/>
         <pathelement location="${java.home}/lib/jsse.jar"/>
     </path>
 
-    <echo>Target bootclasspath: ${target.bootclasspath}</echo>
+    <echo>Java/JVM version: ${ant.java.version}</echo>
+    <echo>Java/JVM version detail version: ${java.version}</echo>
+    <echo>Java/JVM home: ${java.home}</echo>
+    <echo>Java/JVM classpath: ${target.classpath}</echo>
 
     <property name="out.target.dir" value="${basedir}/out/${target}" />
     <property name="app.target.dir" value="${basedir}/out/${target}/apps" />
@@ -81,7 +103,7 @@
             </pathconvert>
             <!-- <echo>Compiling source files: ${includes}</echo> -->
 
-            <javac bootclasspathref="${target.bootclasspath}" srcdir="@{srcdir}" destdir="@{destdir}" includes="${includes}"
+            <javac classpathref="${target.classpath}" srcdir="@{srcdir}" destdir="@{destdir}" includes="${includes}"
                     debug="on" deprecation="on" optimize="on" listfiles="no" source="@{compile.source}" target="@{compile.target}"
                     includeantruntime="false" encoding="utf-8" nowarn="@{nowarn}" createMissingPackageInfoClass="false">
                 <classpath>
@@ -226,7 +248,7 @@
         </jar>
 
         <proguard configuration="build/proguard-sdk.txt">
-            <libraryjar refid="${target.bootclasspath}"/>
+            <libraryjar refid="${target.classpath}"/>
             <injar name="${out.target.dir}/tmp/Mindroid.jar"/>
             <outjar name="${out.target.dir}/Mindroid.jar"/>
         </proguard>
