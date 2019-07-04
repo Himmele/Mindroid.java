@@ -49,7 +49,7 @@ import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
 
 public class XmlRpc extends Plugin {
-    private static final String LOG_TAG = "XmlRpc";
+    private static String LOG_TAG = "XmlRpc";
     private static final String TIMEOUT = "timeout";
     private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
     private static final boolean DEBUG = false;
@@ -78,6 +78,7 @@ public class XmlRpc extends Plugin {
     @Override
     public void start() {
         int nodeId = mRuntime.getNodeId();
+        LOG_TAG = "XmlRpc [" + nodeId + "]";
         Configuration configuration = mRuntime.getConfiguration();
         if (configuration != null) {
             mConfiguration = configuration.plugins.get("xmlrpc");
@@ -339,10 +340,20 @@ public class XmlRpc extends Plugin {
 
         @Override
         public void onConnected(Connection connection) {
+            try {
+                Log.d(LOG_TAG, "Client connected from " + connection.getRemoteSocketAddress());
+            } catch (IOException ignore) {
+                Log.e(LOG_TAG, "Failed to get remote socket address");
+            }
         }
 
         @Override
         public void onDisconnected(Connection connection, Throwable cause) {
+            try {
+                Log.d(LOG_TAG, "Client disconnected from " + connection.getRemoteSocketAddress());
+            } catch (IOException ignore) {
+                Log.e(LOG_TAG, "Failed to get remote socket address");
+            }
         }
 
         @Override
@@ -478,10 +489,20 @@ public class XmlRpc extends Plugin {
 
         @Override
         public void onConnected() {
+            try {
+                Log.d(LOG_TAG, "Connected to " + getRemoteSocketAddress());
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Failed to get remote socket address");
+            }
         }
 
         @Override
         public void onDisconnected(Throwable cause) {
+            try {
+                Log.d(LOG_TAG, "Disconnected from " + getRemoteSocketAddress());
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Failed to get remote socket address");
+            }
         }
 
         @Override

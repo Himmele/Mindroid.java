@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -206,6 +207,14 @@ public abstract class AbstractServer {
 
         public OutputStream getOutputStream() {
             return mOutputStream;
+        }
+
+        public SocketAddress getLocalSocketAddress() throws IOException {
+            return mSocket.getLocalAddress();
+        }
+
+        public SocketAddress getRemoteSocketAddress() throws IOException {
+            return mSocket.getRemoteAddress();
         }
     }
 }

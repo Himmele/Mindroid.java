@@ -48,7 +48,7 @@ import mindroid.util.concurrent.Executors;
 import mindroid.util.concurrent.Promise;
 
 public class Mindroid extends Plugin {
-    private static final String LOG_TAG = "Mindroid";
+    private static String LOG_TAG = "Mindroid";
     private static final String TIMEOUT = "timeout";
     private static final long DEFAULT_TRANSACTION_TIMEOUT = 10000;
     private static final boolean DEBUG = false;
@@ -77,6 +77,7 @@ public class Mindroid extends Plugin {
     @Override
     public void start() {
         int nodeId = mRuntime.getNodeId();
+        LOG_TAG = "Mindroid [" + nodeId + "]";
         Configuration configuration = mRuntime.getConfiguration();
         if (configuration != null) {
             mConfiguration = configuration.plugins.get("mindroid");
@@ -295,10 +296,12 @@ public class Mindroid extends Plugin {
 
         @Override
         public void onConnected(Connection connection) {
+            Log.d(LOG_TAG, "Client connected from " + connection.getRemoteSocketAddress());
         }
 
         @Override
         public void onDisconnected(Connection connection, Throwable cause) {
+            Log.d(LOG_TAG, "Client disconnected from " + connection.getRemoteSocketAddress());
         }
 
         @Override
@@ -419,10 +422,12 @@ public class Mindroid extends Plugin {
 
         @Override
         public void onConnected() {
+            Log.d(LOG_TAG, "Connected to " + getRemoteSocketAddress());
         }
 
         @Override
         public void onDisconnected(Throwable cause) {
+            Log.d(LOG_TAG, "Disconnected from " + getRemoteSocketAddress());
         }
 
         @Override

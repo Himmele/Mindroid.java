@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import mindroid.os.Bundle;
@@ -104,6 +105,14 @@ public abstract class AbstractClient {
 
     public OutputStream getOutputStream() throws IOException {
         return mConnection.mSocket.getOutputStream();
+    }
+
+    public SocketAddress getLocalSocketAddress() throws IOException {
+        return mSocket.getLocalAddress();
+    }
+
+    public SocketAddress getRemoteSocketAddress() throws IOException {
+        return mSocket.getRemoteAddress();
     }
 
     public class Connection implements Closeable {
