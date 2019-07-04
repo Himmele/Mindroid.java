@@ -69,11 +69,7 @@ public abstract class AbstractClient {
         }
     }
 
-    public void shutdown() {
-        shutdown(null);
-    }
-
-    private void shutdown(Throwable cause) {
+    public void shutdown(Throwable cause) {
         if (mConnection != null) {
             try {
                 mConnection.close();

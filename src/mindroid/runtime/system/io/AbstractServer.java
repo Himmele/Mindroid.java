@@ -81,10 +81,6 @@ public abstract class AbstractServer {
         }
     }
 
-    public void shutdown() {
-        shutdown(null);
-    }
-
     public void shutdown(Throwable cause) {
         try {
             mServerSocket.close();

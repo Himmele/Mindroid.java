@@ -77,11 +77,7 @@ public abstract class AbstractServer {
         }
     }
 
-    public void shutdown() {
-        shutdown(null);
-    }
-
-    private void shutdown(Throwable cause) {
+    public void shutdown(Throwable cause) {
         mExecutorGroup.unregister(mServerSocket);
         try {
             mServerSocket.close();

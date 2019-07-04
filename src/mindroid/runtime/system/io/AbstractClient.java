@@ -70,10 +70,6 @@ public abstract class AbstractClient {
         }
     }
 
-    public void shutdown() {
-        shutdown(null);
-    }
-
     public void shutdown(Throwable cause) {
         if (mConnection != null) {
             try {

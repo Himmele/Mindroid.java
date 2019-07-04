@@ -96,7 +96,7 @@ public class XmlRpc extends Plugin {
 
     @Override
     public void stop() {
-        mServer.shutdown();
+        mServer.shutdown(null);
     }
 
     @Override
@@ -127,14 +127,14 @@ public class XmlRpc extends Plugin {
 //                mProxies.remove(nodeId);
 //                Client client = mClients.get(nodeId);
 //                if (client != null) {
-//                    client.shutdown();
+//                    client.shutdown(null);
 //                    mClients.remove(nodeId);
 //                }
 //            }
 //        } else {
 //            Client client = mClients.get(nodeId);
 //            if (client != null) {
-//                client.shutdown();
+//                client.shutdown(null);
 //                mClients.remove(nodeId);
 //            }
 //        }
@@ -444,7 +444,7 @@ public class XmlRpc extends Plugin {
             super(nodeId);
         }
 
-        public void shutdown() {
+        public void shutdown(Throwable cause) {
             XmlRpc.this.onShutdown(this);
 
             if (mTransactions != null) {
@@ -453,7 +453,7 @@ public class XmlRpc extends Plugin {
                 }
             }
 
-            sExecutor.execute(() -> { super.shutdown(); });
+            sExecutor.execute(() -> { super.shutdown(cause); });
         }
 
         public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
@@ -481,7 +481,7 @@ public class XmlRpc extends Plugin {
                 Message.newMessage(binder.getUri().toString(), transactionId, what, data.getByteArray(), data.size()).write(dataOutputStream);
             } catch (IOException e) {
                 mTransactions.remove(transactionId);
-                shutdown();
+                shutdown(e);
                 throw new RemoteException("Binder transaction failure", e);
             }
             return result;
