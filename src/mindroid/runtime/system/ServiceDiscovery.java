@@ -69,7 +69,6 @@ public class ServiceDiscovery {
         public Map<String, Service> services = new HashMap<>();
     }
 
-
     public static Configuration read(File file) throws Exception {
         FileInputStream inputStream = null;
         try {
