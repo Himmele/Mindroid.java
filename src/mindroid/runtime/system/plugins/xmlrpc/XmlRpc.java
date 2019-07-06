@@ -39,7 +39,7 @@ import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
-import mindroid.runtime.system.Configuration;
+import mindroid.runtime.system.ServiceDiscovery;
 import mindroid.runtime.system.Plugin;
 import mindroid.runtime.system.aio.AbstractClient;
 import mindroid.runtime.system.aio.AbstractServer;
@@ -55,7 +55,7 @@ public class XmlRpc extends Plugin {
     private static final boolean DEBUG = false;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
-    private Configuration.Plugin mConfiguration;
+    private ServiceDiscovery.Configuration mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
@@ -79,16 +79,18 @@ public class XmlRpc extends Plugin {
     public void start() {
         int nodeId = mRuntime.getNodeId();
         LOG_TAG = "XmlRpc [" + nodeId + "]";
-        Configuration configuration = mRuntime.getConfiguration();
-        if (configuration != null) {
-            mConfiguration = configuration.plugins.get("xmlrpc");
-            if (mConfiguration != null) {
-                Configuration.Node node = mConfiguration.nodes.get(nodeId);
-                mServer = new Server();
-                try {
-                    mServer.start(node.uri);
-                } catch (IOException e) {
-                    Log.println('E', LOG_TAG, e.getMessage(), e);
+        mConfiguration = mRuntime.getConfiguration();
+        if (mConfiguration != null) {
+            ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+            if (node != null) {
+                ServiceDiscovery.Configuration.Server server = node.servers.get("xmlrpc");
+                if (server != null) {
+                    mServer = new Server();
+                    try {
+                        mServer.start(server.uri);
+                    } catch (IOException e) {
+                        Log.println('E', LOG_TAG, e.getMessage(), e);
+                    }
                 }
             }
         }
@@ -189,17 +191,24 @@ public class XmlRpc extends Plugin {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
         Client client = mClients.get(nodeId);
         if (client == null) {
-            Configuration.Node node;
-            if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
-                if (!mClients.containsKey(nodeId)) {
-                    try {
-                        client = new Client(node.id);
-                        mClients.put(nodeId, client);
-                        client.start(node.uri);
-                    } catch (IOException e) {
-                        mClients.remove(nodeId);
+            if (mConfiguration != null) {
+                ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+                if (node != null) {
+                    ServiceDiscovery.Configuration.Server server = node.servers.get(binder.getUri().getScheme());
+                    if (server != null) {
+                        try {
+                            client = new Client(node.id);
+                            mClients.put(nodeId, client);
+                            client.start(server.uri);
+                        } catch (IOException e) {
+                            mClients.remove(nodeId);
+                            throw new RemoteException("Binder transaction failure");
+                        }
+                    } else {
                         throw new RemoteException("Binder transaction failure");
                     }
+                } else {
+                    throw new RemoteException("Binder transaction failure");
                 }
             } else {
                 throw new RemoteException("Binder transaction failure");

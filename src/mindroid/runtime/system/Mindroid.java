@@ -26,9 +26,7 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -54,7 +52,7 @@ public class Mindroid extends Plugin {
     private static final boolean DEBUG = false;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
-    private Configuration.Plugin mConfiguration;
+    private ServiceDiscovery.Configuration mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
@@ -78,25 +76,18 @@ public class Mindroid extends Plugin {
     public void start() {
         int nodeId = mRuntime.getNodeId();
         LOG_TAG = "Mindroid [" + nodeId + "]";
-        Configuration configuration = mRuntime.getConfiguration();
-        if (configuration != null) {
-            mConfiguration = configuration.plugins.get("mindroid");
-            if (mConfiguration != null) {
-                Set<Long> ids = new HashSet<>();
-                for (Configuration.Service service : mConfiguration.services.values()) {
-                    if (service.node.id == nodeId) {
-                        long id = ((long) nodeId << 32) | (service.id & 0xFFFFFFFFL);
-                        ids.add(id);
+        mConfiguration = mRuntime.getConfiguration();
+        if (mConfiguration != null) {
+            ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+            if (node != null) {
+                ServiceDiscovery.Configuration.Server server = node.servers.get("mindroid");
+                if (server != null) {
+                    mServer = new Server();
+                    try {
+                        mServer.start(server.uri);
+                    } catch (IOException e) {
+                        Log.println('E', LOG_TAG, e.getMessage(), e);
                     }
-                }
-                mRuntime.addIds(ids);
-
-                Configuration.Node node = mConfiguration.nodes.get(nodeId);
-                mServer = new Server();
-                try {
-                    mServer.start(node.uri);
-                } catch (IOException e) {
-                    Log.println('E', LOG_TAG, e.getMessage(), e);
                 }
             }
         }
@@ -163,17 +154,24 @@ public class Mindroid extends Plugin {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
         Client client = mClients.get(nodeId);
         if (client == null) {
-            Configuration.Node node;
-            if (mConfiguration != null && (node = mConfiguration.nodes.get(nodeId)) != null) {
-                if (!mClients.containsKey(nodeId)) {
-                    try {
-                        client = new Client(node.id);
-                        mClients.put(nodeId, client);
-                        client.start(node.uri);
-                    } catch (IOException e) {
-                        mClients.remove(nodeId);
+            if (mConfiguration != null) {
+                ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+                if (node != null) {
+                    ServiceDiscovery.Configuration.Server server = node.servers.get(binder.getUri().getScheme());
+                    if (server != null) {
+                        try {
+                            client = new Client(node.id);
+                            mClients.put(nodeId, client);
+                            client.start(server.uri);
+                        } catch (IOException e) {
+                            mClients.remove(nodeId);
+                            throw new RemoteException("Binder transaction failure");
+                        }
+                    } else {
                         throw new RemoteException("Binder transaction failure");
                     }
+                } else {
+                    throw new RemoteException("Binder transaction failure");
                 }
             } else {
                 throw new RemoteException("Binder transaction failure");

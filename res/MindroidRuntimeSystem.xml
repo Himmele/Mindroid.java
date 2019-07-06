@@ -1,20 +1,25 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 <runtime>
-    <plugins>
-        <plugin name="Mindroid" scheme="mindroid" class="mindroid.runtime.system.Mindroid" enabled="true">
-            <serviceDiscovery>
-                <node id="1" uri="tcp://localhost:12345">
-                    <service id="1" name="eliza" interface="mindroid://interfaces/examples/eliza/IEliza" />
-                    <service id="2" name="locationService" interface="mindroid://interfaces/mindroid/location/ILocationManager" />
-                </node>
-                <node id="42" uri="tcp://localhost:54321" />
-            </serviceDiscovery>
-        </plugin>
-        <plugin name="XmlRpc" scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" enabled="true">
-            <serviceDiscovery>
-                <node id="1" uri="tcp://localhost:1234" />
-                <node id="42" uri="tcp://localhost:4321" />
-            </serviceDiscovery>
-        </plugin>
-    </plugins>
+    <nodes>
+        <node id="1">
+            <server scheme="mindroid" uri="tcp://localhost:12345" class="mindroid.runtime.system.Mindroid" />
+            <server scheme="xmlrpc" uri="tcp://localhost:1234" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+        </node>
+        <node id="42">
+            <server scheme="mindroid" uri="tcp://localhost:54321" class="mindroid.runtime.system.Mindroid" />
+            <server scheme="xmlrpc" uri="tcp://localhost:4321" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+        </node>
+    </nodes>
+
+    <serviceDiscovery>
+        <node id="1">
+            <service id="1" name="eliza">
+                <announcement descriptor="mindroid://interfaces/examples/eliza/IEliza" />
+                <announcement descriptor="xmlrpc://interfaces/examples/eliza/IEliza" />
+            </service>
+            <service id="2" name="locationService">
+                <announcement descriptor="mindroid://interfaces/mindroid/location/ILocationManager" />
+            </service>
+        </node>
+    </serviceDiscovery>
 </runtime>

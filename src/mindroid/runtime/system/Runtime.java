@@ -21,6 +21,7 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -49,34 +50,41 @@ public class Runtime {
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
     private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
     private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
-    private Configuration mConfiguration;
+    private ServiceDiscovery.Configuration mConfiguration;
 
-    private Runtime(int nodeId, File configuration) {
+    private Runtime(int nodeId, File configurationFile) {
         if (nodeId == 0) {
             throw new IllegalArgumentException("Mindroid runtime system node id must not be 0");
         }
         mNodeId = nodeId;
         Log.println('I', LOG_TAG, "Mindroid runtime system node id: " + mNodeId);
-        if (configuration != null) {
+        if (configurationFile != null) {
             try {
-                mConfiguration = Configuration.read(configuration);
+                mConfiguration = ServiceDiscovery.read(configurationFile);
             } catch (Exception e) {
                 Log.println('E', LOG_TAG, "Failed to read Mindroid runtime system configuration", e);
             }
         }
-        if (mConfiguration != null) {
-            for (Configuration.Plugin plugin : mConfiguration.plugins.values()) {
-                if (plugin.enabled) {
-                    try {
-                        Class<Plugin> clazz = (Class<Plugin>) Class.forName(plugin.clazz);
-                        mPlugins.put(plugin.scheme, clazz.newInstance());
-                    } catch (Exception e) {
-                        Log.println('E', LOG_TAG, "Cannot find class \'" + plugin.clazz + "\': " + e.getMessage(), e);
-                    } catch (LinkageError e) {
-                        Log.println('E', LOG_TAG, "Linkage error: " + e.getMessage(), e);
-                    }
+        if (mConfiguration != null && mConfiguration.nodes.containsKey(mNodeId)) {
+            for (ServiceDiscovery.Configuration.Server server : mConfiguration.nodes.get(mNodeId).servers.values()) {
+                try {
+                    Class<Plugin> clazz = (Class<Plugin>) Class.forName(server.clazz);
+                    mPlugins.put(server.scheme, clazz.newInstance());
+                } catch (Exception e) {
+                    Log.println('E', LOG_TAG, "Cannot find class \'" + server.clazz + "\': " + e.getMessage(), e);
+                } catch (LinkageError e) {
+                    Log.println('E', LOG_TAG, "Linkage error: " + e.getMessage(), e);
                 }
             }
+
+            Set<Long> ids = new HashSet<>();
+            for (ServiceDiscovery.Configuration.Service service : mConfiguration.services.values()) {
+                if (service.node.id == nodeId) {
+                    long id = ((long) nodeId << 32) | (service.id & 0xFFFFFFFFL);
+                    ids.add(id);
+                }
+            }
+            mIds.addAll(ids);
         }
     }
 
@@ -121,12 +129,8 @@ public class Runtime {
         return mNodeId;
     }
 
-    public Configuration getConfiguration() {
+    public ServiceDiscovery.Configuration getConfiguration() {
         return mConfiguration;
-    }
-
-    public void addIds(Set<Long> ids) {
-        mIds.addAll(ids);
     }
 
     public final long attachBinder(Binder binder) {
@@ -206,7 +210,7 @@ public class Runtime {
                 throw new IllegalArgumentException("Invalid URI: " + uri.toString());
             }
             if (mNodeId == nodeId) {
-                String key = uri.getScheme() + "://" + uri.getAuthority();
+                final String key = uri.getScheme() + "://" + uri.getAuthority();
                 WeakReference<Binder> b = mBinderUris.get(key);
                 IBinder binder;
                 if (MINDROID_SCHEME.equals(uri.getScheme())) {
@@ -221,14 +225,13 @@ public class Runtime {
                         return binder;
                     } else {
                         mBinderUris.remove(key);
-                        key = MINDROID_SCHEME_WITH_SEPARATOR + uri.getAuthority();
-                        b = mBinderUris.get(key);
+                        b = mBinderUris.get(MINDROID_SCHEME_WITH_SEPARATOR + uri.getAuthority());
                         if (b != null && (binder = b.get()) != null) {
                             Plugin plugin = mPlugins.get(uri.getScheme());
                             if (plugin != null) {
                                 Binder stub = plugin.getStub((Binder) binder);
                                 if (stub != null) {
-                                    mBinderUris.put(stub.getUri().toString(), new WeakReference<Binder>(stub));
+                                    mBinderUris.put(key, new WeakReference<Binder>(stub));
                                 }
                                 return stub;
                             } else {
@@ -260,9 +263,9 @@ public class Runtime {
         if (service instanceof Binder) {
             if (!mServices.containsKey(uri.toString())) {
                 if (mConfiguration != null) {
-                    Configuration.Plugin plugin = mConfiguration.plugins.get(MINDROID_SCHEME);
-                    if (plugin != null) {
-                        Configuration.Service s = plugin.services.get(uri.getAuthority());
+                    ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(mNodeId);
+                    if (node != null) {
+                        ServiceDiscovery.Configuration.Service s = node.services.get(uri.getAuthority());
                         if (s != null) {
                             long oldId = ((long) mNodeId << 32) | (service.getId() & 0xFFFFFFFFL);
                             mIds.remove(oldId);
@@ -404,24 +407,18 @@ public class Runtime {
         }
 
         if (mConfiguration != null) {
-            Configuration.Plugin plugin = mConfiguration.plugins.get(MINDROID_SCHEME);
-            if (plugin != null) {
-                final String name = uri.getAuthority();
-                Configuration.Service service = plugin.services.get(name);
-                if (service == null) {
-                    return null;
-                }
+            ServiceDiscovery.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
+            if (service == null) {
+                return null;
+            }
 
-                try {
-                    URI descriptor = new URI(service.interfaceDescriptor);
-                    URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
-                    Binder.Proxy proxy = new Binder.Proxy(proxyUri);
-                    mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
-                    return proxy;
-                } catch (URISyntaxException e) {
-                    return null;
-                }
-            } else {
+            try {
+                URI descriptor = new URI(service.announcements.get(uri.getScheme()));
+                URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + descriptor.getPath().substring(1), descriptor.getQuery(), null);
+                Binder.Proxy proxy = new Binder.Proxy(proxyUri);
+                mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
+                return proxy;
+            } catch (Exception e) {
                 return null;
             }
         } else {
