@@ -95,7 +95,9 @@ public class Mindroid extends Plugin {
 
     @Override
     public void stop() {
-        mServer.shutdown(null);
+        if (mServer != null) {
+            mServer.shutdown(null);
+        }
     }
 
     @Override

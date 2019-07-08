@@ -33,10 +33,12 @@ public class ServiceDiscovery {
     private static final String NODES_TAG = "nodes";
     private static final String NODE_TAG = "node";
     private static final String NODE_ID_ATTR = "id";
+    private static final String PLUGIN_TAG = "plugin";
+    private static final String PLUGIN_SCHEME_ATTR = "scheme";
+    private static final String PLUGIN_CLASS_ATTR = "class";
     private static final String SERVER_TAG = "server";
     private static final String SERVER_SCHEME_ATTR = "scheme";
     private static final String SERVER_URI_ATTR = "uri";
-    private static final String SERVER_CLASS_ATTR = "class";
     private static final String SERVICE_DISCOVERY_TAG = "serviceDiscovery";
     private static final String SERVICE_TAG = "service";
     private static final String SERVICE_ID_ATTR = "id";
@@ -47,15 +49,21 @@ public class ServiceDiscovery {
     public static class Configuration {
         public static class Node {
             public int id;
+            public Map<String, Plugin> plugins = new HashMap<>();
             public Map<String, Server> servers = new HashMap<>();
             public Map<String, Service> services = new HashMap<>();
+        }
+
+        public static class Plugin {
+            public Node node;
+            public String scheme;
+            public String clazz;
         }
 
         public static class Server {
             public Node node;
             public String scheme;
             public String uri;
-            public String clazz;
         }
 
         public static class Service {
@@ -149,7 +157,13 @@ public class ServiceDiscovery {
         }
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(NODE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-            if (parser.getName().equals(SERVER_TAG)) {
+            if (parser.getName().equals(PLUGIN_TAG)) {
+                Configuration.Plugin plugin = parsePlugin(parser);
+                if (plugin != null) {
+                    plugin.node = node;
+                    node.plugins.put(plugin.scheme, plugin);
+                }
+            } else if (parser.getName().equals(SERVER_TAG)) {
                 Configuration.Server server = parseServer(parser);
                 if (server != null) {
                     server.node = node;
@@ -166,6 +180,34 @@ public class ServiceDiscovery {
         return node;
     }
 
+    private static Configuration.Plugin parsePlugin(XmlPullParser parser) throws XmlPullParserException, IOException {
+        parser.require(XmlPullParser.START_TAG, null, PLUGIN_TAG);
+
+        Configuration.Plugin plugin = new Configuration.Plugin();
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            String attributeName = parser.getAttributeName(i);
+            String attributeValue = parser.getAttributeValue(i);
+            if (attributeName.equals(PLUGIN_SCHEME_ATTR)) {
+                plugin.scheme = attributeValue;
+            } else if (attributeName.equals(PLUGIN_CLASS_ATTR)) {
+                plugin.clazz = attributeValue;
+            }
+        }
+        if (plugin.scheme == null || plugin.scheme.isEmpty()
+                || plugin.clazz == null || plugin.clazz.isEmpty()) {
+            throw new XmlPullParserException("Invalid plugin: " + plugin.clazz);
+        }
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(PLUGIN_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            String tag = parser.getName();
+            skipSubTree(parser);
+            parser.require(XmlPullParser.END_TAG, null, tag);
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, PLUGIN_TAG);
+        return plugin;
+    }
+
     private static Configuration.Server parseServer(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, SERVER_TAG);
 
@@ -177,13 +219,10 @@ public class ServiceDiscovery {
                 server.scheme = attributeValue;
             } else if (attributeName.equals(SERVER_URI_ATTR)) {
                 server.uri = attributeValue;
-            } else if (attributeName.equals(SERVER_CLASS_ATTR)) {
-                server.clazz = attributeValue;
             }
         }
         if (server.scheme == null || server.scheme.isEmpty()
-                || server.uri == null || server.uri.isEmpty()
-                || server.clazz == null || server.clazz.isEmpty()) {
+                || server.uri == null || server.uri.isEmpty()) {
             throw new XmlPullParserException("Invalid server: " + server.uri);
         }
 

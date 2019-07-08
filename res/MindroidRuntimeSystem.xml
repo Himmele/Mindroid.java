@@ -2,12 +2,16 @@
 <runtime>
     <nodes>
         <node id="1">
-            <server scheme="mindroid" uri="tcp://localhost:12345" class="mindroid.runtime.system.Mindroid" />
-            <server scheme="xmlrpc" uri="tcp://localhost:1234" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid" />
+            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+            <server scheme="mindroid" uri="tcp://localhost:12345" />
+            <server scheme="xmlrpc" uri="tcp://localhost:1234" />
         </node>
         <node id="42">
-            <server scheme="mindroid" uri="tcp://localhost:54321" class="mindroid.runtime.system.Mindroid" />
-            <server scheme="xmlrpc" uri="tcp://localhost:4321" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid" />
+            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
+            <server scheme="mindroid" uri="tcp://localhost:54321" />
+            <server scheme="xmlrpc" uri="tcp://localhost:4321" />
         </node>
     </nodes>
 

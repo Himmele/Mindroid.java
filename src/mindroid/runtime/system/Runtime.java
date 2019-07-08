@@ -66,12 +66,12 @@ public class Runtime {
             }
         }
         if (mConfiguration != null && mConfiguration.nodes.containsKey(mNodeId)) {
-            for (ServiceDiscovery.Configuration.Server server : mConfiguration.nodes.get(mNodeId).servers.values()) {
+            for (ServiceDiscovery.Configuration.Plugin plugin : mConfiguration.nodes.get(mNodeId).plugins.values()) {
                 try {
-                    Class<Plugin> clazz = (Class<Plugin>) Class.forName(server.clazz);
-                    mPlugins.put(server.scheme, clazz.newInstance());
+                    Class<Plugin> clazz = (Class<Plugin>) Class.forName(plugin.clazz);
+                    mPlugins.put(plugin.scheme, clazz.newInstance());
                 } catch (Exception e) {
-                    Log.println('E', LOG_TAG, "Cannot find class \'" + server.clazz + "\': " + e.getMessage(), e);
+                    Log.println('E', LOG_TAG, "Cannot find class \'" + plugin.clazz + "\': " + e.getMessage(), e);
                 } catch (LinkageError e) {
                     Log.println('E', LOG_TAG, "Linkage error: " + e.getMessage(), e);
                 }
