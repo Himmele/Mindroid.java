@@ -37,20 +37,18 @@ public class ServiceDiscovery {
     private static final String PLUGIN_SCHEME_ATTR = "scheme";
     private static final String PLUGIN_CLASS_ATTR = "class";
     private static final String SERVER_TAG = "server";
-    private static final String SERVER_SCHEME_ATTR = "scheme";
     private static final String SERVER_URI_ATTR = "uri";
     private static final String SERVICE_DISCOVERY_TAG = "serviceDiscovery";
     private static final String SERVICE_TAG = "service";
     private static final String SERVICE_ID_ATTR = "id";
     private static final String SERVICE_NAME_ATTR = "name";
     private static final String ANNOUNCEMENT_TAG = "announcement";
-    private static final String ANNOUNCEMENT_DESCRIPTOR_ATTR = "descriptor";
+    private static final String ANNOUNCEMENT_INTERFACE_DESCRIPTOR_ATTR = "interfaceDescriptor";
 
     public static class Configuration {
         public static class Node {
             public int id;
             public Map<String, Plugin> plugins = new HashMap<>();
-            public Map<String, Server> servers = new HashMap<>();
             public Map<String, Service> services = new HashMap<>();
         }
 
@@ -58,11 +56,10 @@ public class ServiceDiscovery {
             public Node node;
             public String scheme;
             public String clazz;
+            public Server server;
         }
 
         public static class Server {
-            public Node node;
-            public String scheme;
             public String uri;
         }
 
@@ -163,12 +160,6 @@ public class ServiceDiscovery {
                     plugin.node = node;
                     node.plugins.put(plugin.scheme, plugin);
                 }
-            } else if (parser.getName().equals(SERVER_TAG)) {
-                Configuration.Server server = parseServer(parser);
-                if (server != null) {
-                    server.node = node;
-                    node.servers.put(server.scheme, server);
-                }
             } else {
                 String tag = parser.getName();
                 skipSubTree(parser);
@@ -199,9 +190,13 @@ public class ServiceDiscovery {
         }
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(PLUGIN_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
-            String tag = parser.getName();
-            skipSubTree(parser);
-            parser.require(XmlPullParser.END_TAG, null, tag);
+            if (parser.getName().equals(SERVER_TAG)) {
+                plugin.server = parseServer(parser);
+            } else {
+                String tag = parser.getName();
+                skipSubTree(parser);
+                parser.require(XmlPullParser.END_TAG, null, tag);
+            }
         }
 
         parser.require(XmlPullParser.END_TAG, null, PLUGIN_TAG);
@@ -215,14 +210,11 @@ public class ServiceDiscovery {
         for (int i = 0; i < parser.getAttributeCount(); i++) {
             String attributeName = parser.getAttributeName(i);
             String attributeValue = parser.getAttributeValue(i);
-            if (attributeName.equals(SERVER_SCHEME_ATTR)) {
-                server.scheme = attributeValue;
-            } else if (attributeName.equals(SERVER_URI_ATTR)) {
+            if (attributeName.equals(SERVER_URI_ATTR)) {
                 server.uri = attributeValue;
             }
         }
-        if (server.scheme == null || server.scheme.isEmpty()
-                || server.uri == null || server.uri.isEmpty()) {
+        if (server.uri == null || server.uri.isEmpty()) {
             throw new XmlPullParserException("Invalid server: " + server.uri);
         }
 
@@ -311,9 +303,9 @@ public class ServiceDiscovery {
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
             if (parser.getName().equals(ANNOUNCEMENT_TAG)) {
-                URI descriptor = parseAnnouncement(parser);
-                if (descriptor != null) {
-                    service.announcements.put(descriptor.getScheme(), descriptor.toString());
+                URI interfaceDescriptor = parseAnnouncement(parser);
+                if (interfaceDescriptor != null) {
+                    service.announcements.put(interfaceDescriptor.getScheme(), interfaceDescriptor.toString());
                 }
             } else {
                 String tag = parser.getName();
@@ -329,16 +321,16 @@ public class ServiceDiscovery {
     private static URI parseAnnouncement(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, null, ANNOUNCEMENT_TAG);
 
-        String descriptor = null;
+        String interfaceDescriptor = null;
         for (int i = 0; i < parser.getAttributeCount(); i++) {
             String attributeName = parser.getAttributeName(i);
             String attributeValue = parser.getAttributeValue(i);
-            if (attributeName.equals(ANNOUNCEMENT_DESCRIPTOR_ATTR)) {
-                descriptor = attributeValue;
+            if (attributeName.equals(ANNOUNCEMENT_INTERFACE_DESCRIPTOR_ATTR)) {
+                interfaceDescriptor = attributeValue;
             }
         }
-        if (descriptor == null || descriptor.isEmpty()) {
-            throw new XmlPullParserException("Invalid announcement: " + descriptor);
+        if (interfaceDescriptor == null || interfaceDescriptor.isEmpty()) {
+            throw new XmlPullParserException("Invalid announcement: " + interfaceDescriptor);
         }
 
         for (int eventType = parser.nextTag(); !parser.getName().equals(ANNOUNCEMENT_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
@@ -349,7 +341,7 @@ public class ServiceDiscovery {
 
         parser.require(XmlPullParser.END_TAG, null, ANNOUNCEMENT_TAG);
         try {
-            return URI.create(descriptor);
+            return URI.create(interfaceDescriptor);
         } catch (IllegalArgumentException e) {
             return null;
         }

@@ -2,27 +2,31 @@
 <runtime>
     <nodes>
         <node id="1">
-            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid" />
-            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
-            <server scheme="mindroid" uri="tcp://localhost:12345" />
-            <server scheme="xmlrpc" uri="tcp://localhost:1234" />
+            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid">
+                <server uri="tcp://localhost:12345" />
+            </plugin>
+            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc">
+                <server uri="tcp://localhost:1234" />
+            </plugin>
         </node>
         <node id="42">
-            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid" />
-            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc" />
-            <server scheme="mindroid" uri="tcp://localhost:54321" />
-            <server scheme="xmlrpc" uri="tcp://localhost:4321" />
+            <plugin scheme="mindroid" class="mindroid.runtime.system.Mindroid">
+                <server uri="tcp://localhost:54321" />
+            </plugin>
+            <plugin scheme="xmlrpc" class="mindroid.runtime.system.plugins.xmlrpc.XmlRpc">
+                <server uri="tcp://localhost:4321" />
+            </plugin>
         </node>
     </nodes>
 
     <serviceDiscovery>
         <node id="1">
             <service id="1" name="eliza">
-                <announcement descriptor="mindroid://interfaces/examples/eliza/IEliza" />
-                <announcement descriptor="xmlrpc://interfaces/examples/eliza/IEliza" />
+                <announcement interfaceDescriptor="mindroid://interfaces/examples/eliza/IEliza" />
+                <announcement interfaceDescriptor="xmlrpc://interfaces/examples/eliza/IEliza" />
             </service>
             <service id="2" name="locationService">
-                <announcement descriptor="mindroid://interfaces/mindroid/location/ILocationManager" />
+                <announcement interfaceDescriptor="mindroid://interfaces/mindroid/location/ILocationManager" />
             </service>
         </node>
     </serviceDiscovery>
