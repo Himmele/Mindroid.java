@@ -94,6 +94,10 @@ public final class Parcel {
         return mOutputStream.size();
     }
 
+    /**
+     * Write a boolean value into the parcel at the current dataPosition(),
+     * growing dataCapacity() if needed.
+     */
     public final void putBoolean(boolean value) throws RemoteException {
         checkOutput();
         try {
@@ -103,6 +107,10 @@ public final class Parcel {
         }
     }
 
+    /**
+     * Write a byte value into the parcel at the current dataPosition(),
+     * growing dataCapacity() if needed.
+     */
     public final void putByte(byte value) throws RemoteException {
         checkOutput();
         try {
@@ -112,6 +120,10 @@ public final class Parcel {
         }
     }
 
+    /**
+     * Write a character value into the parcel at the current dataPosition(),
+     * growing dataCapacity() if needed.
+     */
     public final void putChar(char value) throws RemoteException {
         checkOutput();
         try {
@@ -121,6 +133,10 @@ public final class Parcel {
         }
     }
 
+    /**
+     * Write a short integer value into the parcel at the current dataPosition(),
+     * growing dataCapacity() if needed.
+     */
     public final void putShort(short value) throws RemoteException {
         checkOutput();
         try {
