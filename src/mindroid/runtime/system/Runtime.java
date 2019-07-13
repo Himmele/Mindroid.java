@@ -365,6 +365,40 @@ public class Runtime {
         }
     }
 
+    /**
+     * Establishes a connection to node.
+     *
+     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
+     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
+     *
+     * @param node The node.
+     */
+    public final void connect(IBinder node) throws RemoteException {
+        Plugin plugin = mPlugins.get(node.getUri().getScheme());
+        if (plugin != null) {
+            plugin.connect(node);
+        } else {
+            throw new RemoteException("Node connection failure");
+        }
+    }
+
+    /**
+     * Forces the disconnection of a node.
+     *
+     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
+     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
+     *
+     * @param node The node.
+     */
+    public final void disconnect(IBinder node) throws RemoteException {
+        Plugin plugin = mPlugins.get(node.getUri().getScheme());
+        if (plugin != null) {
+            plugin.disconnect(node);
+        } else {
+            throw new RemoteException("Node disconnection failure");
+        }
+    }
+
     public final Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         Plugin plugin = mPlugins.get(binder.getUri().getScheme());
         if (plugin != null) {

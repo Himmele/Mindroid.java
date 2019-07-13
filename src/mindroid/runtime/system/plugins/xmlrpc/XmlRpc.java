@@ -192,6 +192,15 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
+    public void connect(IBinder node) throws RemoteException {
+        // Automatic connection establishment when referencing other nodes.
+    }
+
+    @Override
+    public void disconnect(IBinder node) throws RemoteException {
+    }
+
+    @Override
     public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
         Client client = mClients.get(nodeId);
