@@ -16,6 +16,7 @@
 
 package mindroid.runtime.system;
 
+import java.net.URI;
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
 import mindroid.os.IBinder;
@@ -45,8 +46,8 @@ public abstract class Plugin {
 
     public abstract Binder getStub(Binder binder);
     public abstract IInterface getProxy(IBinder binder);
-    public abstract void connect(IBinder node) throws RemoteException;
-    public abstract void disconnect(IBinder node) throws RemoteException;
+    public abstract void connect(URI node) throws RemoteException;
+    public abstract void disconnect(URI node) throws RemoteException;
     public abstract Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException;
 
     public abstract void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException;

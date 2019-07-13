@@ -373,8 +373,8 @@ public class Runtime {
      *
      * @param node The node.
      */
-    public final void connect(IBinder node) throws RemoteException {
-        Plugin plugin = mPlugins.get(node.getUri().getScheme());
+    public final void connect(URI node) throws RemoteException {
+        Plugin plugin = mPlugins.get(node.getScheme());
         if (plugin != null) {
             plugin.connect(node);
         } else {
@@ -390,8 +390,8 @@ public class Runtime {
      *
      * @param node The node.
      */
-    public final void disconnect(IBinder node) throws RemoteException {
-        Plugin plugin = mPlugins.get(node.getUri().getScheme());
+    public final void disconnect(URI node) throws RemoteException {
+        Plugin plugin = mPlugins.get(node.getScheme());
         if (plugin != null) {
             plugin.disconnect(node);
         } else {

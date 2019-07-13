@@ -192,12 +192,12 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
-    public void connect(IBinder node) throws RemoteException {
+    public void connect(URI node) throws RemoteException {
         // Automatic connection establishment when referencing other nodes.
     }
 
     @Override
-    public void disconnect(IBinder node) throws RemoteException {
+    public void disconnect(URI node) throws RemoteException {
     }
 
     @Override
