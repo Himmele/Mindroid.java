@@ -192,12 +192,14 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
-    public void connect(URI node) throws RemoteException {
+    public Promise<Void> connect(URI node, Bundle extras) {
         // Automatic connection establishment when referencing other nodes.
+        return null;
     }
 
     @Override
-    public void disconnect(URI node) throws RemoteException {
+    public Promise<Void> disconnect(URI node, Bundle extras) {
+        return null;
     }
 
     @Override

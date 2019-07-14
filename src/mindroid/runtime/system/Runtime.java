@@ -372,13 +372,14 @@ public class Runtime {
      * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
      *
      * @param node The node.
+     * @param extras Extra parameters.
      */
-    public final void connect(URI node) throws RemoteException {
+    public final Promise<Void> connect(URI node, Bundle extras) {
         Plugin plugin = mPlugins.get(node.getScheme());
         if (plugin != null) {
-            plugin.connect(node);
+            return plugin.connect(node, extras);
         } else {
-            throw new RemoteException("Node connection failure");
+            return new Promise<>(new RemoteException("Node connection failure"));
         }
     }
 
@@ -389,13 +390,14 @@ public class Runtime {
      * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
      *
      * @param node The node.
+     * @param extras Extra parameters.
      */
-    public final void disconnect(URI node) throws RemoteException {
+    public final Promise<Void> disconnect(URI node, Bundle extras) {
         Plugin plugin = mPlugins.get(node.getScheme());
         if (plugin != null) {
-            plugin.disconnect(node);
+            return plugin.disconnect(node, extras);
         } else {
-            throw new RemoteException("Node disconnection failure");
+            return new Promise<>(new RemoteException("Node disconnection failure"));
         }
     }
 
