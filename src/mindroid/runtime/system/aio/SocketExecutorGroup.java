@@ -19,6 +19,7 @@ package mindroid.runtime.system.aio;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,9 +27,26 @@ import mindroid.util.Log;
 
 public class SocketExecutorGroup {
     private static final String LOG_TAG = "SocketExecutorGroup";
+    private static final ScheduledThreadPoolExecutor sExecutor;
+
     private final ExecutorService mExecutorService;
     private final SocketExecutor[] mSocketExecutors;
     private final AtomicInteger mCounter = new AtomicInteger(0);
+
+    static {
+        sExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                t.setName("SocketExecutorGroupDaemon");
+                return t;
+            }
+        });
+        sExecutor.setKeepAliveTime(10, TimeUnit.SECONDS);
+        sExecutor.allowCoreThreadTimeOut(true);
+        sExecutor.setRemoveOnCancelPolicy(true);
+    }
 
     public SocketExecutorGroup() {
         this(1);
@@ -82,18 +100,21 @@ public class SocketExecutorGroup {
         for (SocketExecutor socketExecutor : mSocketExecutors) {
             socketExecutor.shutdown();
         }
-        try {
-            mExecutorService.shutdown();
-            if (!mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
-                mExecutorService.shutdownNow();
+
+        sExecutor.execute(() -> {
+            try {
+                mExecutorService.shutdown();
                 if (!mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
-                    Log.e(LOG_TAG, "Cannot shutdown executor service");
+                    mExecutorService.shutdownNow();
+                    if (!mExecutorService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                        Log.e(LOG_TAG, "Cannot shutdown executor service");
+                    }
                 }
+            } catch (InterruptedException e) {
+                Log.e(LOG_TAG, "Cannot shutdown executor service", e);
+                mExecutorService.shutdownNow();
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            Log.e(LOG_TAG, "Cannot shutdown executor service", e);
-            mExecutorService.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        });
     }
 }
