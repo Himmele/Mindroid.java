@@ -108,7 +108,7 @@ public class Runtime {
                 try {
                     plugin.start(null, null).get();
                 } catch (CancellationException | ExecutionException | InterruptedException e) {
-                    Log.e(LOG_TAG, "Failed to start plugin", e);
+                    Log.println('E', LOG_TAG, "Failed to start plugin", e);
                 }
             }
         }
@@ -128,7 +128,7 @@ public class Runtime {
                 try {
                     plugin.stop(null, null).get();
                 } catch (CancellationException | ExecutionException | InterruptedException e) {
-                    Log.e(LOG_TAG, "Failed to stop plugin", e);
+                    Log.println('E', LOG_TAG, "Failed to stop plugin", e);
                 }
                 plugin.tearDown();
             }
