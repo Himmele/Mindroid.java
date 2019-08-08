@@ -192,14 +192,16 @@ public class SocketInputStream extends InputStream {
         long c = count;
         long num = 0;
         Iterator<ByteBuffer> itr = mList.iterator();
-        while (itr.hasNext()) {
+        while (itr.hasNext() && c > 0) {
             ByteBuffer b = itr.next();
             final int remaining = b.remaining();
             if (remaining > 0) {
-                final long size = c <= remaining ? c : remaining; 
+                final int size = (int) (c <= remaining ? c : remaining);
+                b.position(b.position() + size);
                 num += size;
                 c -= size;
-                if (mCount.addAndGet((int) -size) == 0) {
+                mCount.addAndGet(-size);
+                if (c == 0 && b.hasRemaining()) {
                     break;
                 }
             }

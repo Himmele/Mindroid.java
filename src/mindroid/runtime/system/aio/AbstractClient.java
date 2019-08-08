@@ -57,7 +57,7 @@ public abstract class AbstractClient {
 
             mSocket.connect(new InetSocketAddress(mHost, mPort)).whenComplete((value, exception) -> {
                 if (exception != null) {
-                    Log.e(LOG_TAG, exception.getMessage(), exception);
+                    Log.e(LOG_TAG, exception.getMessage());
                     shutdown(exception);
                 } else {
                     onConnected();

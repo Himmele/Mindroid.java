@@ -34,6 +34,8 @@ import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
 import mindroid.util.Log;
+import mindroid.util.concurrent.CancellationException;
+import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Promise;
 
 public class Runtime {
@@ -103,7 +105,11 @@ public class Runtime {
         if (start) {
             for (Plugin plugin : sRuntime.mPlugins.values()) {
                 plugin.setUp(sRuntime);
-                plugin.start();
+                try {
+                    plugin.start(null, null).get();
+                } catch (CancellationException | ExecutionException | InterruptedException e) {
+                    Log.e(LOG_TAG, "Failed to start plugin", e);
+                }
             }
         }
     }
@@ -119,7 +125,11 @@ public class Runtime {
         }
         if (shutdown) {
             for (Plugin plugin : runtime.mPlugins.values()) {
-                plugin.stop();
+                try {
+                    plugin.stop(null, null).get();
+                } catch (CancellationException | ExecutionException | InterruptedException e) {
+                    Log.e(LOG_TAG, "Failed to stop plugin", e);
+                }
                 plugin.tearDown();
             }
         }
@@ -365,42 +375,6 @@ public class Runtime {
         }
     }
 
-    /**
-     * Establishes a connection to node.
-     *
-     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
-     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
-     *
-     * @param node The node.
-     * @param extras Extra parameters.
-     */
-    public final Promise<Void> connect(URI node, Bundle extras) {
-        Plugin plugin = mPlugins.get(node.getScheme());
-        if (plugin != null) {
-            return plugin.connect(node, extras);
-        } else {
-            return new Promise<>(new RemoteException("Node connection failure"));
-        }
-    }
-
-    /**
-     * Forces the disconnection of a node.
-     *
-     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
-     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
-     *
-     * @param node The node.
-     * @param extras Extra parameters.
-     */
-    public final Promise<Void> disconnect(URI node, Bundle extras) {
-        Plugin plugin = mPlugins.get(node.getScheme());
-        if (plugin != null) {
-            return plugin.disconnect(node, extras);
-        } else {
-            return new Promise<>(new RemoteException("Node disconnection failure"));
-        }
-    }
-
     public final Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         Plugin plugin = mPlugins.get(binder.getUri().getScheme());
         if (plugin != null) {
@@ -464,5 +438,59 @@ public class Runtime {
 
     public final synchronized void removeProxy(IBinder proxy) {
         mProxies.values().removeIf(p -> proxy.equals(p.get()));
+    }
+
+    public final Promise<Void> start(URI uri, Bundle extras) {
+        Plugin plugin = mPlugins.get(uri.getScheme());
+        if (plugin != null) {
+            return plugin.start(uri, extras);
+        } else {
+            return new Promise<>(new RemoteException("Plugin start failure"));
+        }
+    }
+
+    public final Promise<Void> stop(URI uri, Bundle extras) {
+        Plugin plugin = mPlugins.get(uri.getScheme());
+        if (plugin != null) {
+            return plugin.stop(uri, extras);
+        } else {
+            return new Promise<>(new RemoteException("Plugin stop failure"));
+        }
+    }
+
+    /**
+     * Establishes a connection to node.
+     *
+     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
+     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
+     *
+     * @param node The node.
+     * @param extras Extra parameters.
+     */
+    public final Promise<Void> connect(URI node, Bundle extras) {
+        Plugin plugin = mPlugins.get(node.getScheme());
+        if (plugin != null) {
+            return plugin.connect(node, extras);
+        } else {
+            return new Promise<>(new RemoteException("Node connection failure"));
+        }
+    }
+
+    /**
+     * Forces the disconnection of a node.
+     *
+     * Erlang Documentation: http://erlang.org/doc/reference_manual/distributed.html#node-connections, http://erlang.org/doc/man/net_kernel.html#connect_node-1.
+     * Elixir Documentation: https://hexdocs.pm/elixir/Node.html.
+     *
+     * @param node The node.
+     * @param extras Extra parameters.
+     */
+    public final Promise<Void> disconnect(URI node, Bundle extras) {
+        Plugin plugin = mPlugins.get(node.getScheme());
+        if (plugin != null) {
+            return plugin.disconnect(node, extras);
+        } else {
+            return new Promise<>(new RemoteException("Node disconnection failure"));
+        }
     }
 }

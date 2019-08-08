@@ -36,8 +36,10 @@ public abstract class Plugin {
         mRuntime = null;
     }
 
-    public abstract void start();
-    public abstract void stop();
+    public abstract Promise<Void> start(URI uri, Bundle extras);
+    public abstract Promise<Void> stop(URI uri, Bundle extras);
+    public abstract Promise<Void> connect(URI node, Bundle extras);
+    public abstract Promise<Void> disconnect(URI node, Bundle extras);
 
     public abstract void attachBinder(Binder binder);
     public abstract void detachBinder(long id);
@@ -46,8 +48,7 @@ public abstract class Plugin {
 
     public abstract Binder getStub(Binder binder);
     public abstract IInterface getProxy(IBinder binder);
-    public abstract Promise<Void> connect(URI node, Bundle extras);
-    public abstract Promise<Void> disconnect(URI node, Bundle extras);
+
     public abstract Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException;
 
     public abstract void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException;

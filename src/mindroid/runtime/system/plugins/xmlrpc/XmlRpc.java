@@ -76,7 +76,7 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
-    public void start() {
+    public Promise<Void> start(URI uri, Bundle extras) {
         int nodeId = mRuntime.getNodeId();
         LOG_TAG = "XmlRpc [" + nodeId + "]";
         mConfiguration = mRuntime.getConfiguration();
@@ -92,18 +92,21 @@ public class XmlRpc extends Plugin {
                             mServer.start(server.uri);
                         } catch (IOException e) {
                             Log.println('E', LOG_TAG, e.getMessage(), e);
+                            return new Promise<>(e);
                         }
                     }
                 }
             }
         }
+        return new Promise<>((Void) null);
     }
 
     @Override
-    public void stop() {
+    public Promise<Void> stop(URI uri, Bundle extras) {
         if (mServer != null) {
             mServer.shutdown(null);
         }
+        return new Promise<>((Void) null);
     }
 
     @Override
@@ -192,17 +195,6 @@ public class XmlRpc extends Plugin {
     }
 
     @Override
-    public Promise<Void> connect(URI node, Bundle extras) {
-        // Automatic connection establishment when referencing other nodes.
-        return null;
-    }
-
-    @Override
-    public Promise<Void> disconnect(URI node, Bundle extras) {
-        return null;
-    }
-
-    @Override
     public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
         Client client = mClients.get(nodeId);
@@ -245,6 +237,17 @@ public class XmlRpc extends Plugin {
     @Override
     public boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
         return true;
+    }
+
+    @Override
+    public Promise<Void> connect(URI node, Bundle extras) {
+        // Automatic connection establishment when referencing other nodes.
+        return null;
+    }
+
+    @Override
+    public Promise<Void> disconnect(URI node, Bundle extras) {
+        return null;
     }
 
     public void onShutdown(AbstractClient client) {
