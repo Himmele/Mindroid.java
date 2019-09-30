@@ -57,7 +57,9 @@ public class Socket {
     public void close() throws IOException {
         mOps = 0;
         mSocketChannel.close();
-        mSelector.wakeup();
+        if (mSelector != null) {
+            mSelector.wakeup();
+        }
     }
 
     public CompletableFuture<Void> connect(SocketAddress socketAddress) {

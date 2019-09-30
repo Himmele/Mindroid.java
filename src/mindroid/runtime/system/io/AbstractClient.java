@@ -66,7 +66,11 @@ public abstract class AbstractClient {
                 throw e;
             }
         } catch (URISyntaxException e) {
+            shutdown(e);
             throw new IOException("Invalid URI: " + uri);
+        } catch (RuntimeException e) {
+            shutdown(e);
+            throw e;
         }
     }
 
