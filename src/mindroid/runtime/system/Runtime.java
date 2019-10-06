@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,7 +49,12 @@ public class Runtime {
     private final Map<Long, WeakReference<Binder>> mBinderIds = new ConcurrentHashMap<>();
     private final Map<String, WeakReference<Binder>> mBinderUris = new ConcurrentHashMap<>();
     private final Map<String, Binder> mServices = new HashMap<>();
-    private final Map<String, WeakReference<Binder.Proxy>> mProxies = new HashMap<>();
+    private final Map<String, URI> mNameResolutionCache = new LinkedHashMap<String, URI>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, URI> eldest) {
+            return size() > 100;
+        }
+    };
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
     private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
     private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
@@ -408,12 +414,9 @@ public class Runtime {
 
     private synchronized Binder.Proxy getProxy(URI uri) {
         final String key = uri.toString();
-        WeakReference<Binder.Proxy> wp = mProxies.get(key);
-        Binder.Proxy p;
-        if (wp != null && (p = wp.get()) != null) {
-            return p;
-        } else {
-            mProxies.remove(key);
+        URI proxyUri = mNameResolutionCache.get(key);
+        if (proxyUri != null) {
+            return new Binder.Proxy(proxyUri);
         }
 
         if (mConfiguration != null) {
@@ -424,9 +427,9 @@ public class Runtime {
 
             try {
                 URI interfaceDescriptor = new URI(service.announcements.get(uri.getScheme()));
-                URI proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + interfaceDescriptor.getPath().substring(1), interfaceDescriptor.getQuery(), null);
+                proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + interfaceDescriptor.getPath().substring(1), interfaceDescriptor.getQuery(), null);
                 Binder.Proxy proxy = new Binder.Proxy(proxyUri);
-                mProxies.put(key, new WeakReference<Binder.Proxy>(proxy));
+                mNameResolutionCache.put(key, proxyUri);
                 return proxy;
             } catch (Exception e) {
                 return null;
@@ -434,10 +437,6 @@ public class Runtime {
         } else {
             return null;
         }
-    }
-
-    public final synchronized void removeProxy(IBinder proxy) {
-        mProxies.values().removeIf(p -> proxy.equals(p.get()));
     }
 
     public final Promise<Void> start(URI uri, Bundle extras) {

@@ -121,4 +121,9 @@ public interface IBinder {
      * gone away, meaning the method has been (or soon will be) called.
      */
     public boolean unlink(Supervisor supervisor, Bundle extras);
+
+    /**
+     * Release Binder resources before garbage collection.
+     */
+    public void dispose();
 }

@@ -33,10 +33,10 @@ import java.util.concurrent.RejectedExecutionException;
  * Base class for a remotable object, the core part of a lightweight remote procedure call mechanism
  * defined by {@link IBinder}. This class is an implementation of IBinder that provides the standard
  * support creating a local implementation of such an object.
- * 
+ *
  * You can derive directly from Binder to implement your own custom RPC protocol or simply
  * instantiate a raw Binder object directly to use as a token that can be shared across processes.
- * 
+ *
  * @see IBinder
  */
 public class Binder implements IBinder {
@@ -305,6 +305,10 @@ public class Binder implements IBinder {
         return true;
     }
 
+    @Override
+    public void dispose() {
+    }
+
     private interface IMessenger {
         public boolean isCurrentThread();
         public boolean send(final Message message);
@@ -413,7 +417,7 @@ public class Binder implements IBinder {
 
     public static final class Proxy implements IBinder {
         private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
-        private final Runtime mRuntime;
+        private volatile Runtime mRuntime;
         private final long mProxyId;
         private final long mId;
         private String mDescriptor;
@@ -463,7 +467,7 @@ public class Binder implements IBinder {
         @Override
         protected void finalize() throws Throwable {
             try {
-                mRuntime.detachProxy(mId, mUri, mProxyId);
+                dispose();
             } finally {
                 super.finalize();
             }
@@ -491,7 +495,12 @@ public class Binder implements IBinder {
 
         @Override
         public Promise<Parcel> transact(int what, Parcel data, int flags) throws RemoteException {
-            return mRuntime.transact(this, what, data, flags);
+            final Runtime runtime = mRuntime;
+            if (runtime != null) {
+                return runtime.transact(this, what, data, flags);
+            } else {
+                throw new RemoteException(EXCEPTION_MESSAGE + ": Invalid proxy");
+            }
         }
 
         public void transact(int what, int num, Object obj, Bundle data, Promise<?> promise, int flags) throws RemoteException {
@@ -500,12 +509,31 @@ public class Binder implements IBinder {
 
         @Override
         public void link(Supervisor supervisor, Bundle extras) throws RemoteException {
-            mRuntime.link(this, supervisor, extras);
+            final Runtime runtime = mRuntime;
+            if (runtime != null) {
+                runtime.link(this, supervisor, extras);
+            } else {
+                throw new RemoteException(EXCEPTION_MESSAGE + ": Invalid proxy");
+            }
         }
 
         @Override
         public boolean unlink(Supervisor supervisor, Bundle extras) {
-            return mRuntime.unlink(this, supervisor, extras);
+            final Runtime runtime = mRuntime;
+            if (runtime != null) {
+                return runtime.unlink(this, supervisor, extras);
+            } else {
+                return true;
+            }
+        }
+
+        @Override
+        public synchronized void dispose() {
+            final Runtime runtime = mRuntime;
+            if (runtime != null) {
+                runtime.detachProxy(mId, mUri, mProxyId);
+                mRuntime = null;
+            }
         }
     }
 
