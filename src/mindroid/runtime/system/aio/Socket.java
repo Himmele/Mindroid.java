@@ -18,13 +18,19 @@ package mindroid.runtime.system.aio;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 
+import mindroid.util.Log;
+import mindroid.util.concurrent.Promise;
+
 public class Socket {
+    private static final String LOG_TAG = "Socket";
+    private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10_000;
     private final SocketChannel mSocketChannel;
     private final SocketInputStream mInputStream;
     private final SocketOutputStream mOutputStream;
@@ -62,6 +68,10 @@ public class Socket {
         }
     }
 
+    public void bind(SocketAddress socketAddress) throws IOException {
+        mSocketChannel.bind(socketAddress);
+    }
+
     public CompletableFuture<Void> connect(SocketAddress socketAddress) {
         mOps |= SelectionKey.OP_CONNECT;
         mConnector = new CompletableFuture<>();
@@ -72,6 +82,15 @@ public class Socket {
                 mOutputStream.sync();
             }
         });
+        new Promise<Void>(future).orTimeout(CONNECTION_ESTABLISHMENT_TIMEOUT)
+                .catchException(ex -> {
+                    try {
+                        close();
+                        mConnector.completeExceptionally(new SocketTimeoutException("Failed to connect to " + socketAddress));
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "Failed to close socket", e);
+                    }
+                });
         try {
             mSocketChannel.connect(socketAddress);
         } catch (IOException e) {

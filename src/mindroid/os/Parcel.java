@@ -1221,4 +1221,21 @@ public final class Parcel {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder("Parcel {data=[");
+        byte[] data = mOutputStream.getByteArray();
+        for (int i = 0; i < mOutputStream.size(); ++i) {
+            builder.append(String.format("%02X", Byte.toUnsignedInt(data[i])));
+        }
+        builder.append("]");
+
+        if (mExtras != null) {
+            builder.append(", extras=");
+            builder.append(mExtras.toString());
+        }
+
+        return builder.append("}").toString();
+    }
 }

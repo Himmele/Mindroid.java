@@ -46,6 +46,10 @@ public abstract class AbstractClient {
     }
 
     public void start(String uri) throws IOException {
+        start(uri, null);
+    }
+
+    public void start(String uri, SocketAddress localAddress) throws IOException {
         LOG_TAG = "Client [" + uri + "]";
 
         try {
@@ -57,6 +61,10 @@ public abstract class AbstractClient {
             mPort = url.getPort();
 
             try {
+                if (localAddress != null) {
+                    mSocket.bind(localAddress);
+                }
+
                 mSocket.connect(new InetSocketAddress(mHost, mPort), CONNECTION_ESTABLISHMENT_TIMEOUT);
                 mConnection = new Connection(mSocket);
                 onConnected();

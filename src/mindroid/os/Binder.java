@@ -509,11 +509,14 @@ public class Binder implements IBinder {
 
         @Override
         public void link(Supervisor supervisor, Bundle extras) throws RemoteException {
+            if (supervisor == null) {
+                throw new NullPointerException("supervisor is null");
+            }
             final Runtime runtime = mRuntime;
             if (runtime != null) {
                 runtime.link(this, supervisor, extras);
             } else {
-                throw new RemoteException(EXCEPTION_MESSAGE + ": Invalid proxy");
+                supervisor.onExit(0);
             }
         }
 
@@ -523,7 +526,7 @@ public class Binder implements IBinder {
             if (runtime != null) {
                 return runtime.unlink(this, supervisor, extras);
             } else {
-                return true;
+                return false;
             }
         }
 
