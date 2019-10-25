@@ -60,6 +60,14 @@ public class Socket {
         mOps = SelectionKey.OP_READ;
     }
 
+    public void shutdownInput() throws IOException {
+        mSocketChannel.shutdownInput();
+    }
+
+    public void shutdownOutput() throws IOException {
+        mSocketChannel.shutdownOutput();
+    }
+
     public void close() throws IOException {
         mOps = 0;
         mSocketChannel.close();

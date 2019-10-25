@@ -168,11 +168,6 @@ public abstract class AbstractServer {
             }
 
             mExecutorGroup.unregister(mSocket);
-            try {
-                mSocket.close();
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Cannot close socket", e);
-            }
             if (mInputStream != null) {
                 try {
                     mInputStream.close();
@@ -184,6 +179,21 @@ public abstract class AbstractServer {
                     mOutputStream.close();
                 } catch (IOException ignore) {
                 }
+            }
+            try {
+                mSocket.shutdownInput();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+            }
+            try {
+                mSocket.shutdownOutput();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+            }
+            try {
+                mSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot close socket", e);
             }
             mConnections.remove(Connection.this);
             if (DEBUG) {

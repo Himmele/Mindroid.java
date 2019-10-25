@@ -56,8 +56,18 @@ public class SocketOutputStream extends OutputStream {
      */
     @Override
     public void close() throws IOException {
+        IOException exception = null;
+        try {
+            flush();
+        } catch (IOException e) {
+            exception = e;
+        }
+
         mList.clear();
-        super.close();
+
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     @Override
