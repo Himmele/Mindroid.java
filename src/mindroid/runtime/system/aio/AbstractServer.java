@@ -180,15 +180,17 @@ public abstract class AbstractServer {
                 } catch (IOException ignore) {
                 }
             }
-            try {
-                mSocket.shutdownInput();
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
-            }
-            try {
-                mSocket.shutdownOutput();
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+            if (mSocket.isConnected()) {
+                try {
+                    mSocket.shutdownInput();
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+                }
+                try {
+                    mSocket.shutdownOutput();
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+                }
             }
             try {
                 mSocket.close();
