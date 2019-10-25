@@ -60,6 +60,10 @@ public class Socket {
         mOps = SelectionKey.OP_READ;
     }
 
+    public boolean isClosed() {
+        return !mSocketChannel.isOpen();
+    }
+
     public boolean isConnected() {
         return mSocketChannel.isConnected();
     }

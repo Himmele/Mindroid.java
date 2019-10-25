@@ -196,7 +196,7 @@ public abstract class AbstractClient {
                 } catch (IOException ignore) {
                 }
             }
-            if (mSocket.isConnected()) {
+            if (!mSocket.isClosed()) {
                 try {
                     mSocket.shutdownInput();
                 } catch (IOException e) {
