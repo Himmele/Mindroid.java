@@ -171,13 +171,11 @@ public abstract class AbstractServer {
             if (!mSocket.isClosed()) {
                 try {
                     mSocket.shutdownInput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+                } catch (IOException ignore) {
                 }
                 try {
                     mSocket.shutdownOutput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+                } catch (IOException ignore) {
                 }
             }
             try {
@@ -218,6 +216,10 @@ public abstract class AbstractServer {
 
         public SocketAddress getRemoteSocketAddress() {
             return mSocket.getRemoteSocketAddress();
+        }
+
+        public void setTcpNoDelay(boolean on) throws IOException {
+            mSocket.setTcpNoDelay(on);
         }
 
         public void run() {

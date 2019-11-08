@@ -22,28 +22,24 @@ import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * A specialized {@link OutputStream} for class for writing content to an
- * (internal) byte array. As bytes are written to this stream, the byte array
- * may be expanded to hold more bytes. When the writing is considered to be
- * finished, a copy of the byte array can be requested from the class.
- *
- * @see ByteArrayInputStream
- */
 public class SocketOutputStream extends OutputStream {
-    protected Socket mSocket;
+    protected static final int MAX_BUFFER_SIZE = 8192;
+
+    protected final Socket mSocket;
 
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
      */
-    protected Deque<ByteBuffer> mList = new ConcurrentLinkedDeque<>();
+    protected final Deque<ByteBuffer> mBuffer = new ConcurrentLinkedDeque<>();
 
     /**
-     * Constructs a new ByteArrayOutputStream with a default size of 64 bytes.
-     * If more than 64 bytes are written to this instance, the underlying byte
-     * array will expand.
+     * The total number of bytes initially available in the byte array
+     * {@code mBuffer}.
      */
+    protected final AtomicInteger mCount = new AtomicInteger(0);
+
     SocketOutputStream(Socket socket) {
         mSocket = socket;
     }
@@ -63,7 +59,7 @@ public class SocketOutputStream extends OutputStream {
             exception = e;
         }
 
-        mList.clear();
+        mBuffer.clear();
 
         if (exception != null) {
             throw exception;
@@ -107,8 +103,10 @@ public class SocketOutputStream extends OutputStream {
         }
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, count);
-        mList.add(byteBuffer);
-        sync();
+        mBuffer.add(byteBuffer);
+        if (mCount.addAndGet(count) >= MAX_BUFFER_SIZE) {
+            sync();
+        }
     }
 
     /**
@@ -121,20 +119,23 @@ public class SocketOutputStream extends OutputStream {
     @Override
     public void write(int b) throws IOException {
         ByteBuffer byteBuffer = (ByteBuffer) ByteBuffer.allocate(1).put((byte) b).flip();
-        mList.add(byteBuffer);
-        sync();
+        mBuffer.add(byteBuffer);
+        if (mCount.incrementAndGet() >= MAX_BUFFER_SIZE) {
+            sync();
+        }
     }
 
     void sync() {
         int operation = 0;
         Object arg = null;
         synchronized (this) {
-            if (!mList.isEmpty()) {
-                ByteBuffer[] buffers = mList.toArray(new ByteBuffer[mList.size()]);
+            if (!mBuffer.isEmpty()) {
+                ByteBuffer[] buffers = mBuffer.toArray(new ByteBuffer[0]);
                 try {
                     long num = mSocket.write(buffers);
                     if (num > 0) {
-                        Iterator<ByteBuffer> itr = mList.iterator();
+                        mCount.addAndGet((int) -num);
+                        Iterator<ByteBuffer> itr = mBuffer.iterator();
                         while (itr.hasNext()) {
                             ByteBuffer buffer = itr.next();
                             if (!buffer.hasRemaining()) {

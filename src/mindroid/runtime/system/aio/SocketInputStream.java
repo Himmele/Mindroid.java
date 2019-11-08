@@ -24,24 +24,19 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * A specialized {@link InputStream } for reading the contents of a byte array.
- *
- * @see SocketOutputStream
- */
 public class SocketInputStream extends InputStream {
-    protected Socket mSocket;
+    protected final Socket mSocket;
 
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
      */
-    protected Deque<ByteBuffer> mList = new ConcurrentLinkedDeque<>();
+    protected final Deque<ByteBuffer> mBuffer = new ConcurrentLinkedDeque<>();
 
     /**
-     * The total number of bytes initially available in the byte array
+     * The total number of bytes available in the buffer
      * {@code mBuffer}.
      */
-    protected AtomicInteger mCount = new AtomicInteger(0);
+    protected final AtomicInteger mCount = new AtomicInteger(0);
 
     /**
      * Constructs an empty {@code ByteBufferInputStream}.
@@ -68,7 +63,7 @@ public class SocketInputStream extends InputStream {
      */
     @Override
     public void close() throws IOException {
-        mList.clear();
+        mBuffer.clear();
         mCount.set(0);
     }
 
@@ -110,11 +105,11 @@ public class SocketInputStream extends InputStream {
     @Override
     public int read() throws IOException {
         if (mCount.get() > 0) {
-            ByteBuffer headBuffer = mList.getFirst();
+            ByteBuffer headBuffer = mBuffer.getFirst();
             int b = headBuffer.get() & 0xFF;
             mCount.decrementAndGet();
             if (headBuffer.remaining() == 0) {
-                mList.removeFirst();
+                mBuffer.removeFirst();
             }
             return b;
         } else {
@@ -144,7 +139,7 @@ public class SocketInputStream extends InputStream {
 
         int o = offset;
         int c = count;
-        Iterator<ByteBuffer> itr = mList.iterator();
+        Iterator<ByteBuffer> itr = mBuffer.iterator();
         while (itr.hasNext() && c > 0) {
             ByteBuffer b = itr.next();
             final int remaining = b.remaining();
@@ -191,7 +186,7 @@ public class SocketInputStream extends InputStream {
         }
         long c = count;
         long num = 0;
-        Iterator<ByteBuffer> itr = mList.iterator();
+        Iterator<ByteBuffer> itr = mBuffer.iterator();
         while (itr.hasNext() && c > 0) {
             ByteBuffer b = itr.next();
             final int remaining = b.remaining();
@@ -221,7 +216,7 @@ public class SocketInputStream extends InputStream {
                     operation = Socket.OP_CLOSE;
                 }
                 if (num > 0) {
-                    mList.add((ByteBuffer) buffer.flip());
+                    mBuffer.add((ByteBuffer) buffer.flip());
                     mCount.addAndGet(buffer.remaining());
                     operation = Socket.OP_READ;
                 }

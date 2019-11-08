@@ -22,8 +22,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.NotYetConnectedException;
 import mindroid.os.Bundle;
 import mindroid.util.Log;
 
@@ -131,6 +133,10 @@ public abstract class AbstractClient {
         return mSocket.getRemoteAddress();
     }
 
+    public void setTcpNoDelay(boolean on) throws IOException {
+        mSocket.setOption(StandardSocketOptions.TCP_NODELAY, on);
+    }
+
     public class Connection implements Closeable {
         private final Bundle mContext = new Bundle();
         private final Socket mSocket;
@@ -199,13 +205,11 @@ public abstract class AbstractClient {
             if (!mSocket.isClosed()) {
                 try {
                     mSocket.shutdownInput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+                } catch (IOException | NotYetConnectedException ignore) {
                 }
                 try {
                     mSocket.shutdownOutput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+                } catch (IOException | NotYetConnectedException ignore) {
                 }
             }
             try {

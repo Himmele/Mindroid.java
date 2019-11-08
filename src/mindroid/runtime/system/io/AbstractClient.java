@@ -123,6 +123,10 @@ public abstract class AbstractClient {
         return mSocket.getRemoteSocketAddress();
     }
 
+    public void setTcpNoDelay(boolean on) throws IOException {
+        mSocket.setTcpNoDelay(on);
+    }
+
     public class Connection extends Thread implements Closeable {
         private final Bundle mContext = new Bundle();
         private final Socket mSocket;
@@ -168,13 +172,11 @@ public abstract class AbstractClient {
             if (!mSocket.isClosed()) {
                 try {
                     mSocket.shutdownInput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+                } catch (IOException ignore) {
                 }
                 try {
                     mSocket.shutdownOutput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+                } catch (IOException ignore) {
                 }
             }
             try {

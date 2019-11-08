@@ -23,8 +23,10 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.channels.NotYetConnectedException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -183,13 +185,11 @@ public abstract class AbstractServer {
             if (!mSocket.isClosed()) {
                 try {
                     mSocket.shutdownInput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable input stream for this socket", e);
+                } catch (IOException | NotYetConnectedException ignore) {
                 }
                 try {
                     mSocket.shutdownOutput();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Cannot disable output stream for this socket", e);
+                } catch (IOException | NotYetConnectedException ignore) {
                 }
             }
             try {
@@ -223,6 +223,10 @@ public abstract class AbstractServer {
 
         public SocketAddress getRemoteSocketAddress() throws IOException {
             return mSocket.getRemoteAddress();
+        }
+
+        public void setTcpNoDelay(boolean on) throws IOException {
+            mSocket.setOption(StandardSocketOptions.TCP_NODELAY, on);
         }
     }
 }

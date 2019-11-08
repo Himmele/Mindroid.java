@@ -18,6 +18,7 @@ package mindroid.runtime.system.aio;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -187,6 +188,11 @@ public class Socket {
 
     public SocketAddress getRemoteAddress() throws IOException {
         return mSocketChannel.getRemoteAddress();
+    }
+
+    public <T> Socket setOption(SocketOption<T> name, T value) throws IOException {
+        mSocketChannel.setOption(name, value);
+        return this;
     }
 
     public void setListener(Listener listener) {
