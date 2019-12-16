@@ -17,6 +17,7 @@
 package mindroid.runtime.system.aio;
 
 import java.io.IOException;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -112,21 +113,24 @@ public class SocketExecutor {
                     continue;
                 }
 
-                if (key.isValid() && key.isAcceptable()) {
-                    ServerSocket serverSocket = (ServerSocket) key.attachment();
-                    serverSocket.onOperation(SelectionKey.OP_ACCEPT);
-                }
-                if (key.isValid() && key.isConnectable()) {
-                    Socket socket = (Socket) key.attachment();
-                    socket.onOperation(SelectionKey.OP_CONNECT);
-                }
-                if (key.isValid() && key.isReadable()) {
-                    Socket socket = (Socket) key.attachment();
-                    socket.onOperation(SelectionKey.OP_READ);
-                }
-                if (key.isValid() && key.isWritable()) {
-                    Socket socket = (Socket) key.attachment();
-                    socket.onOperation(SelectionKey.OP_WRITE);
+                try {
+                    if (key.isAcceptable()) {
+                        ServerSocket serverSocket = (ServerSocket) key.attachment();
+                        serverSocket.onOperation(SelectionKey.OP_ACCEPT);
+                    }
+                    if (key.isConnectable()) {
+                        Socket socket = (Socket) key.attachment();
+                        socket.onOperation(SelectionKey.OP_CONNECT);
+                    }
+                    if (key.isReadable()) {
+                        Socket socket = (Socket) key.attachment();
+                        socket.onOperation(SelectionKey.OP_READ);
+                    }
+                    if (key.isWritable()) {
+                        Socket socket = (Socket) key.attachment();
+                        socket.onOperation(SelectionKey.OP_WRITE);
+                    }
+                } catch (CancelledKeyException ignore) {
                 }
             }
         }
