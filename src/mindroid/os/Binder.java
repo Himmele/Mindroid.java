@@ -41,13 +41,14 @@ import java.util.concurrent.RejectedExecutionException;
  */
 public class Binder implements IBinder {
     private static final String LOG_TAG = "Binder";
+    public static final int UNRESOLVED_PROXY_ID = -1;
     private static final int TRANSACTION = 1;
     private static final int LIGHTWEIGHT_TRANSACTION = 2;
     private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
     private static final ThreadLocal<Integer> sCallingPid = new ThreadLocal<>();
     private final Runtime mRuntime;
-    private long mId;
     private final IMessenger mTarget;
+    private long mId;
     private IInterface mOwner;
     private String mDescriptor;
     private URI mUri;
@@ -419,7 +420,7 @@ public class Binder implements IBinder {
         private static final String EXCEPTION_MESSAGE = "Binder transaction failure";
         private volatile Runtime mRuntime;
         private final long mProxyId;
-        private final long mId;
+        private long mId;
         private String mDescriptor;
         private URI mUri;
 
@@ -428,17 +429,7 @@ public class Binder implements IBinder {
                 throw new IllegalArgumentException("Invalid URI: " + uri);
             }
             mRuntime = Runtime.getRuntime();
-            String authority = uri.getAuthority();
-            String[] parts = authority.split("\\.");
-            if (parts.length == 2) {
-                try {
-                    mId = ((long) Integer.valueOf(parts[0]) << 32) | ((long) Integer.valueOf(parts[1]) & 0xFFFFFFFFL);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid URI: " + uri.toString());
-                }
-            } else {
-                throw new IllegalArgumentException("Invalid URI: " + uri.toString());
-            }
+            setId(uri);
             String path = uri.getPath();
             if (path != null && !path.isEmpty()) {
                 String[] pairs = path.substring(1).split(",");
@@ -460,7 +451,6 @@ public class Binder implements IBinder {
             if (mDescriptor == null) {
                 throw new IllegalArgumentException("Invalid URI: " + uri.toString());
             }
-            mUri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
             mProxyId = mRuntime.attachProxy(this);
         }
 
@@ -536,6 +526,35 @@ public class Binder implements IBinder {
             if (runtime != null) {
                 runtime.detachProxy(mId, mUri, mProxyId);
                 mRuntime = null;
+            }
+        }
+
+        /** @hide */
+        public void resolve(URI uri) throws IllegalArgumentException {
+            setId(uri);
+            if (isUnresolved()) {
+                throw new IllegalArgumentException("Unresolved URI: " + uri.toString());
+            }
+        }
+
+        /** @hide */
+        public boolean isUnresolved() {
+            return mId == UNRESOLVED_PROXY_ID;
+        }
+
+        private void setId(URI uri) {
+            String authority = uri.getAuthority();
+            String[] parts = authority.split("\\.");
+            if (parts.length == 2) {
+                try {
+                    mId = ((long) Integer.valueOf(parts[0]) << 32) | ((long) Integer.valueOf(parts[1]) & 0xFFFFFFFFL);
+                    mUri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Invalid URI: " + uri.toString());
+                }
+            } else {
+                mId = UNRESOLVED_PROXY_ID;
+                mUri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
             }
         }
     }

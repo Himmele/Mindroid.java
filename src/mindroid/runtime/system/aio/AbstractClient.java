@@ -26,6 +26,8 @@ import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.NotYetConnectedException;
+import java.nio.channels.UnresolvedAddressException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import mindroid.os.Bundle;
 import mindroid.util.Log;
 
@@ -85,6 +87,9 @@ public abstract class AbstractClient {
         } catch (URISyntaxException e) {
             shutdown(e);
             throw new IOException("Invalid URI: " + uri);
+        } catch (UnresolvedAddressException e) {
+            shutdown(e);
+            throw new IOException("Address cannot be resolved", e);
         } catch (RuntimeException e) {
             shutdown(e);
             throw e;
@@ -142,6 +147,7 @@ public abstract class AbstractClient {
         private final Socket mSocket;
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
+        private final AtomicBoolean mClosed = new AtomicBoolean(false);
 
         Connection(Socket socket) {
             mContext.putObject("connection", this);
@@ -186,6 +192,9 @@ public abstract class AbstractClient {
 
         @Override
         public void close() throws IOException {
+            if (!mClosed.compareAndSet(false, true)) {
+                return;
+            }
             if (DEBUG) {
                 Log.d(LOG_TAG, "Closing connection");
             }

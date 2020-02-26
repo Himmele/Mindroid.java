@@ -111,6 +111,10 @@ public abstract class AbstractServer {
         return Collections.unmodifiableSet(mConnections);
     }
 
+    public SocketAddress getLocalAddress() throws IOException {
+        return mServerSocket.getLocalSocketAddress();
+    }
+
     public abstract void onConnected(Connection connection);
 
     public abstract void onDisconnected(Connection connection, Throwable cause);

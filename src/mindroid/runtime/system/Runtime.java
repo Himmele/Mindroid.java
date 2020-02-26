@@ -23,7 +23,6 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,12 +48,6 @@ public class Runtime {
     private final Map<Long, WeakReference<Binder>> mBinderIds = new ConcurrentHashMap<>();
     private final Map<String, WeakReference<Binder>> mBinderUris = new ConcurrentHashMap<>();
     private final Map<String, Binder> mServices = new HashMap<>();
-    private final Map<String, URI> mNameResolutionCache = new LinkedHashMap<String, URI>(16, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, URI> eldest) {
-            return size() > 100;
-        }
-    };
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
     private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
     private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
@@ -296,6 +289,10 @@ public class Runtime {
                     }
                 }
                 mServices.put(uri.toString(), (Binder) service);
+                Plugin plugin = mPlugins.get(uri.getScheme());
+                if (plugin != null) {
+                    plugin.addService(uri, (Binder) service);
+                }
             }
         } else {
             throw new IllegalArgumentException("Service must be of superclass mindroid.os.Binder");
@@ -308,6 +305,11 @@ public class Runtime {
             while (itr.hasNext()) {
                 Map.Entry<String, Binder> entry = itr.next();
                 if (entry.getValue().getId() == service.getId()) {
+                    Binder binder = entry.getValue();
+                    Plugin plugin = mPlugins.get(binder.getUri().getScheme());
+                    if (plugin != null) {
+                        plugin.removeService(binder);
+                    }
                     itr.remove();
                 }
             }
@@ -353,7 +355,12 @@ public class Runtime {
         }
 
         // Proxies
-        return getProxy(serviceUri);
+        Plugin plugin = mPlugins.get(serviceUri.getScheme());
+        if (plugin != null) {
+            return plugin.resolveService(serviceUri);
+        } else {
+            return null;
+        }
     }
 
     public final long attachProxy(Binder.Proxy proxy) {
@@ -409,33 +416,6 @@ public class Runtime {
             return plugin.unlink(binder, supervisor, extras);
         } else {
             return true;
-        }
-    }
-
-    private synchronized Binder.Proxy getProxy(URI uri) {
-        final String key = uri.toString();
-        URI proxyUri = mNameResolutionCache.get(key);
-        if (proxyUri != null) {
-            return new Binder.Proxy(proxyUri);
-        }
-
-        if (mConfiguration != null) {
-            ServiceDiscovery.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
-            if (service == null) {
-                return null;
-            }
-
-            try {
-                URI interfaceDescriptor = new URI(service.announcements.get(uri.getScheme()));
-                proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + interfaceDescriptor.getPath().substring(1), interfaceDescriptor.getQuery(), null);
-                Binder.Proxy proxy = new Binder.Proxy(proxyUri);
-                mNameResolutionCache.put(key, proxyUri);
-                return proxy;
-            } catch (Exception e) {
-                return null;
-            }
-        } else {
-            return null;
         }
     }
 

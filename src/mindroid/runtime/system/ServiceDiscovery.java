@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import org.xmlpull.v1.XmlPullParser;
@@ -44,6 +45,9 @@ public class ServiceDiscovery {
     private static final String SERVICE_NAME_ATTR = "name";
     private static final String ANNOUNCEMENT_TAG = "announcement";
     private static final String ANNOUNCEMENT_INTERFACE_DESCRIPTOR_ATTR = "interfaceDescriptor";
+    private static final String ALIASES_TAG = "aliases";
+    private static final String ALIAS_TAG = "alias";
+    private static final String ALIAS_EXTRAS_ATTR = "extras";
 
     public static class Configuration {
         public static class Node {
@@ -70,8 +74,19 @@ public class ServiceDiscovery {
             public Map<String, String> announcements = new HashMap<>();
         }
 
+        public static class ServiceAlias {
+            public String name;
+            public Map<String, Alias> aliases = new HashMap<>();
+        }
+
+        public static class Alias {
+            public String interfaceDescriptor;
+            public String extra;
+        }
+
         public Map<Integer, Configuration.Node> nodes = new HashMap<>();
         public Map<String, Service> services = new HashMap<>();
+        public Map<String, ServiceAlias> aliases = new HashMap<>();
     }
 
     public static Configuration read(File file) throws Exception {
@@ -92,6 +107,8 @@ public class ServiceDiscovery {
                     parseNodes(parser, configuration);
                 } else if (parser.getName().equals(SERVICE_DISCOVERY_TAG)) {
                     parseServiceDiscovery(parser, configuration);
+                } else if (parser.getName().equals(ALIASES_TAG)) {
+                    parseAliases(parser, configuration);
                 } else {
                     String tag = parser.getName();
                     skipSubTree(parser);
@@ -345,6 +362,95 @@ public class ServiceDiscovery {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private static void parseAliases(XmlPullParser parser, Configuration configuration) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, null, ALIASES_TAG);
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(ALIASES_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            if (parser.getName().equals(SERVICE_TAG)) {
+                Configuration.ServiceAlias serviceAlias = parseServiceAlias(parser);
+                configuration.aliases.put(serviceAlias.name, serviceAlias);
+            } else {
+                String tag = parser.getName();
+                skipSubTree(parser);
+                parser.require(XmlPullParser.END_TAG, null, tag);
+            }
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, ALIASES_TAG);
+    }
+
+    private static Configuration.ServiceAlias parseServiceAlias(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, null, SERVICE_TAG);
+
+        String serviceName = null;
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            String attributeName = parser.getAttributeName(i);
+            String attributeValue = parser.getAttributeValue(i);
+            if (attributeName.equals(SERVICE_NAME_ATTR)) {
+                serviceName = attributeValue;
+            }
+        }
+        if (serviceName == null || serviceName.isEmpty()) {
+            throw new XmlPullParserException("Invalid announcement: " + serviceName);
+        }
+
+        Configuration.ServiceAlias serviceAlias = new Configuration.ServiceAlias();
+        serviceAlias.name = serviceName;
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(SERVICE_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            if (parser.getName().equals(ALIAS_TAG)) {
+                Configuration.Alias alias = parseAlias(parser);
+                if (alias != null) {
+                    URI uri;
+                    try {
+                        uri = new URI(alias.interfaceDescriptor);
+                    } catch (URISyntaxException e) {
+                        continue;
+                    }
+                    serviceAlias.aliases.put(uri.getScheme(), alias);
+                }
+            } else {
+                String tag = parser.getName();
+                skipSubTree(parser);
+                parser.require(XmlPullParser.END_TAG, null, tag);
+            }
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, SERVICE_TAG);
+        return serviceAlias;
+    }
+
+    private static Configuration.Alias parseAlias(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, null, ALIAS_TAG);
+
+        String interfaceDescriptor = null;
+        String extras = null;
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            String attributeName = parser.getAttributeName(i);
+            String attributeValue = parser.getAttributeValue(i);
+            if (attributeName.equals(ANNOUNCEMENT_INTERFACE_DESCRIPTOR_ATTR)) {
+                interfaceDescriptor = attributeValue;
+            } else if (attributeName.equals(ALIAS_EXTRAS_ATTR)) {
+                extras = attributeValue;
+            }
+        }
+        if (interfaceDescriptor == null || interfaceDescriptor.isEmpty()) {
+            throw new XmlPullParserException("Invalid announcement: " + interfaceDescriptor);
+        }
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(ALIAS_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            String tag = parser.getName();
+            skipSubTree(parser);
+            parser.require(XmlPullParser.END_TAG, null, tag);
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, ALIAS_TAG);
+        Configuration.Alias alias = new Configuration.Alias();
+        alias.interfaceDescriptor = interfaceDescriptor;
+        alias.extra = extras;
+        return alias;
     }
 
     private static void skipSubTree(XmlPullParser parser) throws XmlPullParserException, IOException {

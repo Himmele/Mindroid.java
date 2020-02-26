@@ -30,6 +30,8 @@ import java.nio.channels.NotYetConnectedException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import mindroid.os.Bundle;
 import mindroid.util.Log;
 
@@ -102,6 +104,10 @@ public abstract class AbstractServer {
         return Collections.unmodifiableSet(mConnections);
     }
 
+    public SocketAddress getLocalAddress() throws IOException {
+        return mServerSocket.getLocalAddress();
+    }
+
     public abstract void onConnected(Connection connection);
 
     public abstract void onDisconnected(Connection connection, Throwable cause);
@@ -116,6 +122,7 @@ public abstract class AbstractServer {
         private final Socket mSocket;
         private final InputStream mInputStream;
         private final OutputStream mOutputStream;
+        private final AtomicBoolean mClosed = new AtomicBoolean(false);
 
         Connection(Socket socket) {
             mContext.putObject("connection", this);
@@ -165,6 +172,9 @@ public abstract class AbstractServer {
         }
 
         private void close(Throwable cause) throws IOException {
+            if (!mClosed.compareAndSet(false, true)) {
+                return;
+            }
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnecting from " + mSocket.getRemoteAddress());
             }

@@ -42,12 +42,16 @@ public abstract class Plugin {
     public abstract Promise<Void> disconnect(URI node, Bundle extras);
 
     public abstract void attachBinder(Binder binder);
+    public abstract void addService(URI uri, Binder service);
+    public abstract void removeService(Binder service);
     public abstract void detachBinder(long id);
     public abstract void attachProxy(long proxyId, Binder.Proxy proxy);
     public abstract void detachProxy(long proxyId, long binderId);
 
     public abstract Binder getStub(Binder binder);
     public abstract IInterface getProxy(IBinder binder);
+
+    public abstract Binder.Proxy resolveService(URI serviceUri);
 
     public abstract Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException;
 

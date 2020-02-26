@@ -26,6 +26,7 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -56,6 +57,12 @@ public class Mindroid extends Plugin {
     private Server mServer;
     private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
+    private final Map<String, URI> mNameResolutionCache = new LinkedHashMap<String, URI>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, URI> eldest) {
+            return size() > 100;
+        }
+    };
 
     static {
         sExecutor = new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
@@ -111,6 +118,14 @@ public class Mindroid extends Plugin {
     }
 
     @Override
+    public void addService(URI uri, Binder service) {
+    }
+
+    @Override
+    public void removeService(Binder service) {
+    }
+
+    @Override
     public void detachBinder(long id) {
     }
 
@@ -155,6 +170,34 @@ public class Mindroid extends Plugin {
     @Override
     public IInterface getProxy(IBinder binder) {
         return null;
+    }
+
+    @Override
+    public synchronized Binder.Proxy resolveService(URI uri) {
+        final String key = uri.toString();
+        URI proxyUri = mNameResolutionCache.get(key);
+        if (proxyUri != null) {
+            return new Binder.Proxy(proxyUri);
+        }
+
+        if (mConfiguration != null) {
+            ServiceDiscovery.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
+            if (service == null) {
+                return null;
+            }
+
+            try {
+                URI interfaceDescriptor = new URI(service.announcements.get(uri.getScheme()));
+                proxyUri = new URI(uri.getScheme(), service.node.id + "." + service.id, "/if=" + interfaceDescriptor.getPath().substring(1), interfaceDescriptor.getQuery(), null);
+                Binder.Proxy proxy = new Binder.Proxy(proxyUri);
+                mNameResolutionCache.put(key, proxyUri);
+                return proxy;
+            } catch (Exception e) {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     @Override
