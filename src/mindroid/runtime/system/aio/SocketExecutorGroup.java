@@ -76,23 +76,13 @@ public class SocketExecutorGroup {
         }
     }
 
-    void register(Socket socket) {
+    public void register(SelectableSocket socket) {
         mSocketExecutors[mCounter.getAndIncrement() % mSocketExecutors.length].register(socket);
     }
 
-    void unregister(Socket socket) {
+    public void unregister(SelectableSocket socket) {
         for (SocketExecutor executor : mSocketExecutors) {
             executor.unregister(socket);
-        }
-    }
-
-    void register(ServerSocket serverSocket) {
-        mSocketExecutors[mCounter.getAndIncrement() % mSocketExecutors.length].register(serverSocket);
-    }
-
-    void unregister(ServerSocket serverSocket) {
-        for (SocketExecutor executor : mSocketExecutors) {
-            executor.unregister(serverSocket);
         }
     }
 

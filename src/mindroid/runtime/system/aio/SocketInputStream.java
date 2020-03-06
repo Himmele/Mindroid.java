@@ -144,7 +144,7 @@ public class SocketInputStream extends InputStream {
             ByteBuffer b = itr.next();
             final int remaining = b.remaining();
             if (remaining > 0) {
-                final int size = c <= remaining ? c : remaining; 
+                final int size = Math.min(c, remaining);
                 System.arraycopy(b.array(), b.position(), buffer, o, size);
                 b.position(b.position() + size);
                 o += size;
@@ -191,7 +191,7 @@ public class SocketInputStream extends InputStream {
             ByteBuffer b = itr.next();
             final int remaining = b.remaining();
             if (remaining > 0) {
-                final int size = (int) (c <= remaining ? c : remaining);
+                final int size = (int) Math.min(c, remaining);
                 b.position(b.position() + size);
                 num += size;
                 c -= size;

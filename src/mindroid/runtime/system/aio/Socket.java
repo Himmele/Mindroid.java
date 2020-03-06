@@ -21,15 +21,17 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import mindroid.util.Log;
 import mindroid.util.concurrent.Promise;
 
-public class Socket {
+public class Socket implements SelectableSocket {
     private static final String LOG_TAG = "Socket";
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10_000;
     private final SocketChannel mSocketChannel;
@@ -38,7 +40,7 @@ public class Socket {
     private Selector mSelector;
     private CompletableFuture<Void> mConnector;
     private Listener mListener;
-    private int mOps = 0;
+    private AtomicInteger mOps = new AtomicInteger(0);
 
     public static final int OP_CLOSE = 1;
     public static final int OP_READ = 2;
@@ -50,7 +52,7 @@ public class Socket {
 
     public Socket() throws IOException {
         this(SocketChannel.open());
-        mOps = 0;
+        mOps.set(0);
     }
 
     Socket(SocketChannel socketChannel) throws IOException {
@@ -58,7 +60,7 @@ public class Socket {
         mSocketChannel.configureBlocking(false);
         mInputStream = new SocketInputStream(this);
         mOutputStream = new SocketOutputStream(this);
-        mOps = SelectionKey.OP_READ;
+        mOps.set(SelectionKey.OP_READ);
     }
 
     public boolean isClosed() {
@@ -77,8 +79,9 @@ public class Socket {
         mSocketChannel.shutdownOutput();
     }
 
+    @Override
     public void close() throws IOException {
-        mOps = 0;
+        mOps.set(0);
         mSocketChannel.close();
         if (mSelector != null) {
             mSelector.wakeup();
@@ -90,11 +93,11 @@ public class Socket {
     }
 
     public CompletableFuture<Void> connect(SocketAddress socketAddress) {
-        mOps |= SelectionKey.OP_CONNECT;
+        mOps.getAndUpdate(value -> value | SelectionKey.OP_CONNECT);
         mConnector = new CompletableFuture<>();
         CompletableFuture<Void> future = mConnector.whenComplete((value, exception) -> {
             if (exception == null) {
-                mOps = SelectionKey.OP_READ;
+                mOps.set(SelectionKey.OP_READ);
                 mSelector.wakeup();
                 mOutputStream.sync();
             }
@@ -141,13 +144,13 @@ public class Socket {
 
         int num = mSocketChannel.write(buffer);
         if (!buffer.hasRemaining()) {
-            if ((mOps & SelectionKey.OP_WRITE) == 1) {
-                mOps &= ~SelectionKey.OP_WRITE;
+            int prevOps = mOps.getAndUpdate(value -> value & ~SelectionKey.OP_WRITE);
+            if ((prevOps & SelectionKey.OP_WRITE) != 0) {
                 mSelector.wakeup();
             }
         } else {
-            if ((mOps & SelectionKey.OP_WRITE) == 0) {
-                mOps |= SelectionKey.OP_WRITE;
+            int prevOps = mOps.getAndUpdate(value -> value | SelectionKey.OP_WRITE);
+            if ((prevOps & SelectionKey.OP_WRITE) == 0) {
                 mSelector.wakeup();
             }
         }
@@ -161,13 +164,13 @@ public class Socket {
 
         long num = mSocketChannel.write(buffers);
         if (!buffers[buffers.length - 1].hasRemaining()) {
-            if ((mOps & SelectionKey.OP_WRITE) == 1) {
-                mOps &= ~SelectionKey.OP_WRITE;
+            int prevValue = mOps.getAndUpdate(value -> value & ~SelectionKey.OP_WRITE);
+            if ((prevValue & SelectionKey.OP_WRITE) != 0) {
                 mSelector.wakeup();
             }
         } else {
-            if ((mOps & SelectionKey.OP_WRITE) == 0) {
-                mOps |= SelectionKey.OP_WRITE;
+            int prevValue = mOps.getAndUpdate(value -> value | SelectionKey.OP_WRITE);
+            if ((prevValue & SelectionKey.OP_WRITE) == 0) {
                 mSelector.wakeup();
             }
         }
@@ -199,19 +202,19 @@ public class Socket {
         mListener = listener;
     }
 
-    SocketChannel getChannel() {
-        return mSocketChannel;
+    @Override
+    public boolean isOpen() {
+        return mSocketChannel.isOpen();
     }
 
-    void setSelector(Selector selector) {
+    @Override
+    public SelectionKey register(Selector selector) throws ClosedChannelException {
         mSelector = selector;
+        return mSocketChannel.register(selector, mOps.get());
     }
 
-    int getOps() {
-        return mOps;
-    }
-
-    void onOperation(int ops) {
+    @Override
+    public void onOperation(int ops) {
         if ((ops & SelectionKey.OP_CONNECT) != 0) {
             if (mConnector != null) {
                 try {

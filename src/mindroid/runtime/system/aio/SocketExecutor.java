@@ -18,12 +18,11 @@ package mindroid.runtime.system.aio;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ClosedSelectorException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -33,8 +32,7 @@ public class SocketExecutor {
     private static final String LOG_TAG = "SocketExecutor";
     private final Executor mExecutor;
     private final Selector mSelector;
-    private final Map<SelectableChannel, ServerSocket> mServerSockets = new ConcurrentHashMap<>();
-    private final Map<SelectableChannel, Socket> mSockets = new ConcurrentHashMap<>();
+    private final Set<SelectableSocket> mSockets = ConcurrentHashMap.newKeySet();
 
     public SocketExecutor(Executor executor) throws IOException {
         mExecutor = executor;
@@ -49,26 +47,13 @@ public class SocketExecutor {
         }
     }
 
-    void register(ServerSocket serverSocket) {
-        serverSocket.setSelector(mSelector);
-        mServerSockets.put(serverSocket.getChannel(), serverSocket);
+    public void register(SelectableSocket socket) {
+        mSockets.add(socket);
         mSelector.wakeup();
     }
 
-    void unregister(ServerSocket serverSocket) {
-        if (mServerSockets.remove(serverSocket.getChannel(), serverSocket)) {
-            mSelector.wakeup();
-        }
-    }
-
-    void register(Socket socket) {
-        socket.setSelector(mSelector);
-        mSockets.put(socket.getChannel(), socket);
-        mSelector.wakeup();
-    }
-
-    void unregister(Socket socket) {
-        if (mSockets.remove(socket.getChannel(), socket)) {
+    public void unregister(SelectableSocket socket) {
+        if (mSockets.remove(socket)) {
             mSelector.wakeup();
         }
     }
@@ -77,22 +62,14 @@ public class SocketExecutor {
         while (!Thread.currentThread().isInterrupted() && mSelector.isOpen()) {
             Set<SelectionKey> keys;
             try {
-                Iterator<Map.Entry<SelectableChannel, Socket>> socketIterator = mSockets.entrySet().iterator();
+                Iterator<SelectableSocket> socketIterator = mSockets.iterator();
                 while (socketIterator.hasNext()) {
-                    Map.Entry<SelectableChannel, Socket> entry = socketIterator.next();
-                    SelectableChannel channel = entry.getKey();
-                    Socket socket = entry.getValue();
-                    if (channel.isOpen()) {
-                        channel.register(mSelector, socket.getOps(), socket);
-                    }
-                }
-                Iterator<Map.Entry<SelectableChannel, ServerSocket>> serverSocketIterator = mServerSockets.entrySet().iterator();
-                while (serverSocketIterator.hasNext()) {
-                    Map.Entry<SelectableChannel, ServerSocket> entry = serverSocketIterator.next();
-                    SelectableChannel channel = entry.getKey();
-                    ServerSocket serverSocket = entry.getValue();
-                    if (channel.isOpen()) {
-                        channel.register(mSelector, serverSocket.getOps(), serverSocket);
+                    SelectableSocket socket = socketIterator.next();
+                    if (socket.isOpen()) {
+                        try {
+                            socket.register(mSelector).attach(socket);
+                        } catch (ClosedChannelException ignore) {
+                        }
                     }
                 }
                 mSelector.select();
@@ -114,20 +91,17 @@ public class SocketExecutor {
                 }
 
                 try {
+                    SelectableSocket socket = (SelectableSocket) key.attachment();
                     if (key.isAcceptable()) {
-                        ServerSocket serverSocket = (ServerSocket) key.attachment();
-                        serverSocket.onOperation(SelectionKey.OP_ACCEPT);
+                        socket.onOperation(SelectionKey.OP_ACCEPT);
                     }
                     if (key.isConnectable()) {
-                        Socket socket = (Socket) key.attachment();
                         socket.onOperation(SelectionKey.OP_CONNECT);
                     }
                     if (key.isReadable()) {
-                        Socket socket = (Socket) key.attachment();
                         socket.onOperation(SelectionKey.OP_READ);
                     }
                     if (key.isWritable()) {
-                        Socket socket = (Socket) key.attachment();
                         socket.onOperation(SelectionKey.OP_WRITE);
                     }
                 } catch (CancelledKeyException ignore) {
@@ -135,20 +109,12 @@ public class SocketExecutor {
             }
         }
 
-        for (Socket socket : mSockets.values()) {
+        for (SelectableSocket socket : mSockets) {
             try {
                 socket.close();
             } catch (IOException ignore) {
             }
         }
         mSockets.clear();
-
-        for (ServerSocket serverSocket : mServerSockets.values()) {
-            try {
-                serverSocket.close();
-            } catch (IOException ignore) {
-            }
-        }
-        mServerSockets.clear();
     }
 }

@@ -19,13 +19,13 @@ package mindroid.runtime.system.aio;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
-import java.nio.channels.SelectableChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.CompletableFuture;
 
-public class ServerSocket {
+public class ServerSocket implements SelectableSocket {
     private final ServerSocketChannel mServerSocketChannel;
     private Selector mSelector;
     private Listener mListener;
@@ -46,10 +46,13 @@ public class ServerSocket {
         mOps = SelectionKey.OP_ACCEPT;
     }
 
+    @Override
     public void close() throws IOException {
         mOps = 0;
         mServerSocketChannel.close();
-        mSelector.wakeup();
+        if (mSelector != null) {
+            mSelector.wakeup();
+        }
     }
 
     public CompletableFuture<Socket> accept() {
@@ -70,19 +73,19 @@ public class ServerSocket {
         mListener = listener;
     }
 
-    SelectableChannel getChannel() {
-        return mServerSocketChannel;
+    @Override
+    public boolean isOpen(){
+        return mServerSocketChannel.isOpen();
     }
 
-    void setSelector(Selector selector) {
+    @Override
+    public SelectionKey register(Selector selector) throws ClosedChannelException {
         mSelector = selector;
+        return mServerSocketChannel.register(selector, mOps);
     }
 
-    int getOps() {
-        return mOps;
-    }
-
-    void onOperation(int ops) {
+    @Override
+    public void onOperation(int ops) {
         if ((ops & SelectionKey.OP_ACCEPT) != 0) {
             if (mListener != null) {
                 mListener.onOperation(ServerSocket.OP_ACCEPT, null);
