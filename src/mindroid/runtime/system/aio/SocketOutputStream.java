@@ -21,8 +21,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.LinkedList;
 
 public class SocketOutputStream extends OutputStream {
     protected static final int MAX_BUFFER_SIZE = 8192;
@@ -32,13 +31,13 @@ public class SocketOutputStream extends OutputStream {
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
      */
-    protected final Deque<ByteBuffer> mBuffer = new ConcurrentLinkedDeque<>();
+    protected final Deque<ByteBuffer> mBuffer = new LinkedList<>();
 
     /**
      * The total number of bytes initially available in the byte array
      * {@code mBuffer}.
      */
-    protected final AtomicInteger mCount = new AtomicInteger(0);
+    protected int mCount = 0;
 
     SocketOutputStream(Socket socket) {
         mSocket = socket;
@@ -59,7 +58,10 @@ public class SocketOutputStream extends OutputStream {
             exception = e;
         }
 
-        mBuffer.clear();
+        synchronized (this) {
+            mBuffer.clear();
+            mCount = 0;
+        }
 
         if (exception != null) {
             throw exception;
@@ -103,9 +105,12 @@ public class SocketOutputStream extends OutputStream {
         }
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, count);
-        mBuffer.add(byteBuffer);
-        if (mCount.addAndGet(count) >= MAX_BUFFER_SIZE) {
-            sync();
+        synchronized (this) {
+            mBuffer.add(byteBuffer);
+            mCount += count;
+            if (mCount >= MAX_BUFFER_SIZE) {
+                sync();
+            }
         }
     }
 
@@ -119,9 +124,12 @@ public class SocketOutputStream extends OutputStream {
     @Override
     public void write(int b) throws IOException {
         ByteBuffer byteBuffer = (ByteBuffer) ByteBuffer.allocate(1).put((byte) b).flip();
-        mBuffer.add(byteBuffer);
-        if (mCount.incrementAndGet() >= MAX_BUFFER_SIZE) {
-            sync();
+        synchronized (this) {
+            mBuffer.add(byteBuffer);
+            mCount++;
+            if (mCount >= MAX_BUFFER_SIZE) {
+                sync();
+            }
         }
     }
 
@@ -134,7 +142,7 @@ public class SocketOutputStream extends OutputStream {
                 try {
                     long num = mSocket.write(buffers);
                     if (num > 0) {
-                        mCount.addAndGet((int) -num);
+                        mCount -= (int) num;
                         Iterator<ByteBuffer> itr = mBuffer.iterator();
                         while (itr.hasNext()) {
                             ByteBuffer buffer = itr.next();

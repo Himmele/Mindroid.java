@@ -21,8 +21,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.LinkedList;
 
 public class SocketInputStream extends InputStream {
     protected final Socket mSocket;
@@ -30,13 +29,13 @@ public class SocketInputStream extends InputStream {
     /**
      * The {@code ByteBuffer} list containing the bytes to stream over.
      */
-    protected final Deque<ByteBuffer> mBuffer = new ConcurrentLinkedDeque<>();
+    protected final Deque<ByteBuffer> mBuffer = new LinkedList<>();
 
     /**
      * The total number of bytes available in the buffer
      * {@code mBuffer}.
      */
-    protected final AtomicInteger mCount = new AtomicInteger(0);
+    protected int mCount = 0;
 
     /**
      * Constructs an empty {@code ByteBufferInputStream}.
@@ -51,8 +50,8 @@ public class SocketInputStream extends InputStream {
      * @return {@code count - position}
      */
     @Override
-    public int available() {
-        return mCount.get();
+    public synchronized int available() {
+        return mCount;
     }
 
     /**
@@ -62,9 +61,9 @@ public class SocketInputStream extends InputStream {
      *             if an I/O error occurs while closing this stream.
      */
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         mBuffer.clear();
-        mCount.set(0);
+        mCount = 0;
     }
 
     /**
@@ -103,11 +102,11 @@ public class SocketInputStream extends InputStream {
      * @return the byte read or -1 if the end of this stream has been reached.
      */
     @Override
-    public int read() throws IOException {
-        if (mCount.get() > 0) {
+    public synchronized int read() throws IOException {
+        if (mCount > 0) {
             ByteBuffer headBuffer = mBuffer.getFirst();
             int b = headBuffer.get() & 0xFF;
-            mCount.decrementAndGet();
+            mCount--;
             if (headBuffer.remaining() == 0) {
                 mBuffer.removeFirst();
             }
@@ -123,14 +122,14 @@ public class SocketInputStream extends InputStream {
     }
 
     @Override
-    public int read(byte[] buffer, final int offset, final int count) throws IOException {
+    public synchronized int read(byte[] buffer, final int offset, final int count) throws IOException {
         if (buffer == null) {
             throw new NullPointerException();
         } else if ((offset < 0) || (count < 0) || ((offset + count) > buffer.length)) {
             throw new IndexOutOfBoundsException();
         }
 
-        if (count > mCount.get()) {
+        if (count > mCount) {
             throw new IOException("EOS");
         }
         if (count == 0) {
@@ -149,7 +148,7 @@ public class SocketInputStream extends InputStream {
                 b.position(b.position() + size);
                 o += size;
                 c -= size;
-                mCount.addAndGet(-size);
+                mCount -= size;
                 if (c == 0 && b.hasRemaining()) {
                     break;
                 }
@@ -180,7 +179,7 @@ public class SocketInputStream extends InputStream {
      * @return the number of bytes actually skipped.
      */
     @Override
-    public long skip(long count) {
+    public synchronized long skip(long count) {
         if (count <= 0) {
             return 0;
         }
@@ -195,7 +194,7 @@ public class SocketInputStream extends InputStream {
                 b.position(b.position() + size);
                 num += size;
                 c -= size;
-                mCount.addAndGet(-size);
+                mCount -= size;
                 if (c == 0 && b.hasRemaining()) {
                     break;
                 }
@@ -217,7 +216,7 @@ public class SocketInputStream extends InputStream {
                 }
                 if (num > 0) {
                     mBuffer.add((ByteBuffer) buffer.flip());
-                    mCount.addAndGet(buffer.remaining());
+                    mCount += buffer.remaining();
                     operation = Socket.OP_READ;
                 }
             } catch (IOException e) {
