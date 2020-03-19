@@ -86,7 +86,7 @@ public class SocketExecutorGroup {
         }
     }
 
-    void shutdown() {
+    public void shutdown() {
         for (SocketExecutor socketExecutor : mSocketExecutors) {
             socketExecutor.shutdown();
         }

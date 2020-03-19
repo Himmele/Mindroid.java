@@ -39,9 +39,24 @@ public abstract class AbstractServer {
     private String LOG_TAG;
     private static final boolean DEBUG = false;
 
-    private final SocketExecutorGroup mExecutorGroup = new SocketExecutorGroup();
+    private final SocketExecutorGroup mExecutorGroup;
+    private final boolean mHoldsExecutorGroup;
     private final Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
     private ServerSocket mServerSocket;
+
+    public AbstractServer() {
+        this(null);
+    }
+
+    public AbstractServer(SocketExecutorGroup executorGroup) {
+        if (executorGroup == null) {
+            mExecutorGroup = new SocketExecutorGroup();
+            mHoldsExecutorGroup = true;
+        } else {
+            mExecutorGroup = executorGroup;
+            mHoldsExecutorGroup = false;
+        }
+    }
 
     public void start(String uri) throws IOException {
         LOG_TAG = "Server [" + uri + "]";
@@ -96,7 +111,9 @@ public abstract class AbstractServer {
             }
         }
 
-        mExecutorGroup.shutdown();
+        if (mHoldsExecutorGroup) {
+            mExecutorGroup.shutdown();
+        }
         onShutdown(cause);
     }
 

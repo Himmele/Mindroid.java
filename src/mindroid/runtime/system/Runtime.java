@@ -33,6 +33,8 @@ import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
+import mindroid.runtime.sd.DiscoveryListener;
+import mindroid.runtime.sd.IDiscoveryListener;
 import mindroid.util.Log;
 import mindroid.util.concurrent.CancellationException;
 import mindroid.util.concurrent.ExecutionException;
@@ -48,10 +50,11 @@ public class Runtime {
     private final Map<Long, WeakReference<Binder>> mBinderIds = new ConcurrentHashMap<>();
     private final Map<String, WeakReference<Binder>> mBinderUris = new ConcurrentHashMap<>();
     private final Map<String, Binder> mServices = new HashMap<>();
+    private final Set<DiscoveryListener> mDiscoveryListeners = ConcurrentHashMap.newKeySet();
     private final AtomicInteger mBinderIdGenerator = new AtomicInteger(1);
     private final AtomicInteger mProxyIdGenerator = new AtomicInteger(1);
     private final Set<Long> mIds = ConcurrentHashMap.newKeySet();
-    private ServiceDiscovery.Configuration mConfiguration;
+    private ServiceDiscoveryConfigurationReader.Configuration mConfiguration;
 
     private Runtime(int nodeId, File configurationFile) {
         if (nodeId == 0) {
@@ -61,13 +64,13 @@ public class Runtime {
         Log.println('I', LOG_TAG, "Mindroid runtime system node id: " + mNodeId);
         if (configurationFile != null) {
             try {
-                mConfiguration = ServiceDiscovery.read(configurationFile);
+                mConfiguration = ServiceDiscoveryConfigurationReader.read(configurationFile);
             } catch (Exception e) {
                 Log.println('E', LOG_TAG, "Failed to read Mindroid runtime system configuration", e);
             }
         }
         if (mConfiguration != null && mConfiguration.nodes.containsKey(mNodeId)) {
-            for (ServiceDiscovery.Configuration.Plugin plugin : mConfiguration.nodes.get(mNodeId).plugins.values()) {
+            for (ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin : mConfiguration.nodes.get(mNodeId).plugins.values()) {
                 try {
                     Class<Plugin> clazz = (Class<Plugin>) Class.forName(plugin.clazz);
                     mPlugins.put(plugin.scheme, clazz.newInstance());
@@ -79,7 +82,7 @@ public class Runtime {
             }
 
             Set<Long> ids = new HashSet<>();
-            for (ServiceDiscovery.Configuration.Service service : mConfiguration.services.values()) {
+            for (ServiceDiscoveryConfigurationReader.Configuration.Service service : mConfiguration.services.values()) {
                 if (service.node.id == nodeId) {
                     long id = ((long) nodeId << 32) | (service.id & 0xFFFFFFFFL);
                     ids.add(id);
@@ -138,7 +141,7 @@ public class Runtime {
         return mNodeId;
     }
 
-    public ServiceDiscovery.Configuration getConfiguration() {
+    public ServiceDiscoveryConfigurationReader.Configuration getConfiguration() {
         return mConfiguration;
     }
 
@@ -272,9 +275,9 @@ public class Runtime {
         if (service instanceof Binder) {
             if (!mServices.containsKey(uri.toString())) {
                 if (mConfiguration != null) {
-                    ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(mNodeId);
+                    ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(mNodeId);
                     if (node != null) {
-                        ServiceDiscovery.Configuration.Service s = node.services.get(uri.getAuthority());
+                        ServiceDiscoveryConfigurationReader.Configuration.Service s = node.services.get(uri.getAuthority());
                         if (s != null) {
                             long oldId = ((long) mNodeId << 32) | (service.getId() & 0xFFFFFFFFL);
                             mIds.remove(oldId);
@@ -470,6 +473,34 @@ public class Runtime {
             return plugin.disconnect(node, extras);
         } else {
             return new Promise<>(new RemoteException("Node disconnection failure"));
+        }
+    }
+
+    public void discoverServices(String interfaceDescriptor, Bundle extras, DiscoveryListener listener) throws URISyntaxException {
+        String scheme;
+        if (interfaceDescriptor.contains("://")) {
+            scheme = new URI(interfaceDescriptor).getScheme();
+        } else {
+            scheme = interfaceDescriptor;
+        }
+
+        Plugin plugin = mPlugins.get(scheme);
+        if (plugin != null) {
+            listener.setPlugin(plugin);
+            mDiscoveryListeners.add(listener);
+            plugin.discoverServices(interfaceDescriptor, extras, IDiscoveryListener.Stub.asInterface(listener.asInterface().asBinder()));
+        } else {
+            listener.onStartDiscoveryFailed(new IllegalArgumentException("Unknown interface descriptor scheme"));
+        }
+    }
+
+    public void stopServiceDiscovery(DiscoveryListener listener) {
+        if (listener != null) {
+            mDiscoveryListeners.remove(listener);
+            Plugin plugin = listener.getPlugin();
+            if (plugin != null) {
+                plugin.stopServiceDiscovery(IDiscoveryListener.Stub.asInterface(listener.asInterface().asBinder()));
+            }
         }
     }
 }

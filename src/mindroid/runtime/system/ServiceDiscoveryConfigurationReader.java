@@ -28,8 +28,8 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-public class ServiceDiscovery {
-    private static final String LOG_TAG = "ServiceDiscovery";
+public class ServiceDiscoveryConfigurationReader {
+    private static final String LOG_TAG = "ServiceDiscoveryConfigurationReader";
     private static final String ROOT_TAG = "runtime";
     private static final String NODES_TAG = "nodes";
     private static final String NODE_TAG = "node";

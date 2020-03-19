@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
+import mindroid.runtime.sd.IDiscoveryListener;
 import mindroid.runtime.system.io.AbstractClient;
 import mindroid.runtime.system.io.AbstractServer;
 import mindroid.util.Log;
@@ -53,7 +55,7 @@ public class Mindroid extends Plugin {
     private static final boolean DEBUG = false;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
-    private ServiceDiscovery.Configuration mConfiguration;
+    private ServiceDiscoveryConfigurationReader.Configuration mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
     private final Map<Integer, Map<Long, WeakReference<IBinder>>> mProxies = new HashMap<>();
@@ -85,11 +87,11 @@ public class Mindroid extends Plugin {
         LOG_TAG = "Mindroid [" + nodeId + "]";
         mConfiguration = mRuntime.getConfiguration();
         if (mConfiguration != null) {
-            ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+            ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(nodeId);
             if (node != null) {
-                ServiceDiscovery.Configuration.Plugin plugin = node.plugins.get("mindroid");
+                ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin = node.plugins.get("mindroid");
                 if (plugin != null) {
-                    ServiceDiscovery.Configuration.Server server = plugin.server;
+                    ServiceDiscoveryConfigurationReader.Configuration.Server server = plugin.server;
                     if (server != null) {
                         mServer = new Server();
                         try {
@@ -181,7 +183,7 @@ public class Mindroid extends Plugin {
         }
 
         if (mConfiguration != null) {
-            ServiceDiscovery.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
+            ServiceDiscoveryConfigurationReader.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
             if (service == null) {
                 return null;
             }
@@ -206,11 +208,11 @@ public class Mindroid extends Plugin {
         Client client = mClients.get(nodeId);
         if (client == null) {
             if (mConfiguration != null) {
-                ServiceDiscovery.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+                ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(nodeId);
                 if (node != null) {
-                    ServiceDiscovery.Configuration.Plugin plugin = node.plugins.get(binder.getUri().getScheme());
+                    ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin = node.plugins.get(binder.getUri().getScheme());
                     if (plugin != null) {
-                        ServiceDiscovery.Configuration.Server server = plugin.server;
+                        ServiceDiscoveryConfigurationReader.Configuration.Server server = plugin.server;
                         if (server != null) {
                             try {
                                 client = new Client(node.id);
@@ -243,6 +245,18 @@ public class Mindroid extends Plugin {
     @Override
     public boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
         return true;
+    }
+
+    @Override
+    public void discoverServices(String interfaceDescriptor, Bundle extras, IDiscoveryListener listener) throws URISyntaxException {
+        try {
+            listener.onStartDiscoveryFailed(new UnsupportedOperationException("No service discovery support"));
+        } catch (RemoteException ignore) {
+        }
+    }
+
+    @Override
+    public void stopServiceDiscovery(IDiscoveryListener listener) {
     }
 
     @Override

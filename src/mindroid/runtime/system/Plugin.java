@@ -17,12 +17,14 @@
 package mindroid.runtime.system;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
 import mindroid.os.IBinder;
 import mindroid.os.IInterface;
 import mindroid.os.Parcel;
 import mindroid.os.RemoteException;
+import mindroid.runtime.sd.IDiscoveryListener;
 import mindroid.util.concurrent.Promise;
 
 public abstract class Plugin {
@@ -57,6 +59,9 @@ public abstract class Plugin {
 
     public abstract void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException;
     public abstract boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras);
+
+    public abstract void discoverServices(String interfaceDescriptor, Bundle extras, IDiscoveryListener listener) throws URISyntaxException;
+    public abstract void stopServiceDiscovery(IDiscoveryListener listener);
 
     public static abstract class Observer {
         public abstract void onEntry(int nodeId);

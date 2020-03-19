@@ -36,13 +36,25 @@ public abstract class AbstractClient {
     private static final boolean DEBUG = false;
 
     private final int mNodeId;
-    private final SocketExecutorGroup mExecutorGroup = new SocketExecutorGroup();
+    private final SocketExecutorGroup mExecutorGroup;
+    private final boolean mHoldsExecutorGroup;
     private final Socket mSocket;
     private final Connection mConnection;
     private String mHost;
     private int mPort;
 
     public AbstractClient(int nodeId) throws IOException {
+        this(nodeId, null);
+    }
+
+    public AbstractClient(int nodeId, SocketExecutorGroup executorGroup) throws IOException {
+        if (executorGroup == null) {
+            mExecutorGroup = new SocketExecutorGroup();
+            mHoldsExecutorGroup = true;
+        } else {
+            mExecutorGroup = executorGroup;
+            mHoldsExecutorGroup = false;
+        }
         mNodeId = nodeId;
         mSocket = new Socket();
         mConnection = new Connection(mSocket);
@@ -103,8 +115,9 @@ public abstract class AbstractClient {
             } catch (IOException ignore) {
             }
         }
-
-        mExecutorGroup.shutdown();
+        if (mHoldsExecutorGroup) {
+            mExecutorGroup.shutdown();
+        }
         onDisconnected(cause);
     }
 
