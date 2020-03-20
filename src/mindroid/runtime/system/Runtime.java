@@ -85,7 +85,9 @@ public class Runtime {
             for (ServiceDiscoveryConfigurationReader.Configuration.Service service : mConfiguration.services.values()) {
                 if (service.node.id == nodeId) {
                     long id = ((long) nodeId << 32) | (service.id & 0xFFFFFFFFL);
-                    ids.add(id);
+                    if (!ids.add(id)) {
+                        Log.println('E', LOG_TAG, "Cannot register service \'" + service.name + "\' with already used id " + service.id);
+                    }
                 }
             }
             mIds.addAll(ids);

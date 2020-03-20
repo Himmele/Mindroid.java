@@ -69,7 +69,7 @@ public class ServiceDiscoveryConfigurationReader {
 
         public static class Service {
             public Node node;
-            public int id;
+            public int id = -1;
             public String name;
             public Map<String, String> announcements = new HashMap<>();
         }
@@ -314,7 +314,7 @@ public class ServiceDiscoveryConfigurationReader {
                 service.name = attributeValue;
             }
         }
-        if (service.id == 0 || service.name == null || service.name.isEmpty()) {
+        if (service.id < 0 || service.name == null || service.name.isEmpty()) {
             throw new XmlPullParserException("Invalid service: " + service.id);
         }
 
