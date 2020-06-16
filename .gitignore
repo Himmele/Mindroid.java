@@ -1,6 +1,8 @@
 *.class
+build
 bin
 lib
 out
 apps
 prefs
+.gradle

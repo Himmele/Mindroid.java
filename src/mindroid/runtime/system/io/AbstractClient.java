@@ -39,6 +39,7 @@ public abstract class AbstractClient {
     private String mHost;
     private int mPort;
     private Connection mConnection;
+    private volatile boolean mIsClosed = false;
 
     public AbstractClient(int nodeId) throws IOException {
         mNodeId = nodeId;
@@ -89,6 +90,7 @@ public abstract class AbstractClient {
             } catch (IOException ignore) {
             }
         }
+        mIsClosed = true;
 
         onDisconnected(cause);
     }
@@ -125,6 +127,10 @@ public abstract class AbstractClient {
 
     public void setTcpNoDelay(boolean on) throws IOException {
         mSocket.setTcpNoDelay(on);
+    }
+
+    public boolean isClosed() {
+        return mIsClosed;
     }
 
     public class Connection extends Thread implements Closeable {

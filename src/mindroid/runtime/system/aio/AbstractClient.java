@@ -42,6 +42,7 @@ public abstract class AbstractClient {
     private final Connection mConnection;
     private String mHost;
     private int mPort;
+    private volatile boolean mIsClosed = false;
 
     public AbstractClient(int nodeId) throws IOException {
         this(nodeId, null);
@@ -115,6 +116,8 @@ public abstract class AbstractClient {
             } catch (IOException ignore) {
             }
         }
+        mIsClosed = true;
+
         if (mHoldsExecutorGroup) {
             mExecutorGroup.shutdown();
         }
@@ -153,6 +156,10 @@ public abstract class AbstractClient {
 
     public void setTcpNoDelay(boolean on) throws IOException {
         mSocket.setOption(StandardSocketOptions.TCP_NODELAY, on);
+    }
+
+    public boolean isClosed() {
+        return mIsClosed;
     }
 
     public class Connection implements Closeable {

@@ -63,6 +63,12 @@ public abstract class Context {
      */
     public static final int MODE_APPEND = 0x8000;
 
+    /**
+     * File creation mode: for use with {@link #getSharedPreferences}, disable immediate file
+     * synchronization when committing changes back to the preferences file.
+     */
+    public static final int MODE_NO_SYNC = 0x10000;
+
     /** Return PackageManager instance to find global package information. */
     public abstract PackageManager getPackageManager();
 

@@ -205,21 +205,29 @@ public class Mindroid extends Plugin {
     @Override
     public Promise<Parcel> transact(IBinder binder, int what, Parcel data, int flags) throws RemoteException {
         int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
-        Client client = mClients.get(nodeId);
-        if (client == null) {
-            if (mConfiguration != null) {
-                ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(nodeId);
-                if (node != null) {
-                    ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin = node.plugins.get(binder.getUri().getScheme());
-                    if (plugin != null) {
-                        ServiceDiscoveryConfigurationReader.Configuration.Server server = plugin.server;
-                        if (server != null) {
-                            try {
-                                client = new Client(node.id);
-                                mClients.put(nodeId, client);
-                                client.start(server.uri);
-                            } catch (IOException e) {
-                                mClients.remove(nodeId);
+        Client client;
+        synchronized (this) {
+            client = mClients.get(nodeId);
+            if (client == null) {
+                if (mConfiguration != null) {
+                    ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+                    if (node != null) {
+                        ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin = node.plugins.get(binder.getUri().getScheme());
+                        if (plugin != null) {
+                            ServiceDiscoveryConfigurationReader.Configuration.Server server = plugin.server;
+                            if (server != null) {
+                                try {
+                                    client = new Client(node.id);
+                                    client.start(server.uri);
+                                    if (!client.isClosed()) {
+                                        mClients.put(nodeId, client);
+                                    } else {
+                                        throw new RemoteException("Binder transaction failure");
+                                    }
+                                } catch (IOException e) {
+                                    throw new RemoteException("Binder transaction failure");
+                                }
+                            } else {
                                 throw new RemoteException("Binder transaction failure");
                             }
                         } else {
@@ -231,8 +239,6 @@ public class Mindroid extends Plugin {
                 } else {
                     throw new RemoteException("Binder transaction failure");
                 }
-            } else {
-                throw new RemoteException("Binder transaction failure");
             }
         }
         return client.transact(binder, what, data, flags);
@@ -271,7 +277,9 @@ public class Mindroid extends Plugin {
     }
 
     public void onShutdown(AbstractClient client) {
-        mClients.remove(client.getNodeId());
+        synchronized (this) {
+            mClients.remove(client.getNodeId(), client);
+        }
     }
 
     private static class Message {

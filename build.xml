@@ -242,7 +242,7 @@
             </fileset>
         </jar>
 
-        <proguard configuration="build/proguard-sdk.txt">
+        <proguard configuration="configs/proguard-sdk.txt">
             <libraryjar refid="${target.classpath}"/>
             <injar name="${out.target.dir}/tmp/Mindroid.jar"/>
             <outjar name="${out.target.dir}/Mindroid.jar"/>

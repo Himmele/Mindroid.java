@@ -17,6 +17,7 @@
 
 package mindroid.app;
 
+import mindroid.content.Context;
 import mindroid.content.SharedPreferences;
 import mindroid.os.RemoteException;
 import mindroid.util.Log;
@@ -57,6 +58,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
 
     private final File mFile;
     private final File mBackupFile;
+    private final int mMode;
     private final Object mLock = new Object();
     private Map<String, Object> mMap;
     private Map<OnSharedPreferenceChangeListener, IOnSharedPreferenceChangeListener> mListeners = new HashMap<>();
@@ -64,6 +66,7 @@ public final class SharedPreferencesImpl implements SharedPreferences {
     public SharedPreferencesImpl(File file, int mode) {
         mFile = file;
         mBackupFile = makeBackupFile(file);
+        mMode = mode;
         synchronized (mLock) {
             mMap = null;
             loadSharedPrefs();
@@ -713,9 +716,12 @@ public final class SharedPreferencesImpl implements SharedPreferences {
         }
     }
 
-    private static boolean fsync(File file) {
+    private boolean fsync(File file) {
         if (file == null) {
             return false;
+        }
+        if ((mMode & Context.MODE_NO_SYNC) != 0) {
+            return true;
         }
 
         int attempts = 2;
