@@ -131,7 +131,7 @@ public class Runtime {
             for (Plugin plugin : runtime.mPlugins.values()) {
                 try {
                     plugin.stop(null, null).get();
-                } catch (CancellationException | ExecutionException | InterruptedException e) {
+                } catch (Throwable e) {
                     Log.println('E', LOG_TAG, "Failed to stop plugin", e);
                 }
                 plugin.tearDown();

@@ -68,7 +68,7 @@ public class SocketExecutor {
                     if (socket.isOpen()) {
                         try {
                             socket.register(mSelector).attach(socket);
-                        } catch (ClosedChannelException ignore) {
+                        } catch (CancelledKeyException | ClosedChannelException ignore) {
                         }
                     }
                 }

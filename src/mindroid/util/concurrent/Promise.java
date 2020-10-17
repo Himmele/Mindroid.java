@@ -44,6 +44,7 @@ import java.util.function.Function;
 import mindroid.os.Handler;
 import mindroid.os.Looper;
 import mindroid.os.SystemClock;
+import mindroid.util.Log;
 import sun.misc.Unsafe;
 
 /**
@@ -971,6 +972,14 @@ public class Promise<T> implements Future<T> {
             addAction(a);
         }
         return p;
+    }
+
+    @Override
+    public Promise<T> logUncaughtException() {
+        catchException(Executors.SYNCHRONOUS_EXECUTOR, (exception) -> {
+            Log.e("Promise", "Uncaught exception: " + exception.getMessage(), exception);
+        });
+        return this;
     }
 
     @Override

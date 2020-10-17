@@ -19,7 +19,6 @@ package mindroid.runtime.system;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -48,12 +47,14 @@ public class ServiceDiscoveryConfigurationReader {
     private static final String ALIASES_TAG = "aliases";
     private static final String ALIAS_TAG = "alias";
     private static final String ALIAS_EXTRAS_ATTR = "extras";
+    private static final String ALIAS_NODE_ATTR = "node";
 
     public static class Configuration {
         public static class Node {
             public int id;
             public Map<String, Plugin> plugins = new HashMap<>();
             public Map<String, Service> services = new HashMap<>();
+            public Map<Integer, Node> aliases = new HashMap<>();
         }
 
         public static class Plugin {
@@ -90,13 +91,11 @@ public class ServiceDiscoveryConfigurationReader {
     }
 
     public static Configuration read(File file) throws Exception {
-        FileInputStream inputStream = null;
-        try {
-            inputStream = new FileInputStream(file);
+        try (FileInputStream inputStream = new FileInputStream(file)) {
             XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
             factory.setNamespaceAware(true);
             XmlPullParser parser = factory.newPullParser();
-            parser.setInput((InputStream) inputStream, "UTF-8");
+            parser.setInput(inputStream, "UTF-8");
             parser.require(XmlPullParser.START_DOCUMENT, null, null);
             parser.nextTag();
             parser.require(XmlPullParser.START_TAG, null, ROOT_TAG);
@@ -120,16 +119,17 @@ public class ServiceDiscoveryConfigurationReader {
             parser.next();
             parser.require(XmlPullParser.END_DOCUMENT, null, null);
 
-            return configuration;
-        } catch (Exception e) {
-            throw e;
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
+            for (Configuration.Node node : configuration.nodes.values()) {
+                for (Map.Entry<Integer, Configuration.Node> alias : node.aliases.entrySet()) {
+                    Configuration.Node aliasNode = configuration.nodes.get(alias.getKey());
+                    if (aliasNode == null) {
+                        throw new XmlPullParserException("Cannot find node alias: " + alias.getKey());
+                    }
+                    alias.setValue(aliasNode);
                 }
             }
+
+            return configuration;
         }
     }
 
@@ -177,6 +177,9 @@ public class ServiceDiscoveryConfigurationReader {
                     plugin.node = node;
                     node.plugins.put(plugin.scheme, plugin);
                 }
+            } else if (parser.getName().equals(ALIAS_TAG)) {
+                Configuration.Node aliasNode = parseNodeAlias(parser);
+                node.aliases.put(aliasNode.id, aliasNode);
             } else {
                 String tag = parser.getName();
                 skipSubTree(parser);
@@ -185,6 +188,37 @@ public class ServiceDiscoveryConfigurationReader {
         }
 
         parser.require(XmlPullParser.END_TAG, null, NODE_TAG);
+        return node;
+    }
+
+    private static Configuration.Node parseNodeAlias(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, null, ALIAS_TAG);
+
+        Integer alias = null;
+        for (int i = 0; i < parser.getAttributeCount(); i++) {
+            String attributeName = parser.getAttributeName(i);
+            String attributeValue = parser.getAttributeValue(i);
+            if (attributeName.equals(ALIAS_NODE_ATTR)) {
+                try {
+                    alias = Integer.valueOf(attributeValue);
+                } catch (NumberFormatException e) {
+                    throw new XmlPullParserException("Cannot parse id " + attributeValue + " : " + e.getMessage());
+                }
+            }
+        }
+        if (alias == null) {
+            throw new XmlPullParserException("Alias does not contain a node id");
+        }
+
+        for (int eventType = parser.nextTag(); !parser.getName().equals(ALIAS_TAG) && eventType != XmlPullParser.END_TAG; eventType = parser.nextTag()) {
+            String tag = parser.getName();
+            skipSubTree(parser);
+            parser.require(XmlPullParser.END_TAG, null, tag);
+        }
+
+        parser.require(XmlPullParser.END_TAG, null, ALIAS_TAG);
+        Configuration.Node node = new Configuration.Node();
+        node.id = alias;
         return node;
     }
 

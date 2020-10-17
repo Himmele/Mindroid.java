@@ -97,11 +97,13 @@ public abstract class AbstractServer {
     }
 
     public void shutdown(Throwable cause) {
-        mExecutorGroup.unregister(mServerSocket);
-        try {
-            mServerSocket.close();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "Cannot close server socket", e);
+        if (mServerSocket != null) {
+            mExecutorGroup.unregister(mServerSocket);
+            try {
+                mServerSocket.close();
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Cannot close server socket", e);
+            }
         }
 
         for (Connection connection : mConnections) {

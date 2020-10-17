@@ -40,9 +40,17 @@ public class ServerSocket implements SelectableSocket {
 
     public ServerSocket(SocketAddress socketAddress) throws IOException {
         mServerSocketChannel = ServerSocketChannel.open();
-        mServerSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        mServerSocketChannel.bind(socketAddress);
-        mServerSocketChannel.configureBlocking(false);
+        try {
+            mServerSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            mServerSocketChannel.bind(socketAddress);
+            mServerSocketChannel.configureBlocking(false);
+        } catch (IOException | RuntimeException e) {
+            try {
+                mServerSocketChannel.close();
+            } catch (IOException ignore) {
+            }
+            throw e;
+        }
         mOps = SelectionKey.OP_ACCEPT;
     }
 

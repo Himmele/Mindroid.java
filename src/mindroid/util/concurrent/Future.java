@@ -611,6 +611,8 @@ public interface Future<T> {
 
     public Future<T> catchException(Executor executor, Consumer<Throwable> action);
 
+    public Future<T> logUncaughtException();
+
     /**
      * Exceptionally completes this Future with a {@link TimeoutException}
      * if not otherwise completed before the given timeout.
