@@ -26,6 +26,7 @@ import mindroid.util.concurrent.TimeoutException;
 import mindroid.runtime.system.Runtime;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -310,6 +311,22 @@ public class Binder implements IBinder {
     public void dispose() {
     }
 
+    @Override
+    public boolean equals(final Object obj) {
+        if (obj == null) return false;
+        if (obj == this) return true;
+        if (!(obj instanceof IBinder)) {
+            return false;
+        }
+        IBinder other = (IBinder) obj;
+        return getId() == other.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
     private interface IMessenger {
         public boolean isCurrentThread();
         public boolean send(final Message message);
@@ -527,6 +544,25 @@ public class Binder implements IBinder {
                 runtime.detachProxy(mId, mUri, mProxyId);
                 mRuntime = null;
             }
+        }
+
+        @Override
+        public boolean equals(final Object obj) {
+            if (obj == null) return false;
+            if (obj == this) return true;
+            if (!(obj instanceof IBinder)) {
+                return false;
+            }
+            if (getId() == UNRESOLVED_PROXY_ID) {
+                return false;
+            }
+            IBinder other = (IBinder) obj;
+            return getId() == other.getId();
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getId());
         }
 
         /** @hide */
