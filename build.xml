@@ -52,6 +52,7 @@
     <path id="JSE_Classpath">
         <pathelement location="${java.home}/jmods/java.base.jmod"/>
         <pathelement location="${java.home}/jmods/java.logging.jmod"/>
+        <pathelement location="${java.home}/jmods/java.management.jmod"/>
         <pathelement location="${java.home}/jmods/java.naming.jmod"/>
         <pathelement location="${java.home}/jmods/jdk.unsupported.jmod"/>
     </path>
