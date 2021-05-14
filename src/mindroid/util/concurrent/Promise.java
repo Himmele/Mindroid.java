@@ -184,8 +184,28 @@ public class Promise<T> implements Future<T> {
         mExecutor = handler.asExecutor();
     }
 
+    public Promise(final Handler handler, T result) {
+        this(handler);
+        complete(result);
+    }
+
+    public Promise(final Handler handler, final Throwable throwable) {
+        this(handler);
+        completeWith(throwable);
+    }
+
     public Promise(final Executor executor) {
         mExecutor = executor;
+    }
+
+    public Promise(final Executor executor, T result) {
+        this(executor);
+        complete(result);
+    }
+
+    public Promise(final Executor executor, final Throwable throwable) {
+        this(executor);
+        completeWith(throwable);
     }
 
     public Promise(final Promise<T> supplier) {

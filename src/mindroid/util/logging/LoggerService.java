@@ -160,7 +160,7 @@ public class LoggerService extends Service {
 
     public void onCreate() {
         SharedPreferences preferences = Environment.getSharedPreferences(Environment.getPreferencesDirectory(), "Logger.xml", 0);
-        final int threadPriority = preferences.getInt("threadPriority", Thread.MIN_PRIORITY);
+        final int threadPriority = preferences.getInt("threadPriority", Thread.NORM_PRIORITY);
         mLogger.setPriority(threadPriority);
         final String integrationTesting = System.getProperty(Properties.INTEGRATION_TESTING);
         if (integrationTesting != null && Boolean.valueOf(integrationTesting)) {

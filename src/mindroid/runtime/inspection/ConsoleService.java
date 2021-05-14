@@ -25,10 +25,22 @@ import mindroid.os.RemoteException;
 import mindroid.os.ServiceManager;
 import mindroid.util.concurrent.ExecutionException;
 import mindroid.util.concurrent.Promise;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.lang.management.BufferPoolMXBean;
+import java.lang.management.LockInfo;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
+import java.lang.management.MemoryUsage;
+import java.lang.management.MonitorInfo;
+import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -125,28 +137,11 @@ public class ConsoleService extends Service {
                 .map((entry) -> entry.getKey() + ": " + entry.getValue().description)
                 .collect(Collectors.joining(System.lineSeparator())));
 
-        addCommand("dump threads", "Print stack traces of all threads", (args) -> {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
-            for (Map.Entry<Thread, StackTraceElement[]> entry : stackTraces.entrySet()) {
-                pw.println(entry.getKey());
-                for (StackTraceElement e : entry.getValue()) {
-                    pw.println("  " + e.toString());
-                }
-                pw.println();
-            }
-            return sw.toString();
-        });
+        addCommand("dump threads", "Print thread summary including stack traces", (args) -> getThreadInformation());
 
-        addCommand("dump memory", "Print memory summary", (args) -> {
-            long freeMemory = java.lang.Runtime.getRuntime().freeMemory();
-            long totalMemory = java.lang.Runtime.getRuntime().totalMemory();
-            long maxMemory = java.lang.Runtime.getRuntime().maxMemory();
-            return "Free memory:  " + freeMemory + " B" + System.lineSeparator()
-                    + "Total memory: " + totalMemory + " B" + System.lineSeparator()
-                    + "Max memory:   " + maxMemory + " B";
-        });
+        addCommand("dump memory", "Print memory summary", (args) -> getMemoryUsage());
+
+        addCommand("dump uptime", "Print Java VM uptime", (args) -> getUptime());
 
         addCommand("gc", "Run garbage collection", (args) -> {
             java.lang.Runtime.getRuntime().gc();
@@ -162,5 +157,193 @@ public class ConsoleService extends Service {
             Runtime.getRuntime().exit(-1, "Restart via console");
             return null;
         });
+    }
+
+    private static String getMemoryUsage() {
+        StringBuilder builder = new StringBuilder();
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage totalHeapMemoryUsage = memoryBean.getHeapMemoryUsage();
+        MemoryUsage totalNonHeapMemoryUsage = memoryBean.getNonHeapMemoryUsage();
+
+        builder.append("Summary:").append(System.lineSeparator());
+        builder.append("Heap memory:  ");
+        addMemoryUsageSummary(builder, totalHeapMemoryUsage);
+        builder.append(System.lineSeparator());
+        builder.append("Non-heap memory: ");
+        addMemoryUsageSummary(builder, totalNonHeapMemoryUsage);
+        builder.append(System.lineSeparator()).append(System.lineSeparator());
+
+        List<MemoryPoolMXBean> memoryPools = ManagementFactory.getMemoryPoolMXBeans();
+        List<MemoryPoolMXBean> heapMemoryPools = new ArrayList<>();
+        List<MemoryPoolMXBean> nonHeapMemoryPools = new ArrayList<>();
+        for (MemoryPoolMXBean pool : memoryPools) {
+            if (pool.isValid()) {
+                if (pool.getType() == MemoryType.HEAP) {
+                    heapMemoryPools.add(pool);
+                } else {
+                    nonHeapMemoryPools.add(pool);
+                }
+            }
+        }
+
+        builder.append("Heap memory:").append(System.lineSeparator());
+        builder.append("Total heap memory:");
+        addMemoryUsage(builder, totalHeapMemoryUsage);
+        builder.append(System.lineSeparator());
+        for (MemoryPoolMXBean pool : heapMemoryPools) {
+            addMemoryPool(builder, pool);
+            builder.append(System.lineSeparator());
+        }
+        builder.append(System.lineSeparator()).append("Non-heap memory:").append(System.lineSeparator());
+        builder.append("Total non-heap memory:");
+        addMemoryUsage(builder, totalNonHeapMemoryUsage);
+        builder.append(System.lineSeparator());
+        for (MemoryPoolMXBean pool : nonHeapMemoryPools) {
+            addMemoryPool(builder, pool);
+            builder.append(System.lineSeparator());
+        }
+
+        List<BufferPoolMXBean> buffers = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+        builder.append(System.lineSeparator()).append("Buffers:").append(System.lineSeparator());
+        for (BufferPoolMXBean buffer : buffers) {
+            builder.append(buffer.getName()).append(":");
+            builder.append(" count ").append(buffer.getCount());
+            builder.append(" memory ").append(buffer.getMemoryUsed()).append("B");
+            builder.append(System.lineSeparator());
+        }
+
+        return builder.toString();
+    }
+
+    private static void addMemoryPool(StringBuilder builder, MemoryPoolMXBean pool) {
+        builder.append(pool.getName()).append(":");
+        addMemoryUsage(builder, pool.getUsage());
+
+        MemoryUsage peakUsage = pool.getPeakUsage();
+        builder.append(" peak used ").append(peakUsage.getUsed()).append("B");
+        builder.append(" peak committed ").append(peakUsage.getCommitted()).append("B");
+    }
+
+    private static void addMemoryUsage(StringBuilder builder, MemoryUsage usage) {
+        if (usage.getInit() >= 0) {
+            builder.append(" init ").append(usage.getInit()).append("B");
+        }
+        builder.append(" used ").append(usage.getUsed()).append("B");
+        builder.append(" committed ").append(usage.getCommitted()).append("B");
+        if (usage.getMax() > 0) {
+            builder.append(" max ").append(usage.getMax()).append("B");
+        }
+    }
+
+    private static void addMemoryUsageSummary(StringBuilder builder, MemoryUsage usage) {
+        builder.append(" used ").append(usage.getUsed()).append("B");
+        builder.append(" committed ").append(usage.getCommitted()).append("B");
+        if (usage.getMax() > 0) {
+            builder.append(" max ").append(usage.getMax()).append("B");
+            double percentage = ((double) usage.getUsed()) / usage.getMax() * 100;
+            builder.append(String.format(" %.2f%%", percentage));
+        }
+    }
+
+    private static String getUptime() {
+        RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
+        Duration uptime = Duration.ofMillis(runtimeBean.getUptime());
+        StringBuilder builder = new StringBuilder();
+        if (uptime.compareTo(Duration.ofDays(1)) > 0) {
+            builder.append(uptime.toDays()).append(" days ");
+        }
+        builder.append(String.format("%02d:%02d:%02d.%03d", uptime.toHoursPart(), uptime.toMinutesPart(), uptime.toSecondsPart(), uptime.toMillisPart()));
+        return builder.toString();
+    }
+
+    private static String getThreadInformation() {
+        final StringBuilder builder = new StringBuilder();
+        final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
+        final ThreadInfo[] threadInfos = threadBean.dumpAllThreads(true, true);
+        for (ThreadInfo threadInfo : threadInfos) {
+            addThreadInformation(builder, threadInfo);
+            builder.append("\n");
+        }
+
+        final long[] deadlockedThreads = threadBean.findDeadlockedThreads();
+        if (deadlockedThreads != null && deadlockedThreads.length > 0) {
+            builder.append("Deadlocked threads:\n");
+            ThreadInfo[] threads = threadBean.getThreadInfo(deadlockedThreads, true, true, Integer.MAX_VALUE);
+            for (ThreadInfo thread : threads) {
+                addThreadInformation(builder, thread);
+                builder.append("\n");
+            }
+        }
+
+        return builder.toString();
+    }
+
+    @SuppressWarnings("incomplete-switch")
+    private static void addThreadInformation(StringBuilder builder, ThreadInfo threadInfo) {
+        builder.append('"').append(threadInfo.getThreadName()).append('"')
+                .append(threadInfo.isDaemon() ? " daemon" : "")
+                .append(" prio=").append(threadInfo.getPriority())
+                .append(" id=").append(threadInfo.getThreadId())
+                .append(" ").append(threadInfo.getThreadState());
+        if (threadInfo.getLockName() != null) {
+            builder.append(" on ").append(threadInfo.getLockName());
+        }
+
+        if (threadInfo.getLockOwnerName() != null) {
+            builder.append(" owned by \"").append(threadInfo.getLockOwnerName()).append("\" id=").append(threadInfo.getLockOwnerId());
+        }
+
+        if (threadInfo.isSuspended()) {
+            builder.append(" (suspended)");
+        }
+
+        if (threadInfo.isInNative()) {
+            builder.append(" (in native)");
+        }
+
+        builder.append('\n');
+
+        StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+        MonitorInfo[] lockedMonitors = threadInfo.getLockedMonitors();
+        for (int i = 0; i < stackTrace.length; ++i) {
+            StackTraceElement ste = stackTrace[i];
+            builder.append("\tat ").append(ste.toString());
+            builder.append('\n');
+            if (i == 0 && threadInfo.getLockInfo() != null) {
+                Thread.State ts = threadInfo.getThreadState();
+                switch (ts) {
+                case BLOCKED:
+                    builder.append("\t-  blocked on ").append(threadInfo.getLockInfo());
+                    builder.append('\n');
+                    break;
+                case WAITING:
+                case TIMED_WAITING:
+                    builder.append("\t-  waiting on ").append(threadInfo.getLockInfo());
+                    builder.append('\n');
+                    break;
+                }
+            }
+
+            for (MonitorInfo mi : lockedMonitors) {
+                if (mi.getLockedStackDepth() == i) {
+                    builder.append("\t-  locked ").append(mi);
+                    builder.append('\n');
+                }
+            }
+        }
+
+        LockInfo[] locks = threadInfo.getLockedSynchronizers();
+        if (locks.length > 0) {
+            builder.append("\n\tLocked synchronizers count = ").append(locks.length);
+            builder.append('\n');
+
+            for (LockInfo li : locks) {
+                builder.append("\t- ").append(li);
+                builder.append('\n');
+            }
+        }
+
+        builder.append('\n');
     }
 }

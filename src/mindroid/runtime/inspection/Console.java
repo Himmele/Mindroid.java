@@ -98,6 +98,22 @@ public class Console {
         }
     }
 
+    public boolean removeCommands(String... commands) {
+        boolean allCommandsRemoved = true;
+        for (String command : commands) {
+            allCommandsRemoved &= removeCommand(command);
+        }
+        return allCommandsRemoved;
+    }
+
+    public boolean removeCommands(Iterable<String> commands) {
+        boolean allCommandsRemoved = true;
+        for (String command : commands) {
+            allCommandsRemoved &= removeCommand(command);
+        }
+        return allCommandsRemoved;
+    }
+
     public Promise<String> executeCommand(String command, String... arguments) {
         if ((mConsole != null) && (command != null)) {
             try {
