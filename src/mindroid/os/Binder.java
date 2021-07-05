@@ -212,7 +212,7 @@ public class Binder implements IBinder {
         message.obj = data;
         message.sendingPid = Process.myPid();
         Promise<Parcel> promise;
-        if (flags == FLAG_ONEWAY) {
+        if ((flags & FLAG_ONEWAY) != 0 && (flags & (FLAG_ONEWAY_WITH_EXCEPTION_HANDLING ^ FLAG_ONEWAY)) == 0) {
             message.result = null;
             promise = null;
         } else {

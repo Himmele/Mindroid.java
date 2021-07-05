@@ -397,7 +397,7 @@ public class Runtime {
         Plugin plugin = mPlugins.get(binder.getUri().getScheme());
         if (plugin != null) {
             Promise<Parcel> promise = plugin.transact(binder, what, data, flags);
-            if (flags != Binder.FLAG_ONEWAY && promise == null) {
+            if (((flags & Binder.FLAG_ONEWAY) == 0) && promise == null) {
                 throw new RemoteException("Binder transaction failure");
             }
             return promise;

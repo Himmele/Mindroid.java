@@ -37,6 +37,11 @@ public interface IBinder {
     public static final int FLAG_ONEWAY = 0x00000001;
 
     /**
+     * Same as FLAG_ONEWAY, but forwards exceptions to the callee of the transact method.
+     */
+    public static final int FLAG_ONEWAY_WITH_EXCEPTION_HANDLING = FLAG_ONEWAY | 0x00000002;
+
+    /**
      * Returns the binder's id.
      */
     public long getId();

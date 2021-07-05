@@ -487,7 +487,7 @@ public class Mindroid extends Plugin {
                 }
                 DataOutputStream dataOutputStream = (DataOutputStream) context.getObject("dataOutputStream");
 
-                if (flags == Binder.FLAG_ONEWAY) {
+                if ((flags & Binder.FLAG_ONEWAY) != 0) {
                     result = null;
                 } else {
                     final Promise<Parcel> promise = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
