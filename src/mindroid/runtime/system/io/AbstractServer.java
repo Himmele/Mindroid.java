@@ -39,8 +39,16 @@ public abstract class AbstractServer {
     private static final boolean DEBUG = false;
 
     private final Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
-    private ServerSocket mServerSocket;
+    private final ServerSocket mServerSocket;
     private Thread mThread;
+
+    public AbstractServer() throws IOException {
+        this(new ServerSocket());
+    }
+
+    public AbstractServer(ServerSocket serverSocket) throws IOException {
+        mServerSocket = serverSocket;
+    }
 
     public void start(String uri) throws IOException {
         LOG_TAG = "Server [" + uri + "]";
@@ -53,7 +61,6 @@ public abstract class AbstractServer {
 
         if ("tcp".equals(url.getScheme())) {
             try {
-                mServerSocket = new ServerSocket();
                 mServerSocket.setReuseAddress(true);
                 mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
 
@@ -65,9 +72,10 @@ public abstract class AbstractServer {
                                 if (DEBUG) {
                                     Log.d(LOG_TAG, "New connection from " + socket.getRemoteSocketAddress());
                                 }
-                                mConnections.add(new Connection(socket));
+                                Connection connection = new Connection(socket);
+                                mConnections.add(connection);
                             } catch (IOException e) {
-                                Log.e(LOG_TAG, e.getMessage(), e);
+                                Log.e(LOG_TAG, "Failed to accept new connection: " + e.getMessage(), e);
                             }
                         }
                     }
@@ -194,12 +202,14 @@ public abstract class AbstractServer {
                 }
             } catch (InterruptedException ignore) {
             }
-            mConnections.remove(this);
+            boolean doDisconnect = mConnections.remove(this);
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteSocketAddress());
             }
 
-            AbstractServer.this.onDisconnected(this, cause);
+            if (doDisconnect) {
+                AbstractServer.this.onDisconnected(this, cause);
+            }
         }
 
         public Bundle getContext() {

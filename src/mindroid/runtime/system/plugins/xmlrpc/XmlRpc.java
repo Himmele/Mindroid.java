@@ -96,8 +96,8 @@ public class XmlRpc extends Plugin {
                 if (plugin != null) {
                     ServiceDiscoveryConfigurationReader.Configuration.Server server = plugin.server;
                     if (server != null) {
-                        mServer = new Server();
                         try {
+                            mServer = new Server();
                             mServer.start(server.uri);
                         } catch (IOException e) {
                             Log.println('E', LOG_TAG, e.getMessage(), e);
@@ -435,6 +435,10 @@ public class XmlRpc extends Plugin {
 
     private class Server extends AbstractServer {
         private final byte[] BINDER_TRANSACTION_FAILURE = "Binder transaction failure".getBytes();
+
+        public Server() throws IOException {
+            super();
+        }
 
         @Override
         public void onConnected(Connection connection) {

@@ -16,6 +16,9 @@
 
 package mindroid.runtime.system.aio;
 
+import mindroid.os.Bundle;
+import mindroid.util.Log;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,11 +32,9 @@ import java.net.URISyntaxException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import mindroid.os.Bundle;
-import mindroid.util.Log;
 
 public abstract class AbstractServer {
     private String LOG_TAG;
@@ -42,19 +43,33 @@ public abstract class AbstractServer {
     private final SocketExecutorGroup mExecutorGroup;
     private final boolean mHoldsExecutorGroup;
     private final Set<Connection> mConnections = ConcurrentHashMap.newKeySet();
-    private ServerSocket mServerSocket;
+    private final ServerSocket mServerSocket;
 
-    public AbstractServer() {
-        this(null);
+    public AbstractServer() throws IOException {
+        this(null, null);
     }
 
-    public AbstractServer(SocketExecutorGroup executorGroup) {
+    public AbstractServer(ServerSocket serverSocket) throws IOException {
+        this(null, serverSocket);
+    }
+
+    public AbstractServer(SocketExecutorGroup executorGroup) throws IOException {
+        this(executorGroup, null);
+    }
+
+    protected AbstractServer(SocketExecutorGroup executorGroup, ServerSocket serverSocket) throws IOException {
         if (executorGroup == null) {
             mExecutorGroup = new SocketExecutorGroup();
             mHoldsExecutorGroup = true;
         } else {
             mExecutorGroup = executorGroup;
             mHoldsExecutorGroup = false;
+        }
+
+        if (serverSocket == null) {
+            mServerSocket = new ServerSocket();
+        } else {
+            mServerSocket = serverSocket;
         }
     }
 
@@ -69,20 +84,33 @@ public abstract class AbstractServer {
 
         if ("tcp".equals(url.getScheme())) {
             try {
-                mServerSocket = new ServerSocket(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
+                mServerSocket.bind(new InetSocketAddress(InetAddress.getByName(url.getHost()), url.getPort()));
                 mServerSocket.setListener((operation, argument) -> {
                     if (operation == ServerSocket.OP_ACCEPT) {
-                        mServerSocket.accept().whenComplete((socket, exception) -> {
-                            if (exception == null) {
+                        mServerSocket.accept().whenComplete((socket, socketException) -> {
+                            if (socketException == null) {
                                 if (DEBUG) {
                                     try {
                                         Log.d(LOG_TAG, "New connection from " + socket.getRemoteAddress());
                                     } catch (IOException ignore) {
                                     }
                                 }
-                                mConnections.add(new Connection(socket));
+                                Connection connection = new Connection(socket);
+                                awaitConnection(socket, connection).whenComplete((ignore, connectionException) -> {
+                                    if (connectionException == null) {
+                                        mConnections.add(connection);
+                                        onConnected(connection);
+                                    } else {
+                                        Log.w(LOG_TAG, "Failed to accept new connection: " + connectionException);
+                                        try {
+                                            connection.close();
+                                        } catch (IOException e) {
+                                            Log.e(LOG_TAG, "Failed to close connection", e);
+                                        }
+                                    }
+                                });
                             } else {
-                                shutdown(exception);
+                                shutdown(socketException);
                             }
                         });
                     }
@@ -94,6 +122,12 @@ public abstract class AbstractServer {
         } else {
             throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
         }
+    }
+
+    protected CompletableFuture<Void> awaitConnection(Socket socket, Connection connection) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        future.complete(null);
+        return future;
     }
 
     public void shutdown(Throwable cause) {
@@ -181,8 +215,6 @@ public abstract class AbstractServer {
                 }
             });
             mExecutorGroup.register(mSocket);
-
-            AbstractServer.this.onConnected(this);
         }
 
         @Override
@@ -226,12 +258,14 @@ public abstract class AbstractServer {
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Cannot close socket", e);
             }
-            mConnections.remove(Connection.this);
+            boolean doDisconnect = mConnections.remove(Connection.this);
             if (DEBUG) {
                 Log.d(LOG_TAG, "Disconnected from " + mSocket.getRemoteAddress());
             }
 
-            AbstractServer.this.onDisconnected(this, cause);
+            if (doDisconnect) {
+                AbstractServer.this.onDisconnected(this, cause);
+            }
         }
 
         public Bundle getContext() {

@@ -23,6 +23,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 
 public class ServerSocket implements SelectableSocket {
@@ -38,15 +39,23 @@ public class ServerSocket implements SelectableSocket {
         public abstract void onOperation(int operation, Object arg);
     }
 
-    public ServerSocket(SocketAddress socketAddress) throws IOException {
+    public ServerSocket() throws IOException {
         mServerSocketChannel = ServerSocketChannel.open();
+    }
+
+    public ServerSocket(SocketAddress socketAddress) throws IOException {
+        this();
+        bind(socketAddress);
+    }
+
+    public void bind(SocketAddress socketAddress) throws IOException {
         try {
             mServerSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             mServerSocketChannel.bind(socketAddress);
             mServerSocketChannel.configureBlocking(false);
         } catch (IOException | RuntimeException e) {
             try {
-                mServerSocketChannel.close();
+                close();
             } catch (IOException ignore) {
             }
             throw e;
@@ -66,11 +75,15 @@ public class ServerSocket implements SelectableSocket {
     public CompletableFuture<Socket> accept() {
         CompletableFuture<Socket> future = new CompletableFuture<>();
         try {
-            future.complete(new Socket(mServerSocketChannel.accept()));
+            future.complete(createSocket(mServerSocketChannel.accept()));
         } catch (IOException e) {
             future.completeExceptionally(e);
         }
         return future;
+    }
+
+    protected Socket createSocket(SocketChannel socketChannel) throws IOException {
+        return new Socket(socketChannel);
     }
 
     public SocketAddress getLocalAddress() throws IOException {

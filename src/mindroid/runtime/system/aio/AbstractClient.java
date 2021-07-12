@@ -16,6 +16,9 @@
 
 package mindroid.runtime.system.aio;
 
+import mindroid.os.Bundle;
+import mindroid.util.Log;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,8 +31,6 @@ import java.net.URISyntaxException;
 import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import mindroid.os.Bundle;
-import mindroid.util.Log;
 
 public abstract class AbstractClient {
     private String LOG_TAG;
@@ -49,6 +50,10 @@ public abstract class AbstractClient {
     }
 
     public AbstractClient(int nodeId, SocketExecutorGroup executorGroup) throws IOException {
+        this(nodeId, executorGroup, new Socket());
+    }
+
+    protected AbstractClient(int nodeId, SocketExecutorGroup executorGroup, Socket socket) {
         if (executorGroup == null) {
             mExecutorGroup = new SocketExecutorGroup();
             mHoldsExecutorGroup = true;
@@ -57,7 +62,7 @@ public abstract class AbstractClient {
             mHoldsExecutorGroup = false;
         }
         mNodeId = nodeId;
-        mSocket = new Socket();
+        mSocket = socket;
         mConnection = new Connection(mSocket);
     }
 

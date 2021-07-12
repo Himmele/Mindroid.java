@@ -105,13 +105,7 @@ public class SocketOutputStream extends OutputStream {
         }
 
         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, count);
-        synchronized (this) {
-            mBuffer.add(byteBuffer);
-            mCount += count;
-            if (mCount >= MAX_BUFFER_SIZE) {
-                sync();
-            }
-        }
+        write(byteBuffer);
     }
 
     /**
@@ -123,13 +117,15 @@ public class SocketOutputStream extends OutputStream {
      */
     @Override
     public void write(int b) throws IOException {
-        ByteBuffer byteBuffer = (ByteBuffer) ByteBuffer.allocate(1).put((byte) b).flip();
-        synchronized (this) {
-            mBuffer.add(byteBuffer);
-            mCount++;
-            if (mCount >= MAX_BUFFER_SIZE) {
-                sync();
-            }
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1).put((byte) b).flip();
+        write(byteBuffer);
+    }
+
+    public synchronized void write(ByteBuffer byteBuffer) throws IOException {
+        mBuffer.add(byteBuffer);
+        mCount += byteBuffer.remaining();
+        if (mCount >= MAX_BUFFER_SIZE) {
+            sync();
         }
     }
 

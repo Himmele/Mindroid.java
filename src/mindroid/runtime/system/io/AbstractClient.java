@@ -41,9 +41,13 @@ public abstract class AbstractClient {
     private Connection mConnection;
     private volatile boolean mIsClosed = false;
 
-    public AbstractClient(int nodeId) throws IOException {
+    public AbstractClient(int nodeId) {
+        this(nodeId, new Socket());
+    }
+
+    protected AbstractClient(int nodeId, Socket socket) {
         mNodeId = nodeId;
-        mSocket = new Socket();
+        mSocket = socket;
     }
 
     public void start(String uri) throws IOException {

@@ -16,7 +16,13 @@
 
 package mindroid.runtime.system.aio;
 
+import mindroid.util.Log;
+import mindroid.util.concurrent.Executors;
+import mindroid.util.concurrent.Promise;
+
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.net.SocketTimeoutException;
@@ -28,19 +34,16 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import mindroid.util.Log;
-import mindroid.util.concurrent.Promise;
-
 public class Socket implements SelectableSocket {
     private static final String LOG_TAG = "Socket";
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10_000;
     private final SocketChannel mSocketChannel;
-    private final SocketInputStream mInputStream;
-    private final SocketOutputStream mOutputStream;
     private Selector mSelector;
     private CompletableFuture<Void> mConnector;
     private Listener mListener;
     private AtomicInteger mOps = new AtomicInteger(0);
+    protected final SocketInputStream mInputStream;
+    protected final SocketOutputStream mOutputStream;
 
     public static final int OP_CLOSE = 1;
     public static final int OP_READ = 2;
@@ -55,7 +58,7 @@ public class Socket implements SelectableSocket {
         mOps.set(0);
     }
 
-    Socket(SocketChannel socketChannel) throws IOException {
+    protected Socket(SocketChannel socketChannel) throws IOException {
         mSocketChannel = socketChannel;
         mSocketChannel.configureBlocking(false);
         mInputStream = new SocketInputStream(this);
@@ -102,7 +105,9 @@ public class Socket implements SelectableSocket {
                 mOutputStream.sync();
             }
         });
-        new Promise<Void>(future).orTimeout(CONNECTION_ESTABLISHMENT_TIMEOUT)
+        Promise<Void> timeout = new Promise<>(Executors.SYNCHRONOUS_EXECUTOR);
+        timeout.completeWith(future);
+        timeout.orTimeout(CONNECTION_ESTABLISHMENT_TIMEOUT)
                 .catchException(ex -> {
                     try {
                         close();
@@ -177,11 +182,11 @@ public class Socket implements SelectableSocket {
         return num;
     }
 
-    public SocketInputStream getInputStream() {
+    public InputStream getInputStream() {
         return mInputStream;
     }
 
-    public SocketOutputStream getOutputStream() {
+    public OutputStream getOutputStream() {
         return mOutputStream;
     }
 
