@@ -26,14 +26,18 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import mindroid.os.Binder;
 import mindroid.os.Bundle;
 import mindroid.os.IBinder;
@@ -246,11 +250,30 @@ public class Mindroid extends Plugin {
 
     @Override
     public void link(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) throws RemoteException {
+        int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
+        Client client;
+        synchronized (this) {
+            client = mClients.get(nodeId);
+        }
+        if (client != null) {
+            client.link(supervisor);
+        } else {
+            supervisor.onExit(0);
+        }
     }
 
     @Override
     public boolean unlink(IBinder binder, IBinder.Supervisor supervisor, Bundle extras) {
-        return true;
+        int nodeId = (int) ((binder.getId() >> 32) & 0xFFFFFFFFL);
+        Client client;
+        synchronized (this) {
+            client = mClients.get(nodeId);
+        }
+        if (client != null) {
+            return client.unlink(supervisor);
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -285,6 +308,7 @@ public class Mindroid extends Plugin {
     private static class Message {
         public static final int MESSAGE_TYPE_TRANSACTION = 1;
         public static final int MESSAGE_TYPE_EXCEPTION_TRANSACTION = 2;
+        public static final int MAX_MESSAGE_SIZE = 64 * 1024 * 1024; //64MB
 
         private Message(int type, String uri, int transactionId, int what, byte[] data, int size) {
             this(type, uri, transactionId, what, data, size, null);
@@ -330,6 +354,9 @@ public class Mindroid extends Plugin {
             int transactionId = inputStream.readInt();
             int what = inputStream.readInt();
             int size = inputStream.readInt();
+            if (size < 0 || size > MAX_MESSAGE_SIZE) {
+                throw new IOException("Invalid message size: uri=" + uri + ", what=" + what + ", size=" + size);
+            }
             byte[] data = new byte[size];
             inputStream.readFully(data, 0, size);
             if (type == MESSAGE_TYPE_TRANSACTION) {
@@ -463,6 +490,8 @@ public class Mindroid extends Plugin {
     private class Client extends AbstractClient {
         private final AtomicInteger mTransactionIdGenerator = new AtomicInteger(1);
         private Map<Integer, Promise<Parcel>> mTransactions = new ConcurrentHashMap<>();
+        private final AtomicBoolean mIsClosed = new AtomicBoolean(false);
+        private List<IBinder.Supervisor> mSupervisors = new ArrayList<>();
 
         public Client(int nodeId) throws IOException {
             super(nodeId);
@@ -511,14 +540,29 @@ public class Mindroid extends Plugin {
             return result;
         }
 
+        public synchronized void link(IBinder.Supervisor supervisor) {
+            if (mIsClosed.get()) {
+                supervisor.onExit(0);
+            } else {
+                mSupervisors.add(supervisor);
+            }
+        }
+
+        public synchronized boolean unlink(IBinder.Supervisor supervisor) {
+            return mSupervisors.remove(supervisor);
+        }
+
         @Override
         public void onConnected() {
             Log.d(LOG_TAG, "Connected to " + getRemoteSocketAddress());
         }
 
         @Override
-        public void onDisconnected(Throwable cause) {
+        public synchronized void onDisconnected(Throwable cause) {
+            mIsClosed.set(true);
             Log.d(LOG_TAG, "Disconnected from " + getRemoteSocketAddress());
+            mSupervisors.forEach(supervisor -> supervisor.onExit(0));
+            mSupervisors.clear();
         }
 
         @Override

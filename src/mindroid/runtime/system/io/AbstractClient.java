@@ -144,7 +144,7 @@ public abstract class AbstractClient {
         private final OutputStream mOutputStream;
 
         Connection(Socket socket) throws IOException {
-            setName("Client: " + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress());
+            setName("Client [" + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress() + "]");
             mContext.putObject("connection", this);
             mSocket = socket;
             try {

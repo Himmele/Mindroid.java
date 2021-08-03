@@ -139,6 +139,7 @@ public abstract class AbstractServer {
         private final OutputStream mOutputStream;
 
         Connection(Socket socket) throws IOException {
+            setName("Server [" + socket.getLocalSocketAddress() + " <<>> " + socket.getRemoteSocketAddress() + "]");
             mContext.putObject("connection", this);
             mSocket = socket;
             try {
