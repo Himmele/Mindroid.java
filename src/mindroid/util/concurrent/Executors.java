@@ -19,7 +19,7 @@ package mindroid.util.concurrent;
 import java.util.concurrent.Executor;
 
 public class Executors {
-    public static final SynchronousExecutor SYNCHRONOUS_EXECUTOR = new SynchronousExecutor();
+    public static final Executor SYNCHRONOUS_EXECUTOR = new SynchronousExecutor();
 
     private Executors() {
     }

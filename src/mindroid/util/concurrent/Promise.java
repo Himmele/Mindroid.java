@@ -121,6 +121,7 @@ import sun.misc.Unsafe;
  * }}</pre>
  */
 public class Promise<T> implements Future<T> {
+    private static final String LOG_TAG = "Promise";
     private static final sun.misc.Unsafe UNSAFE;
     private static final long RESULT;
     private static final Object NULL = new Object();
@@ -997,7 +998,7 @@ public class Promise<T> implements Future<T> {
     @Override
     public Promise<T> logUncaughtException() {
         catchException(Executors.SYNCHRONOUS_EXECUTOR, (exception) -> {
-            Log.e("Promise", "Uncaught exception: " + exception.getMessage(), exception);
+            Log.e(LOG_TAG, "Uncaught exception: " + exception.getMessage(), exception);
         });
         return this;
     }
@@ -1055,7 +1056,12 @@ public class Promise<T> implements Future<T> {
 
         void tryRun() {
             if (claim()) {
-                mExecutor.execute(this);
+                try {
+                    mExecutor.execute(this);
+                } catch (Throwable e) {
+                    mConsumer.setResult(toCompletionException(e));
+                    mConsumer.onComplete();
+                }
             }
         }
 
@@ -1079,7 +1085,12 @@ public class Promise<T> implements Future<T> {
         void tryRun() {
             if (mSupplier.mResult != null && mSupplier2.mResult != null) {
                 if (claim()) {
-                    mExecutor.execute(this);
+                    try {
+                        mExecutor.execute(this);
+                    } catch (Throwable e) {
+                        mConsumer.setResult(toCompletionException(e));
+                        mConsumer.onComplete();
+                    }
                 }
             }
         }

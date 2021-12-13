@@ -61,6 +61,7 @@ public class XmlRpc extends Plugin {
     private static final boolean DEBUG = false;
     private static final ScheduledThreadPoolExecutor sExecutor;
 
+    private int mNodeId;
     private ServiceDiscoveryConfigurationReader.Configuration mConfiguration;
     private Server mServer;
     private Map<Integer, Client> mClients = new ConcurrentHashMap<>();
@@ -89,11 +90,11 @@ public class XmlRpc extends Plugin {
 
     @Override
     public Promise<Void> start(URI uri, Bundle extras) {
-        int nodeId = mRuntime.getNodeId();
-        LOG_TAG = "XmlRpc [" + nodeId + "]";
+        mNodeId = mRuntime.getNodeId();
+        LOG_TAG = "XmlRpc [" + mNodeId + "]";
         mConfiguration = mRuntime.getConfiguration();
         if (mConfiguration != null) {
-            ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(nodeId);
+            ServiceDiscoveryConfigurationReader.Configuration.Node node = mConfiguration.nodes.get(mNodeId);
             if (node != null) {
                 ServiceDiscoveryConfigurationReader.Configuration.Plugin plugin = node.plugins.get("xmlrpc");
                 if (plugin != null) {
@@ -225,6 +226,9 @@ public class XmlRpc extends Plugin {
         if (mConfiguration != null) {
             ServiceDiscoveryConfigurationReader.Configuration.Service service = mConfiguration.services.get(uri.getAuthority());
             if (service == null) {
+                return null;
+            }
+            if (service.node.id == mNodeId) {
                 return null;
             }
 
@@ -394,7 +398,7 @@ public class XmlRpc extends Plugin {
             int what = inputStream.readInt();
             int size = inputStream.readInt();
             if (size < 0 || size > MAX_MESSAGE_SIZE) {
-                throw new IOException("Invalid message size: uri=" + uri + ", what=" + what + ", size=" + size);
+                throw new IOException("Invalid input message size: uri=" + uri + ", transactionId=" + transactionId + ", what=" + what + ", size=" + size);
             }
             byte[] data = new byte[size];
             inputStream.readFully(data, 0, size);
@@ -419,6 +423,9 @@ public class XmlRpc extends Plugin {
         }
 
         public final void write(DataOutputStream outputStream) throws IOException {
+            if (size < 0 || size > MAX_MESSAGE_SIZE) {
+                throw new IOException("Invalid output message size: uri=" + uri + ", transactionId=" + transactionId + ", what=" + what + ", size=" + size);
+            }
             synchronized (outputStream) {
                 byte[] uri = this.uri.getBytes(StandardCharsets.US_ASCII);
                 int size = 4 + 2 + uri.length + 4 + 4 + 4 + this.size;
