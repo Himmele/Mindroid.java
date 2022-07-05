@@ -6,7 +6,7 @@
     <property name="compile.target" value="1.8" />
 
     <taskdef resource="net/sf/antcontrib/antlib.xml"/>
-    <taskdef resource="proguard/ant/task.properties" classpath="prebuilts/ProGuard/proguard.jar" />
+    <taskdef resource="proguard/ant/task.properties" classpath="prebuilts/ProGuard/proguard-ant.jar" />
 
     <!-- Global properties-->
     <condition property="target" value="pc">

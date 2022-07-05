@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'application'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
@@ -10,6 +10,7 @@ sourceSets {
                 "$projectDir/src",
             ]
             include '**/*.java'
+            exclude 'main/Main.java'
         }
 
         resources {
@@ -23,9 +24,10 @@ sourceSets {
 group = 'mindroid'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 11
+compileJava.options.encoding = 'UTF-8'
 
 jar {
-    baseName = 'Mindroid'
+    archiveBaseName = 'Mindroid'
 }
 
 repositories {
@@ -33,5 +35,5 @@ repositories {
 }
 
 application {
-    mainClassName = 'main.Main'
+    mainClass.set('main.Main')
 }

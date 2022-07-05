@@ -146,6 +146,8 @@ public class MessageQueue {
                         mHeadMessage = message.nextMessage;
                         if (mHeadMessage != null) {
                             mHeadMessage.prevMessage = null;
+                        } else {
+                            mTailMessage = null;
                         }
                         message.prevMessage = null;
                         message.nextMessage = null;

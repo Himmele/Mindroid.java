@@ -1222,20 +1222,41 @@ public final class Parcel {
         }
     }
 
+    private static final String HEX_CHARS = "0123456789ABCDEF";
+    private static final String PARCEL_PROLOG = "Parcel {";
+    private static final String PARCEL_DATA_PROLOG = "data=[";
+    private static final String PARCEL_EPILOG = "}";
+    private static final String PARCEL_DATA_EPILOG = "]";
+    private static final String PARCEL_EXTRAS_PROLOG = ", extras=";
+
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("Parcel {data=[");
-        byte[] data = mOutputStream.getByteArray();
-        for (int i = 0; i < mOutputStream.size(); ++i) {
-            builder.append(String.format("%02X", Byte.toUnsignedInt(data[i])));
-        }
-        builder.append("]");
-
+        int dataSize = mOutputStream.size();
+        int size = PARCEL_PROLOG.length() + PARCEL_DATA_PROLOG.length()
+                + PARCEL_EPILOG.length() + PARCEL_DATA_EPILOG.length()
+                + dataSize * 2;
+        String extrasString = null;
         if (mExtras != null) {
-            builder.append(", extras=");
-            builder.append(mExtras.toString());
+            extrasString = mExtras.toString();
+            size += PARCEL_EXTRAS_PROLOG.length() + extrasString.length();
         }
 
-        return builder.append("}").toString();
+        StringBuilder builder = new StringBuilder(size);
+        builder.append(PARCEL_PROLOG);
+        builder.append(PARCEL_DATA_PROLOG);
+        byte[] data = mOutputStream.getByteArray();
+        for (int i = 0; i < dataSize; ++i) {
+            int byteValue = data[i];
+            builder.append(HEX_CHARS.charAt(byteValue & 0xF0 >> 4));
+            builder.append(HEX_CHARS.charAt(byteValue & 0x0F));
+        }
+        builder.append(PARCEL_DATA_EPILOG);
+
+        if (extrasString != null) {
+            builder.append(PARCEL_EXTRAS_PROLOG);
+            builder.append(extrasString);
+        }
+
+        return builder.append(PARCEL_EPILOG).toString();
     }
 }

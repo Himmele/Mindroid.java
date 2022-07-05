@@ -38,6 +38,7 @@ public class Socket implements SelectableSocket {
     private static final String LOG_TAG = "Socket";
     private static final int CONNECTION_ESTABLISHMENT_TIMEOUT = 10_000;
     private final SocketChannel mSocketChannel;
+    private final CompletableFuture<Void> mConnectionFuture = new CompletableFuture<>();
     private Selector mSelector;
     private CompletableFuture<Void> mConnector;
     private Listener mListener;
@@ -207,6 +208,10 @@ public class Socket implements SelectableSocket {
         mListener = listener;
     }
 
+    protected CompletableFuture<Void> awaitConnection() {
+        return mConnectionFuture;
+    }
+
     @Override
     public boolean isOpen() {
         return mSocketChannel.isOpen();
@@ -214,6 +219,8 @@ public class Socket implements SelectableSocket {
 
     @Override
     public SelectionKey register(Selector selector) throws ClosedChannelException {
+        // Ensure that mConnectionFuture is completed by the same thread that performs OP_READ/OP_WRITE operations (and before the first OP_READ operation).
+        mConnectionFuture.complete(null);
         mSelector = selector;
         return mSocketChannel.register(selector, mOps.get());
     }

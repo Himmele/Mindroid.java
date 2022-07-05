@@ -53,14 +53,25 @@ public class SocketExecutorGroup {
     }
 
     public SocketExecutorGroup(int size) {
+        this(size, null);
+    }
+
+    public SocketExecutorGroup(int size, String name) {
         if (size <= 0) {
             throw new IllegalArgumentException();
         }
         mExecutorService = Executors.newFixedThreadPool(size, new ThreadFactory() {
+            private final String mName = name;
             private final AtomicInteger mCount = new AtomicInteger(1);
 
             public Thread newThread(Runnable r) {
-                Thread t = new Thread(r, "SocketExecutor #" + mCount.getAndIncrement());
+                String namePrefix;
+                if (mName == null) {
+                    namePrefix = "";
+                } else {
+                    namePrefix = name + "-";
+                }
+                Thread t = new Thread(r, namePrefix + "SocketExecutor #" + mCount.getAndIncrement());
                 t.setPriority(Thread.NORM_PRIORITY);
                 return t;
             }

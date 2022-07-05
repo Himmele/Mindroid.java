@@ -190,11 +190,11 @@ public class Binder implements IBinder {
      * If you want to call this, call transact().
      */
     protected void onTransact(int what, Parcel data, Promise<Parcel> result) throws RemoteException {
-        throw new RemoteException(new NoSuchMethodException());
+        throw new RemoteException(new NoSuchMethodException("Unknown method id: " + what));
     }
 
     protected void onTransact(int what, int num, Object obj, Bundle data, Promise<?> result) throws RemoteException {
-        throw new RemoteException(new NoSuchMethodException());
+        throw new RemoteException(new NoSuchMethodException("Unknown method id: " + what));
     }
 
     /**

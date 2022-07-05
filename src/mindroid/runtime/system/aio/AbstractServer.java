@@ -95,20 +95,7 @@ public abstract class AbstractServer {
                                     } catch (IOException ignore) {
                                     }
                                 }
-                                Connection connection = new Connection(socket);
-                                awaitConnection(socket, connection).whenComplete((ignore, connectionException) -> {
-                                    if (connectionException == null) {
-                                        mConnections.add(connection);
-                                        onConnected(connection);
-                                    } else {
-                                        Log.w(LOG_TAG, "Failed to accept new connection: " + connectionException);
-                                        try {
-                                            connection.close();
-                                        } catch (IOException e) {
-                                            Log.e(LOG_TAG, "Failed to close connection", e);
-                                        }
-                                    }
-                                });
+                                new Connection(socket);
                             } else {
                                 shutdown(socketException);
                             }
@@ -122,12 +109,6 @@ public abstract class AbstractServer {
         } else {
             throw new IllegalArgumentException("Invalid URI scheme: " + url.getScheme());
         }
-    }
-
-    protected CompletableFuture<Void> awaitConnection(Socket socket, Connection connection) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        future.complete(null);
-        return future;
     }
 
     public void shutdown(Throwable cause) {
@@ -211,6 +192,19 @@ public abstract class AbstractServer {
                     try {
                         close();
                     } catch (IOException ignore) {
+                    }
+                }
+            });
+            socket.awaitConnection().whenComplete((ignore, connectionException) -> {
+                if (connectionException == null) {
+                    mConnections.add(this);
+                    onConnected(this);
+                } else {
+                    Log.w(LOG_TAG, "Failed to accept new connection: " + connectionException);
+                    try {
+                        close();
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "Failed to close connection", e);
                     }
                 }
             });
