@@ -1247,7 +1247,7 @@ public final class Parcel {
         byte[] data = mOutputStream.getByteArray();
         for (int i = 0; i < dataSize; ++i) {
             int byteValue = data[i];
-            builder.append(HEX_CHARS.charAt(byteValue & 0xF0 >> 4));
+            builder.append(HEX_CHARS.charAt((byteValue & 0xF0) >> 4));
             builder.append(HEX_CHARS.charAt(byteValue & 0x0F));
         }
         builder.append(PARCEL_DATA_EPILOG);

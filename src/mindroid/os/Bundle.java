@@ -60,9 +60,13 @@ public final class Bundle {
 
     /**
      * Removes all elements from the mapping of this Bundle.
+     *
+     * @return Returns a reference to the same Bundle object, so you can chain calls
+     * together.
      */
-    public void clear() {
+    public Bundle clear() {
         mMap.clear();
+        return this;
     }
 
     /**
@@ -114,20 +118,26 @@ public final class Bundle {
      * Removes any entry with the given key from the mapping of this Bundle.
      *
      * @param key a String key
+     * @return Returns a reference to the same Bundle object, so you can chain calls
+     * together.
      */
-    public void remove(String key) {
+    public Bundle remove(String key) {
         mMap.remove(key);
+        return this;
     }
 
     /**
      * Inserts all key-value pairs from the given Bundle into this Bundle.
      *
      * @param bundle a Bundle
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putAll(Bundle bundle) {
+    public Bundle putAll(Bundle bundle) {
         if (bundle != null) {
             mMap.putAll(bundle.mMap);
         }
+        return this;
     }
 
     /**
@@ -136,9 +146,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a Boolean, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putBoolean(String key, boolean value) {
+    public Bundle putBoolean(String key, boolean value) {
         mMap.put(key, new Boolean(value));
+        return this;
     }
 
     /**
@@ -147,9 +160,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a byte
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putByte(String key, byte value) {
+    public Bundle putByte(String key, byte value) {
         mMap.put(key, new Byte(value));
+        return this;
     }
 
     /**
@@ -158,9 +174,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a char, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putChar(String key, char value) {
+    public Bundle putChar(String key, char value) {
         mMap.put(key, new Character(value));
+        return this;
     }
 
     /**
@@ -169,9 +188,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a short
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putShort(String key, short value) {
+    public Bundle putShort(String key, short value) {
         mMap.put(key, new Short(value));
+        return this;
     }
 
     /**
@@ -180,9 +202,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an int, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putInt(String key, int value) {
+    public Bundle putInt(String key, int value) {
         mMap.put(key, new Integer(value));
+        return this;
     }
 
     /**
@@ -191,9 +216,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a long
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putLong(String key, long value) {
+    public Bundle putLong(String key, long value) {
         mMap.put(key, new Long(value));
+        return this;
     }
 
     /**
@@ -202,9 +230,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a float
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putFloat(String key, float value) {
+    public Bundle putFloat(String key, float value) {
         mMap.put(key, new Float(value));
+        return this;
     }
 
     /**
@@ -213,9 +244,12 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a double
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putDouble(String key, double value) {
+    public Bundle putDouble(String key, double value) {
         mMap.put(key, new Double(value));
+        return this;
     }
 
     /**
@@ -224,11 +258,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a String, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putString(String key, String value) {
+    public Bundle putString(String key, String value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -237,11 +274,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putObject(String key, Object value) {
+    public Bundle putObject(String key, Object value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -250,11 +290,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a boolean array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putBooleanArray(String key, boolean[] value) {
+    public Bundle putBooleanArray(String key, boolean[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -263,11 +306,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a byte array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putByteArray(String key, byte[] value) {
+    public Bundle putByteArray(String key, byte[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -276,11 +322,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a short array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putShortArray(String key, short[] value) {
+    public Bundle putShortArray(String key, short[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -289,11 +338,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a char array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putCharArray(String key, char[] value) {
+    public Bundle putCharArray(String key, char[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -302,11 +354,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an int array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putIntArray(String key, int[] value) {
+    public Bundle putIntArray(String key, int[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -315,11 +370,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a long array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putLongArray(String key, long[] value) {
+    public Bundle putLongArray(String key, long[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -328,11 +386,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a float array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putFloatArray(String key, float[] value) {
+    public Bundle putFloatArray(String key, float[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -341,11 +402,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a double array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putDoubleArray(String key, double[] value) {
+    public Bundle putDoubleArray(String key, double[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -354,11 +418,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a String array object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putStringArray(String key, String[] value) {
+    public Bundle putStringArray(String key, String[] value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -367,11 +434,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an ArrayList<Integer> object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putIntegerArrayList(String key, ArrayList<Integer> value) {
+    public Bundle putIntegerArrayList(String key, ArrayList<Integer> value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -380,11 +450,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an ArrayList<String> object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putStringArrayList(String key, ArrayList<String> value) {
+    public Bundle putStringArrayList(String key, ArrayList<String> value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -393,11 +466,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value a Bundle object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putBundle(String key, Bundle value) {
+    public Bundle putBundle(String key, Bundle value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
@@ -414,11 +490,14 @@ public final class Bundle {
      *
      * @param key a String, or null
      * @param value an IBinder object, or null
+     * @return Returns a reference to the same Bundle object, so you can chain put calls
+     * together.
      */
-    public void putBinder(String key, IBinder value) {
+    public Bundle putBinder(String key, IBinder value) {
         if (value != null) {
             mMap.put(key, value);
         }
+        return this;
     }
 
     /**
